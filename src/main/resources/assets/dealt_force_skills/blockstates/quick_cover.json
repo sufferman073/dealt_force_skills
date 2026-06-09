@@ -1,0 +1,12 @@
+{
+  "multipart": [
+    { "when": { "facing": "north", "half": "false" }, "apply": { "model": "dealt_force_skills:block/quick_cover_z" } },
+    { "when": { "facing": "south", "half": "false" }, "apply": { "model": "dealt_force_skills:block/quick_cover_z" } },
+    { "when": { "facing": "east", "half": "false" }, "apply": { "model": "dealt_force_skills:block/quick_cover_x" } },
+    { "when": { "facing": "west", "half": "false" }, "apply": { "model": "dealt_force_skills:block/quick_cover_x" } },
+    { "when": { "facing": "north", "half": "true" }, "apply": { "model": "dealt_force_skills:block/quick_cover_z_half" } },
+    { "when": { "facing": "south", "half": "true" }, "apply": { "model": "dealt_force_skills:block/quick_cover_z_half" } },
+    { "when": { "facing": "east", "half": "true" }, "apply": { "model": "dealt_force_skills:block/quick_cover_x_half" } },
+    { "when": { "facing": "west", "half": "true" }, "apply": { "model": "dealt_force_skills:block/quick_cover_x_half" } }
+  ]
+}

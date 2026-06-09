@@ -1,0 +1,209 @@
+package com.rzy.dealt_force_skills.client;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.SkillSlot;
+import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
+import com.rzy.dealt_force_skills.character.raptor.RaptorToolAction;
+import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
+import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
+import com.rzy.dealt_force_skills.network.C2S_RaptorToolAction;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.InteractionHand;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import org.lwjgl.glfw.GLFW;
+
+@Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
+public final class RaptorInputHandler {
+    private static final int ACTIVE_LONG_HOLD_TICKS = 15;
+    private static final int PULSE_EQUIP_HOLD_TICKS = 8;
+
+    private static boolean active1WasDown;
+    private static int active1HeldTicks;
+    private static boolean active2WasDown;
+    private static int active2HeldTicks;
+    private static boolean sentActive2HoldAction;
+    private static boolean coreWasDown;
+    private static int coreHeldTicks;
+
+    private RaptorInputHandler() {
+    }
+
+    public static void tick(Minecraft minecraft) {
+        if (RaptorFalconController.isControlling()) {
+            resetActive1();
+            resetActive2();
+            resetCore();
+            return;
+        }
+        if (minecraft.player == null || !ClientRaptorHudState.shouldRender()) {
+            resetActive1();
+            resetActive2();
+            resetCore();
+            return;
+        }
+        handleActive1Key();
+        handleActive2Key();
+        handleCoreKey();
+        if (ClientRaptorHudState.hasEquippedTool()) {
+            releaseBlockedKey(minecraft.options.keyAttack);
+            releaseBlockedKey(minecraft.options.keyUse);
+            releaseBlockedKey(minecraft.options.keyPickItem);
+            releaseBlockedKey(minecraft.options.keyDrop);
+            releaseBlockedKey(minecraft.options.keySwapOffhand);
+        }
+    }
+
+    public static boolean ownsCoreSkill() {
+        return ClientRaptorHudState.shouldRender();
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMouseButtonPre(InputEvent.MouseButton.Pre event) {
+        if (!ClientRaptorHudState.hasEquippedTool() || !isPrimaryOrSecondary(event.getButton())) {
+            return;
+        }
+        if (Minecraft.getInstance().screen != null) {
+            return;
+        }
+        event.setCanceled(true);
+        if (event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
+
+        RaptorTool tool = ClientRaptorHudState.equippedTool();
+        if (tool == RaptorTool.FALCON_DRONE) {
+            NetworkHandler.sendToServer(new C2S_RaptorToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                    ? RaptorToolAction.LAUNCH_FALCON
+                    : RaptorToolAction.STOW_TOOL));
+            return;
+        }
+        if (tool == RaptorTool.PULSE_GRENADE) {
+            NetworkHandler.sendToServer(new C2S_RaptorToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
+                    ? RaptorToolAction.THROW_PULSE_GRENADE
+                    : RaptorToolAction.STOW_TOOL));
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
+        if (!ClientRaptorHudState.hasEquippedTool()) {
+            return;
+        }
+        event.setSwingHand(false);
+        event.setCanceled(true);
+        if (event.getHand() != InteractionHand.MAIN_HAND) {
+            return;
+        }
+        RaptorTool tool = ClientRaptorHudState.equippedTool();
+        if (event.isAttack()) {
+            NetworkHandler.sendToServer(new C2S_RaptorToolAction(tool == RaptorTool.FALCON_DRONE
+                    ? RaptorToolAction.LAUNCH_FALCON
+                    : RaptorToolAction.THROW_PULSE_GRENADE));
+        } else if (event.isUseItem()) {
+            NetworkHandler.sendToServer(new C2S_RaptorToolAction(RaptorToolAction.STOW_TOOL));
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        if (Minecraft.getInstance().screen == null && ClientRaptorHudState.hasEquippedTool()) {
+            event.setCanceled(true);
+        }
+    }
+
+    private static void handleActive1Key() {
+        if (KeybindRegister.ACTIVE_SKILL_1 == null) {
+            return;
+        }
+        boolean down = KeybindRegister.ACTIVE_SKILL_1.isDown();
+        if (down) {
+            active1WasDown = true;
+            active1HeldTicks++;
+            while (KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
+            }
+            return;
+        }
+        if (active1WasDown) {
+            if (active1HeldTicks >= ACTIVE_LONG_HOLD_TICKS && ClientRaptorHudState.falconActiveTicks() > 0) {
+                NetworkHandler.sendToServer(new C2S_RaptorToolAction(RaptorToolAction.FALCON_SELF_DESTRUCT));
+            } else {
+                ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1);
+            }
+        }
+        resetActive1();
+    }
+
+    private static void handleActive2Key() {
+        if (KeybindRegister.ACTIVE_SKILL_2 == null) {
+            return;
+        }
+        boolean down = KeybindRegister.ACTIVE_SKILL_2.isDown();
+        if (down) {
+            active2WasDown = true;
+            active2HeldTicks++;
+            while (KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
+            }
+            if (active2HeldTicks >= PULSE_EQUIP_HOLD_TICKS && !sentActive2HoldAction) {
+                sentActive2HoldAction = true;
+                NetworkHandler.sendToServer(new C2S_RaptorToolAction(ClientRaptorHudState.falconActiveTicks() > 0
+                        ? RaptorToolAction.FALCON_PULSE
+                        : RaptorToolAction.EQUIP_PULSE_GRENADE));
+            }
+            return;
+        }
+        if (active2WasDown && !sentActive2HoldAction) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+        }
+        resetActive2();
+    }
+
+    private static void handleCoreKey() {
+        if (KeybindRegister.CORE_SKILL == null) {
+            return;
+        }
+        boolean down = KeybindRegister.CORE_SKILL.isDown();
+        if (down) {
+            coreWasDown = true;
+            coreHeldTicks++;
+            while (KeybindRegister.CORE_SKILL.consumeClick()) {
+            }
+            return;
+        }
+        if (coreWasDown) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.CORE, coreHeldTicks >= ACTIVE_LONG_HOLD_TICKS);
+        }
+        resetCore();
+    }
+
+    private static void resetActive1() {
+        active1WasDown = false;
+        active1HeldTicks = 0;
+    }
+
+    private static void resetActive2() {
+        active2WasDown = false;
+        active2HeldTicks = 0;
+        sentActive2HoldAction = false;
+    }
+
+    private static void resetCore() {
+        coreWasDown = false;
+        coreHeldTicks = 0;
+    }
+
+    private static boolean isPrimaryOrSecondary(int button) {
+        return button == GLFW.GLFW_MOUSE_BUTTON_LEFT || button == GLFW.GLFW_MOUSE_BUTTON_RIGHT;
+    }
+
+    private static void releaseBlockedKey(KeyMapping keyMapping) {
+        keyMapping.setDown(false);
+        while (keyMapping.consumeClick()) {
+        }
+    }
+}

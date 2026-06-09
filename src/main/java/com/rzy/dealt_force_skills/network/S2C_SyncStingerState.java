@@ -1,0 +1,119 @@
+package com.rzy.dealt_force_skills.network;
+
+import com.rzy.dealt_force_skills.character.stinger.StingerDownedMarker;
+import com.rzy.dealt_force_skills.client.character.ClientStingerHudState;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.network.NetworkEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+public class S2C_SyncStingerState {
+    private final int smokeCooldownTicks;
+    private final int droneCooldownTicks;
+    private final int stimCharges;
+    private final int stimMaxCharges;
+    private final int stimRechargeTicks;
+    private final int equippedToolOrdinal;
+    private final int stimModeOrdinal;
+    private final int rescueTicks;
+    private final int rescueRequiredTicks;
+    private final int selfDownedTicks;
+    private final List<StingerDownedMarker> downedMarkers;
+
+    public S2C_SyncStingerState(
+            int smokeCooldownTicks,
+            int droneCooldownTicks,
+            int stimCharges,
+            int stimMaxCharges,
+            int stimRechargeTicks,
+            int equippedToolOrdinal,
+            int stimModeOrdinal,
+            int rescueTicks,
+            int rescueRequiredTicks,
+            int selfDownedTicks,
+            List<StingerDownedMarker> downedMarkers
+    ) {
+        this.smokeCooldownTicks = smokeCooldownTicks;
+        this.droneCooldownTicks = droneCooldownTicks;
+        this.stimCharges = stimCharges;
+        this.stimMaxCharges = stimMaxCharges;
+        this.stimRechargeTicks = stimRechargeTicks;
+        this.equippedToolOrdinal = equippedToolOrdinal;
+        this.stimModeOrdinal = stimModeOrdinal;
+        this.rescueTicks = rescueTicks;
+        this.rescueRequiredTicks = rescueRequiredTicks;
+        this.selfDownedTicks = selfDownedTicks;
+        this.downedMarkers = List.copyOf(downedMarkers);
+    }
+
+    public static void encode(S2C_SyncStingerState msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.smokeCooldownTicks);
+        buf.writeVarInt(msg.droneCooldownTicks);
+        buf.writeVarInt(msg.stimCharges);
+        buf.writeVarInt(msg.stimMaxCharges);
+        buf.writeVarInt(msg.stimRechargeTicks);
+        buf.writeVarInt(msg.equippedToolOrdinal);
+        buf.writeVarInt(msg.stimModeOrdinal);
+        buf.writeVarInt(msg.rescueTicks);
+        buf.writeVarInt(msg.rescueRequiredTicks);
+        buf.writeVarInt(msg.selfDownedTicks);
+        buf.writeVarInt(msg.downedMarkers.size());
+        for (StingerDownedMarker marker : msg.downedMarkers) {
+            buf.writeVarInt(marker.entityId());
+            buf.writeDouble(marker.position().x);
+            buf.writeDouble(marker.position().y);
+            buf.writeDouble(marker.position().z);
+            buf.writeVarInt(marker.remainingTicks());
+        }
+    }
+
+    public static S2C_SyncStingerState decode(FriendlyByteBuf buf) {
+        int smokeCooldownTicks = buf.readVarInt();
+        int droneCooldownTicks = buf.readVarInt();
+        int stimCharges = buf.readVarInt();
+        int stimMaxCharges = buf.readVarInt();
+        int stimRechargeTicks = buf.readVarInt();
+        int equippedToolOrdinal = buf.readVarInt();
+        int stimModeOrdinal = buf.readVarInt();
+        int rescueTicks = buf.readVarInt();
+        int rescueRequiredTicks = buf.readVarInt();
+        int selfDownedTicks = buf.readVarInt();
+        int count = buf.readVarInt();
+        List<StingerDownedMarker> markers = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            markers.add(new StingerDownedMarker(
+                    buf.readVarInt(),
+                    new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()),
+                    buf.readVarInt()
+            ));
+        }
+        return new S2C_SyncStingerState(smokeCooldownTicks, droneCooldownTicks, stimCharges, stimMaxCharges,
+                stimRechargeTicks, equippedToolOrdinal, stimModeOrdinal, rescueTicks, rescueRequiredTicks,
+                selfDownedTicks, markers);
+    }
+
+    public static void handle(S2C_SyncStingerState msg, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientStingerHudState.sync(
+                        msg.smokeCooldownTicks,
+                        msg.droneCooldownTicks,
+                        msg.stimCharges,
+                        msg.stimMaxCharges,
+                        msg.stimRechargeTicks,
+                        msg.equippedToolOrdinal,
+                        msg.stimModeOrdinal,
+                        msg.rescueTicks,
+                        msg.rescueRequiredTicks,
+                        msg.selfDownedTicks,
+                        msg.downedMarkers
+                )
+        ));
+        ctx.get().setPacketHandled(true);
+    }
+}

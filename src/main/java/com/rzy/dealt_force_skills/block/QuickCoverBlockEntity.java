@@ -1,0 +1,155 @@
+package com.rzy.dealt_force_skills.block;
+
+import com.rzy.dealt_force_skills.registry.ModBlockEntities;
+import com.rzy.dealt_force_skills.registry.ModBlocks;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+
+public class QuickCoverBlockEntity extends BlockEntity {
+    private static final int MAX_HEALTH = 2500;
+    private static final int MAX_DAMAGE_PER_HIT = 100;
+    private static final String ROOT = "Root";
+    private static final String ROOT_POS = "RootPos";
+    private static final String HEALTH = "Health";
+    private static final String EXPIRE_AT = "ExpireAt";
+
+    private boolean root;
+    private BlockPos rootPos = BlockPos.ZERO;
+    private int health = MAX_HEALTH;
+    private long expireAt;
+    private boolean removingLinked;
+
+    public QuickCoverBlockEntity(BlockPos pos, BlockState state) {
+        super(ModBlockEntities.QUICK_COVER.get(), pos, state);
+    }
+
+    public void configureRoot(BlockPos rootPos, long expireAt) {
+        this.root = true;
+        this.rootPos = rootPos.immutable();
+        this.health = MAX_HEALTH;
+        this.expireAt = expireAt;
+        setChanged();
+    }
+
+    public void configurePart(BlockPos rootPos, long expireAt) {
+        this.root = false;
+        this.rootPos = rootPos.immutable();
+        this.health = 0;
+        this.expireAt = expireAt;
+        setChanged();
+    }
+
+    public static void tick(Level level, BlockPos pos, BlockState state, QuickCoverBlockEntity be) {
+        if (level.isClientSide) {
+            return;
+        }
+        if (be.expireAt > 0L && level.getGameTime() >= be.expireAt) {
+            destroyCoverAt(level, pos);
+            return;
+        }
+        if (!be.root && !isQuickCoverRoot(level, be.rootPos)) {
+            level.removeBlock(pos, false);
+        }
+    }
+
+    public static void destroyCoverAt(Level level, BlockPos pos) {
+        if (!(level.getBlockEntity(pos) instanceof QuickCoverBlockEntity cover)) {
+            if (level.getBlockState(pos).is(ModBlocks.QUICK_COVER.get())) {
+                level.removeBlock(pos, false);
+            }
+            return;
+        }
+
+        BlockPos root = cover.root ? pos : cover.rootPos;
+        if (root == null) {
+            root = pos;
+        }
+
+        for (BlockPos check : BlockPos.betweenClosed(root.offset(-3, -3, -3), root.offset(3, 3, 3))) {
+            if (level.getBlockEntity(check) instanceof QuickCoverBlockEntity linked
+                    && linked.isLinkedTo(root)) {
+                linked.removingLinked = true;
+                level.removeBlock(check, false);
+            }
+        }
+    }
+
+    public static void damageCoverAt(Level level, BlockPos pos, int amount) {
+        if (!(level.getBlockEntity(pos) instanceof QuickCoverBlockEntity cover)) {
+            return;
+        }
+
+        QuickCoverBlockEntity root = cover.rootEntity();
+        if (root == null) {
+            destroyCoverAt(level, pos);
+            return;
+        }
+
+        int damage = Math.min(MAX_DAMAGE_PER_HIT, Math.max(1, amount));
+        root.health = Math.max(0, root.health - damage);
+        root.setChanged();
+        if (root.health <= 0) {
+            destroyCoverAt(level, root.worldPosition);
+        }
+    }
+
+    public void onRemoved() {
+        if (level == null || level.isClientSide || removingLinked) {
+            return;
+        }
+        if (root) {
+            destroyCoverAt(level, worldPosition);
+        }
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        tag.putBoolean(ROOT, root);
+        tag.putInt(HEALTH, health);
+        tag.putLong(EXPIRE_AT, expireAt);
+        CompoundTag pos = new CompoundTag();
+        pos.putInt("X", rootPos.getX());
+        pos.putInt("Y", rootPos.getY());
+        pos.putInt("Z", rootPos.getZ());
+        tag.put(ROOT_POS, pos);
+    }
+
+    @Override
+    public void load(CompoundTag tag) {
+        super.load(tag);
+        root = tag.getBoolean(ROOT);
+        health = tag.contains(HEALTH, Tag.TAG_INT) ? tag.getInt(HEALTH) : MAX_HEALTH;
+        expireAt = tag.getLong(EXPIRE_AT);
+        if (tag.contains(ROOT_POS, Tag.TAG_COMPOUND)) {
+            CompoundTag pos = tag.getCompound(ROOT_POS);
+            rootPos = new BlockPos(pos.getInt("X"), pos.getInt("Y"), pos.getInt("Z"));
+        } else {
+            rootPos = worldPosition;
+        }
+    }
+
+    private QuickCoverBlockEntity rootEntity() {
+        if (root) {
+            return this;
+        }
+        if (level != null && level.getBlockEntity(rootPos) instanceof QuickCoverBlockEntity cover && cover.root) {
+            return cover;
+        }
+        return null;
+    }
+
+    private boolean isLinkedTo(BlockPos root) {
+        return worldPosition.equals(root) || (rootPos != null && rootPos.equals(root));
+    }
+
+    private static boolean isQuickCoverRoot(Level level, BlockPos pos) {
+        return pos != null
+                && level.getBlockEntity(pos) instanceof QuickCoverBlockEntity cover
+                && cover.root;
+    }
+}

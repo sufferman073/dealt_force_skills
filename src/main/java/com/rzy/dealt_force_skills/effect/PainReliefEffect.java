@@ -1,0 +1,10 @@
+package com.rzy.dealt_force_skills.effect;
+
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+
+public class PainReliefEffect extends MobEffect {
+    public PainReliefEffect() {
+        super(MobEffectCategory.BENEFICIAL, 0xE7D67A);
+    }
+}

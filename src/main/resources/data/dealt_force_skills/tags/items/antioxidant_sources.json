@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:cocoa_beans",
+    "minecraft:sweet_berries",
+    "minecraft:glow_berries",
+    "minecraft:carrot",
+    "minecraft:apple",
+    "minecraft:pumpkin_seeds",
+    "minecraft:kelp",
+    "#dealt_force_skills:mushrooms"
+  ]
+}

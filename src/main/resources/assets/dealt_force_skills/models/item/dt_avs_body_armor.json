@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dealt_force_skills:item/dt_avs_body_armor"
+  }
+}

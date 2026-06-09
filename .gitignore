@@ -1,0 +1,96 @@
+# =========================================================
+# Public repository whitelist
+# Ignore everything by default, then only allow public mod files.
+# =========================================================
+
+*
+
+# ---------------------------------------------------------
+# Root public files
+# ---------------------------------------------------------
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/LICENSE
+!/LICENSE-CODE.txt
+!/ASSETS_LICENSE.md
+
+# ---------------------------------------------------------
+# Gradle / Forge project files
+# ---------------------------------------------------------
+!/build.gradle
+!/settings.gradle
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+
+# ---------------------------------------------------------
+# Gradle wrapper
+# ---------------------------------------------------------
+!/gradle/
+!/gradle/wrapper/
+!/gradle/wrapper/**
+
+# ---------------------------------------------------------
+# Source code and resources
+# ---------------------------------------------------------
+!/src/
+!/src/main/
+!/src/main/**
+
+# Datagen output, keep only if your mod needs it
+!/src/generated/
+!/src/generated/**
+
+# ---------------------------------------------------------
+# GitHub Actions, optional
+# ---------------------------------------------------------
+!/.github/
+!/.github/workflows/
+!/.github/workflows/**
+
+# =========================================================
+# Explicit private / junk blocks
+# These are redundant because of the whitelist above,
+# but kept here as safety warnings.
+# =========================================================
+
+build/
+.gradle/
+run/
+logs/
+crash-reports/
+out/
+bin/
+
+.idea/
+.vscode/
+*.iml
+
+other_compact_mods/
+characters_records/
+items_records/
+knowledge/
+port_backups/
+旧版本/
+备份/
+设计稿/
+开发日志/
+档案/
+临时素材/
+Codex任务记录/
+
+教导日志.md
+task_plan.md
+progress.md
+findings.md
+存在的问题.txt
+
+.env
+*.env
+secrets.*
+*.key
+*.pem
+*token*
+*password*
+*secret*

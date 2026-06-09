@@ -1,0 +1,105 @@
+package com.rzy.dealt_force_skills.network;
+
+import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.network.NetworkEvent;
+
+import java.util.function.Supplier;
+
+public class S2C_SyncSinevaState {
+    private final int bladeWireCharges;
+    private final int bladeWireMaxCharges;
+    private final int bladeWireRechargeTicks;
+    private final int grappleCooldownTicks;
+    private final int bombSuitCooldownTicks;
+    private final int bombSuitEquipTicks;
+    private final int bashCooldownTicks;
+    private final int chargeCooldownTicks;
+    private final boolean bombSuitActive;
+    private final boolean shieldDeployed;
+    private final int viewportHealth;
+    private final int viewportMaxHealth;
+
+    public S2C_SyncSinevaState(
+            int bladeWireCharges,
+            int bladeWireMaxCharges,
+            int bladeWireRechargeTicks,
+            int grappleCooldownTicks,
+            int bombSuitCooldownTicks,
+            int bombSuitEquipTicks,
+            int bashCooldownTicks,
+            int chargeCooldownTicks,
+            boolean bombSuitActive,
+            boolean shieldDeployed,
+            int viewportHealth,
+            int viewportMaxHealth
+    ) {
+        this.bladeWireCharges = bladeWireCharges;
+        this.bladeWireMaxCharges = bladeWireMaxCharges;
+        this.bladeWireRechargeTicks = bladeWireRechargeTicks;
+        this.grappleCooldownTicks = grappleCooldownTicks;
+        this.bombSuitCooldownTicks = bombSuitCooldownTicks;
+        this.bombSuitEquipTicks = bombSuitEquipTicks;
+        this.bashCooldownTicks = bashCooldownTicks;
+        this.chargeCooldownTicks = chargeCooldownTicks;
+        this.bombSuitActive = bombSuitActive;
+        this.shieldDeployed = shieldDeployed;
+        this.viewportHealth = viewportHealth;
+        this.viewportMaxHealth = viewportMaxHealth;
+    }
+
+    public static void encode(S2C_SyncSinevaState msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.bladeWireCharges);
+        buf.writeVarInt(msg.bladeWireMaxCharges);
+        buf.writeVarInt(msg.bladeWireRechargeTicks);
+        buf.writeVarInt(msg.grappleCooldownTicks);
+        buf.writeVarInt(msg.bombSuitCooldownTicks);
+        buf.writeVarInt(msg.bombSuitEquipTicks);
+        buf.writeVarInt(msg.bashCooldownTicks);
+        buf.writeVarInt(msg.chargeCooldownTicks);
+        buf.writeBoolean(msg.bombSuitActive);
+        buf.writeBoolean(msg.shieldDeployed);
+        buf.writeVarInt(msg.viewportHealth);
+        buf.writeVarInt(msg.viewportMaxHealth);
+    }
+
+    public static S2C_SyncSinevaState decode(FriendlyByteBuf buf) {
+        return new S2C_SyncSinevaState(
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readVarInt(),
+                buf.readBoolean(),
+                buf.readBoolean(),
+                buf.readVarInt(),
+                buf.readVarInt()
+        );
+    }
+
+    public static void handle(S2C_SyncSinevaState msg, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientSinevaHudState.sync(
+                        msg.bladeWireCharges,
+                        msg.bladeWireMaxCharges,
+                        msg.bladeWireRechargeTicks,
+                        msg.grappleCooldownTicks,
+                        msg.bombSuitCooldownTicks,
+                        msg.bombSuitEquipTicks,
+                        msg.bashCooldownTicks,
+                        msg.chargeCooldownTicks,
+                        msg.bombSuitActive,
+                        msg.shieldDeployed,
+                        msg.viewportHealth,
+                        msg.viewportMaxHealth
+                )
+        ));
+        ctx.get().setPacketHandled(true);
+    }
+}

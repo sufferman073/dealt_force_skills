@@ -1,0 +1,3868 @@
+package com.rzy.dealt_force_skills.event;
+
+import com.rzy.dealt_force_skills.block.BladeWireBlockEntity;
+import com.rzy.dealt_force_skills.block.QuickCoverBlock;
+import com.rzy.dealt_force_skills.block.QuickCoverBlockEntity;
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
+import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
+import com.rzy.dealt_force_skills.character.dwolf.DWolfSkills;
+import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
+import com.rzy.dealt_force_skills.character.dwolf.DWolfTool;
+import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
+import com.rzy.dealt_force_skills.character.gizmo.GizmoTool;
+import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
+import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
+import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
+import com.rzy.dealt_force_skills.character.luna.LunaTool;
+import com.rzy.dealt_force_skills.character.manba.ManbaStateManager;
+import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
+import com.rzy.dealt_force_skills.character.morse.MorseTool;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroTool;
+import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
+import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
+import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
+import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
+import com.rzy.dealt_force_skills.character.shepherd.ShepherdTool;
+import com.rzy.dealt_force_skills.character.uluru.UluruTool;
+import com.rzy.dealt_force_skills.character.sineva.SinevaShieldGeometry;
+import com.rzy.dealt_force_skills.character.sineva.SinevaKnockdownState;
+import com.rzy.dealt_force_skills.character.sineva.SinevaSkills;
+import com.rzy.dealt_force_skills.character.sineva.SinevaStateManager;
+import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
+import com.rzy.dealt_force_skills.character.stinger.StingerTool;
+import com.rzy.dealt_force_skills.character.tempest.TempestStateManager;
+import com.rzy.dealt_force_skills.character.tempest.TempestTool;
+import com.rzy.dealt_force_skills.character.toxik.ToxikStateManager;
+import com.rzy.dealt_force_skills.character.toxik.ToxikTool;
+import com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper;
+import com.rzy.dealt_force_skills.character.uluru.UluruStateManager;
+import com.rzy.dealt_force_skills.character.undead.UndeadProfession;
+import com.rzy.dealt_force_skills.character.undead.UndeadStateManager;
+import com.rzy.dealt_force_skills.character.undead.UndeadSupportManager;
+import com.rzy.dealt_force_skills.character.undead.UndeadUpgradeManager;
+import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
+import com.rzy.dealt_force_skills.character.vlinder.VlinderTool;
+import com.rzy.dealt_force_skills.character.vyron.VyronSkills;
+import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
+import com.rzy.dealt_force_skills.character.vyron.VyronTool;
+import com.rzy.dealt_force_skills.effect.NoxDelayedWoundEffect;
+import com.rzy.dealt_force_skills.effect.NoxFlashedEffect;
+import com.rzy.dealt_force_skills.effect.ModItemEffectHelper;
+import com.rzy.dealt_force_skills.effect.ManbaBlindedEffect;
+import com.rzy.dealt_force_skills.effect.HackclawFlashBlindEffect;
+import com.rzy.dealt_force_skills.effect.MorseFlashedEffect;
+import com.rzy.dealt_force_skills.effect.ToxikTearGasBlindEffect;
+import com.rzy.dealt_force_skills.effect.ToxikFireflyInterferenceEffect;
+import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
+import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
+import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
+import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
+import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Profile;
+import com.rzy.dealt_force_skills.item.DfsEquipmentItem.SpecialAbility;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_CharacterHitFeedback;
+import com.rzy.dealt_force_skills.registry.ModBlocks;
+import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModItems;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.shop.HaffCoinManager;
+import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
+import com.rzy.dealt_force_skills.shop.UndeadSoulManager;
+import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.TickTask;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.Container;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.damagesource.DamageTypes;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.trading.MerchantOffer;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.CocoaBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingFallEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingHealEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.MobEffectEvent;
+import net.minecraftforge.event.entity.item.ItemTossEvent;
+import net.minecraftforge.event.entity.player.AttackEntityEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.PlayLevelSoundEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.ExplosionEvent;
+import net.minecraftforge.event.village.VillagerTradesEvent;
+import net.minecraftforge.event.village.WandererTradesEvent;
+import net.minecraftforge.eventbus.api.Event;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.world.phys.BlockHitResult;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+@Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID)
+public class CommonEvents {
+    private static final String TACZ_AMMO_HIT_BLOCK_EVENT = "com.tacz.guns.api.event.server.AmmoHitBlockEvent";
+    private static final String TACZ_GUN_RELOAD_EVENT = "com.tacz.guns.api.event.common.GunReloadEvent";
+    private static final String TACZ_GUN_SHOOT_EVENT = "com.tacz.guns.api.event.common.GunShootEvent";
+    private static final String TACZ_GUN_FIRE_EVENT = "com.tacz.guns.api.event.common.GunFireEvent";
+    private static final String TACZ_GUN_MELEE_EVENT = "com.tacz.guns.api.event.common.GunMeleeEvent";
+    private static final String TACZ_GUN_FIRE_SELECT_EVENT = "com.tacz.guns.api.event.common.GunFireSelectEvent";
+    private static final String TACZ_GUN_OPERATOR = "com.tacz.guns.api.entity.IGunOperator";
+    private static final String TACZ_CLIENT_GUN_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
+    private static final TagKey<DamageType> TACZ_BULLETS_TAG = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.tryBuild("tacz", "bullets"));
+    private static final int EFFECT_REAPPLY_GRACE_TICKS = 2;
+    private static final double SHIELD_DEPLOYED_SLOW_AMOUNT = -0.1;
+    private static final double SHIELD_DAMAGE_SLOW_MAX_TOTAL = 0.95D;
+    private static final double EQUIPMENT_PROJECTILE_NEAR_INFLATE = 0.75D;
+    private static final double EQUIPMENT_RANGED_TRACE_INFLATE = 0.25D;
+    private static final String EQUIPMENT_FATAL_GUARD_UNTIL = "dealt_force_skills.equipment_fatal_guard_until";
+    private static final String ASARA_SET_FATAL_GUARD_UNTIL = "dealt_force_skills.asara_set_fatal_guard_until";
+    private static final String GLOBAL_FORCES_LOCK_TARGET = "dealt_force_skills.global_forces_lock_target";
+    private static final String GLOBAL_FORCES_LOCK_PROGRESS_TARGET = "dealt_force_skills.global_forces_lock_progress_target";
+    private static final String GLOBAL_FORCES_LOCK_PROGRESS_TICKS = "dealt_force_skills.global_forces_lock_progress_ticks";
+    private static final String RED_OWL_REVENGE_TYPE = "dealt_force_skills.red_owl_revenge_type";
+    private static final String EQUIPMENT_RESTORE_UNTIL = "dealt_force_skills.equipment_restore_until";
+    private static final String EQUIPMENT_SUMMON_UNTIL = "dealt_force_skills.equipment_summon_until";
+    private static final String FS_STATIONARY_STACKS = "dealt_force_skills.fs_stationary_stacks";
+    private static final String FS_STATIONARY_TICKS = "dealt_force_skills.fs_stationary_ticks";
+    private static final String FS_MOVING_TICKS = "dealt_force_skills.fs_moving_ticks";
+    private static final String FS_LAST_X = "dealt_force_skills.fs_last_x";
+    private static final String FS_LAST_Y = "dealt_force_skills.fs_last_y";
+    private static final String FS_LAST_Z = "dealt_force_skills.fs_last_z";
+    private static final String TRICK_STACKS = "dealt_force_skills.trick_stacks";
+    private static final String TRICK_UNTIL = "dealt_force_skills.trick_until";
+    private static final String DICH9_STACKS = "dealt_force_skills.dich9_stacks";
+    private static final String DICH9_UNTIL = "dealt_force_skills.dich9_until";
+    private static final String MHS_FURY_UNTIL = "dealt_force_skills.mhs_fury_until";
+    private static final String MHS_FURY_SLOT = "dealt_force_skills.mhs_fury_slot";
+    private static final String TACZ_GUN_ID_TAG = "GunId";
+    private static final String TACZ_GUN_CURRENT_AMMO_COUNT_TAG = "GunCurrentAmmoCount";
+    private static final String TACZ_GUN_HAS_BULLET_IN_BARREL_TAG = "HasBulletInBarrel";
+    private static final String EQUIPMENT_STATIONARY = "dealt_force_skills.equipment_stationary";
+    private static final String EQUIPMENT_LAST_X = "dealt_force_skills.equipment_last_x";
+    private static final String EQUIPMENT_LAST_Y = "dealt_force_skills.equipment_last_y";
+    private static final String EQUIPMENT_LAST_Z = "dealt_force_skills.equipment_last_z";
+    private static final String EQUIPMENT_STATIONARY_DAMAGE_TICKS = "dealt_force_skills.equipment_stationary_damage_ticks";
+    private static final double PREMIUM_COFFEE_FAILURE_BASE = 0.95D;
+    private static final double PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL = 0.15D;
+    private static final double PREMIUM_COFFEE_DROP_BASE = 0.01D;
+    private static final double PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL = 0.01D;
+    private static final double NEW_RECRUIT_MINING_DUPLICATE_CHANCE = 0.25D;
+    private static final int GLOBAL_FORCES_LOCK_TICKS_REQUIRED = 4 * 20;
+    private static final double GLOBAL_FORCES_ALLY_RANGE = 20.0D;
+    private static final double GLOBAL_FORCES_LOCK_RAY_RADIUS = 1.0D;
+    private static final double GTI_OVERLOAD_LIMIT_MULTIPLIER = 2.0D;
+    private static final int MHS_FURY_DURATION_TICKS = 15 * 20;
+    private static final double MHS_FURY_TRIGGER_RANGE = 2.0D;
+    private static final String KING_KONG_COOLDOWN_UNTIL = "dealt_force_skills.king_kong_cooldown_until";
+    private static final String KING_KONG_TARGET_ID = "dealt_force_skills.king_kong_target_id";
+    private static final String KING_KONG_STRIKE_TICK = "dealt_force_skills.king_kong_strike_tick";
+    private static final UUID EQUIPMENT_ASSAULT_MOVEMENT_UUID = UUID.fromString("ddf4b7a1-9809-46d6-8e8f-7d78cd7e1101");
+    private static final UUID EQUIPMENT_MHS_ROOT_UUID = UUID.fromString("82b98383-88a5-4b72-935b-49b6b1d7f001");
+    private static final Map<UUID, Map<MobEffect, TrackedEffect>> ULURU_EFFECT_TRACKING = new HashMap<>();
+    private static final Map<UUID, Integer> WEBBED_SELECTED_SLOTS = new HashMap<>();
+    private static final Map<UUID, Integer> TEMPEST_ACTION_LOCKED_SELECTED_SLOTS = new HashMap<>();
+    private static final Map<UUID, LockedLook> WEBBED_LOOK_LOCKS = new HashMap<>();
+    private static final Map<UUID, TaczAmmoSnapshot> MHS_TACTICAL_AMMO_SNAPSHOTS = new HashMap<>();
+    private static final Set<VillagerProfession> BLUEPRINT_PROFESSIONS = Set.of(
+            VillagerProfession.ARMORER,
+            VillagerProfession.CARTOGRAPHER,
+            VillagerProfession.FLETCHER,
+            VillagerProfession.LEATHERWORKER,
+            VillagerProfession.LIBRARIAN,
+            VillagerProfession.MASON,
+            VillagerProfession.WEAPONSMITH,
+            VillagerProfession.TOOLSMITH
+    );
+    private static final int[] BLUEPRINT_TRADE_LEVELS = {3, 4, 5};
+    private static boolean taczReloadBridgeChecked;
+    private static boolean taczReloadBridgeAvailable;
+    private static Method taczFromLivingEntity;
+    private static Method taczCancelReload;
+    private static final String UNDEAD_EXPLORER_LOOT_CLAIMED =
+            DealtForceSkillsMod.MODID + ".undead_explorer_loot_claimed";
+
+    @SubscribeEvent
+    public static void onLivingAttack(LivingAttackEvent event) {
+        DamageSource source = event.getSource();
+        if (UndeadSupportManager.shouldCancelFriendlyFire(event.getEntity(), source)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (source.getEntity() instanceof ServerPlayer attacker) {
+            DepartmentOfTransportationStateManager.revealFromOffense(attacker);
+            if (UndeadStateManager.blocksOutgoingAttack(attacker)) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+        if (event.getEntity() instanceof ServerPlayer target
+                && DepartmentOfTransportationStateManager.isFullyConcealed(target)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof ServerPlayer target
+                && UndeadStateManager.blocksIncomingAttack(target)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        if (StingerStateManager.isDowned(player)
+                && !StingerStateManager.isExecutingDownedDeath(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (VlinderStateManager.isDowned(player)
+                && !VlinderStateManager.isExecutingDownedDeath(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (CatDadStateManager.isDowned(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer
+                && CatDadStateManager.tryBlockIncoming(serverPlayer)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && ManbaStateManager.isManba(player)) {
+            ManbaStateManager.recordDamageTaken(serverPlayer);
+            if (ManbaStateManager.shouldIgnoreIncomingDamage(player, source)
+                    || ManbaStateManager.trySteelBody(serverPlayer, source, event.getAmount())) {
+                event.setCanceled(true);
+                return;
+            }
+            ManbaStateManager.tryTriggerDiversion(serverPlayer, source);
+        }
+
+        // Bomb suit immunities
+        if (SinevaStateManager.isBombSuitActive(player)) {
+            if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)
+                    || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)
+                    || source.is(net.minecraft.tags.DamageTypeTags.WITCH_RESISTANT_TO)) {
+                // Fire / void / magic — fully immune
+                event.setCanceled(true);
+                return;
+            }
+            // Generic magic damage (wither, dragon breath, etc.)
+            if (source.getMsgId().equals("indirectMagic") || source.getMsgId().equals("magic")
+                    || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_EFFECTS)) {
+                event.setCanceled(true);
+                return;
+            }
+        }
+
+        Vec3 sourcePos = damageSourcePosition(source);
+        if (sourcePos == null) return;
+
+        if (tryAbsorbFrontShield(player, source, sourcePos, event.getAmount())) {
+            if (event.getAmount() > 0.0f && isPlayerSourcedDamage(source)) {
+                SinevaStateManager.recordPlayerShieldDamage(player);
+            }
+            event.setCanceled(true);
+            return;
+        }
+
+        Entity attacker = damageSourceEntity(source);
+        if (attacker == null) return;
+
+        if (SinevaStateManager.isSineva(player)
+                && !SinevaStateManager.isShieldDeployed(player)
+                && Util.isFromBehind(player, sourcePos, 70.0f)
+                && Util.isUpperBodySource(player, attacker)) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onHackclawMovementSound(PlayLevelSoundEvent.AtEntity event) {
+        if (!(event.getEntity() instanceof Player player) || !HackclawStateManager.isHackclaw(player)) {
+            return;
+        }
+        if (isMovementOrLandingSound(event.getSound().value().getLocation())) {
+            event.setNewVolume(event.getOriginalVolume() * 0.4f);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMorsePlayerSound(PlayLevelSoundEvent.AtEntity event) {
+        if (!(event.getEntity() instanceof ServerPlayer source)) {
+            return;
+        }
+        MorseStateManager.onPlayerSound(source, source.position());
+    }
+
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        LivingEntity hurtEntity = event.getEntity();
+        MobEffectInstance corrosion = activeEffectInstance(hurtEntity, ModEffects.CORROSION.get());
+        if (corrosion != null && event.getAmount() > 0.0f) {
+            int stacks = corrosion.getAmplifier() + 1;
+            event.setAmount(event.getAmount() * (1.0f + stacks * 0.3f));
+        }
+        if (StingerStateManager.hasStimSuppression(hurtEntity)
+                && effectApplies(hurtEntity, ModEffects.STINGER_STIM_SUPPRESSION.get())
+                && event.getAmount() > 0.0f) {
+            event.setAmount(event.getAmount() * 1.15f);
+        }
+        if (VlinderStateManager.hasMedicalWasteInterference(hurtEntity)
+                && effectApplies(hurtEntity, ModEffects.VLINDER_MEDICAL_WASTE_INTERFERENCE.get())
+                && event.getAmount() > 0.0f) {
+            event.setAmount(event.getAmount() * 1.3f);
+        }
+        if (ModItemEffectHelper.hasLaughingManiaThree(hurtEntity) && event.getAmount() > 0.0f) {
+            event.setAmount(event.getAmount() * 0.6f);
+        }
+        LunaStateManager.handleDamageReveal(event);
+        if (NoxStateManager.handleDecoyHurt(hurtEntity, event.getSource(), event.getAmount())) {
+            event.setAmount(0.0f);
+            return;
+        }
+        LexNinjiaStateManager.handleLivingHurt(event);
+
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker
+                && event.getAmount() > 0.0f) {
+            DepartmentOfTransportationStateManager.revealFromOffense(attacker);
+        }
+
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker
+                && ManbaStateManager.isManba(attacker)
+                && event.getAmount() > 0.0f) {
+            event.setAmount(event.getAmount() * ManbaStateManager.outgoingDamageMultiplier(attacker, hurtEntity));
+        }
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker
+                && event.getAmount() > 0.0f
+                && !event.getSource().is(SkillDamageHelper.TRUE_SKILL_DAMAGE)) {
+            event.setAmount(event.getAmount() * equipmentOutgoingDamageMultiplier(attacker, hurtEntity, event.getSource()));
+        }
+        if (event.getSource().getEntity() instanceof ServerPlayer attacker
+                && UndeadStateManager.isUndead(attacker)
+                && event.getAmount() > 0.0f) {
+            event.setAmount(UndeadStateManager.handleOutgoingHurt(
+                    attacker, hurtEntity, event.getSource(), event.getAmount()));
+        }
+
+        if (!(hurtEntity instanceof Player player)) {
+            if (event.getAmount() > 0.0f) {
+                ManbaStateManager.addAffectionForDamagedTarget(hurtEntity, event.getSource(), event.getAmount());
+                NoxStateManager.tryApplyDelayedWound(event.getSource(), hurtEntity, event.getAmount());
+            }
+            return;
+        }
+
+        if (StingerStateManager.isDowned(player)
+                && !StingerStateManager.isExecutingDownedDeath(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setAmount(0.0f);
+            return;
+        }
+
+        if (VlinderStateManager.isDowned(player)
+                && !VlinderStateManager.isExecutingDownedDeath(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setAmount(0.0f);
+            return;
+        }
+
+        if (CatDadStateManager.isDowned(player)
+                && !ManbaStateManager.isExecutingDuelTarget(player)) {
+            event.setAmount(0.0f);
+            return;
+        }
+
+        DamageSource source = event.getSource();
+        if (suppressesPotionDamage(player, source)) {
+            event.setAmount(0.0f);
+            return;
+        }
+        if (player instanceof ServerPlayer serverPlayer && CatDadStateManager.tryBlockIncoming(serverPlayer)) {
+            event.setAmount(0.0f);
+            return;
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && DepartmentOfTransportationStateManager.isDepartment(player)
+                && event.getAmount() > 0.0f) {
+            float adjustedAmount = DepartmentOfTransportationStateManager.handleIncomingHurt(serverPlayer, source, event.getAmount());
+            if (adjustedAmount <= 0.0f) {
+                event.setAmount(0.0f);
+                return;
+            }
+            event.setAmount(adjustedAmount);
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && UndeadStateManager.isUndead(player)
+                && event.getAmount() > 0.0f) {
+            float adjustedAmount = UndeadStateManager.handleIncomingHurt(
+                    serverPlayer, source, event.getAmount());
+            if (adjustedAmount <= 0.0F) {
+                event.setAmount(0.0F);
+                return;
+            }
+            event.setAmount(adjustedAmount);
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && NikaidouHiroStateManager.isNikaidouHiro(player)
+                && event.getAmount() > 0.0f) {
+            float adjustedAmount = source.is(SkillDamageHelper.NIKAIDOU_DECAY)
+                    ? event.getAmount()
+                    : event.getAmount() * NikaidouHiroStateManager.incomingDamageMultiplier(player);
+            if (adjustedAmount <= 0.0f) {
+                event.setAmount(0.0f);
+                return;
+            }
+            if (NikaidouHiroStateManager.shouldPreventFatalDamage(serverPlayer, source, adjustedAmount)) {
+                event.setAmount(0.0f);
+                return;
+            }
+            event.setAmount(adjustedAmount);
+        }
+        if (player instanceof ServerPlayer serverPlayer && ManbaStateManager.isManba(player)) {
+            if (ManbaStateManager.shouldIgnoreIncomingDamage(player, source)
+                    || ManbaStateManager.trySteelBody(serverPlayer, source, event.getAmount())) {
+                event.setAmount(0.0f);
+                return;
+            }
+            ManbaStateManager.tryTriggerDiversion(serverPlayer, source);
+            if (event.getAmount() > 0.0f) {
+                event.setAmount(event.getAmount() * ManbaStateManager.incomingDamageMultiplier(player, source));
+            }
+        }
+
+        if (ShepherdStateManager.isShepherd(player) && isExplosionDamage(source)) {
+            event.setAmount(event.getAmount() * 0.7f);
+        }
+
+        if (SinevaStateManager.isBombSuitActive(player)) {
+            if (source.is(net.minecraft.tags.DamageTypeTags.IS_FIRE)
+                    || source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)
+                    || source.is(net.minecraft.tags.DamageTypeTags.WITCH_RESISTANT_TO)) {
+                event.setAmount(0.0f);
+                return;
+            }
+        }
+
+        Vec3 sourcePos = damageSourcePosition(source);
+        if (sourcePos != null && tryAbsorbFrontShield(player, source, sourcePos, event.getAmount())) {
+            if (event.getAmount() > 0.0f && isPlayerSourcedDamage(source)) {
+                SinevaStateManager.recordPlayerShieldDamage(player);
+            }
+            event.setAmount(0.0f);
+            return;
+        }
+
+        if (SinevaStateManager.isShieldDeployed(player) && event.getAmount() > 0.0f && isPlayerSourcedDamage(source)) {
+            SinevaStateManager.recordShieldDamage(player);
+        }
+
+        if (SinevaStateManager.isBombSuitActive(player)) {
+            event.setAmount(event.getAmount() * 0.5f);
+        }
+
+        if (player.hasEffect(ModEffects.STINGER_STIM_HEAL.get()) && event.getAmount() > 0.0f) {
+            event.setAmount(event.getAmount() * 0.85f);
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && event.getAmount() > 0.0f) {
+            float equipmentAdjusted = handleEquipmentDefense(serverPlayer, source, event.getAmount());
+            if (equipmentAdjusted <= 0.0f) {
+                event.setAmount(0.0f);
+                return;
+            }
+            float allyAdjusted = tryAbsorbGlobalForcesAllyDamage(serverPlayer, source, equipmentAdjusted);
+            if (allyAdjusted <= 0.0f) {
+                event.setAmount(0.0f);
+                return;
+            }
+            event.setAmount(allyAdjusted);
+        }
+
+        if (player instanceof ServerPlayer serverPlayer
+                && TempestStateManager.isTempest(player)
+                && event.getAmount() > 0.0f) {
+            TempestStateManager.triggerExplosiveSpine(serverPlayer, ModSounds.TEMPEST_EXPLOSIVE_SPINE_ACTIVATE.get());
+            if (TempestStateManager.shouldPreventFatalDamage(serverPlayer, event.getAmount())) {
+                event.setAmount(0.0f);
+                TempestStateManager.triggerEmergencyRecall(serverPlayer);
+                return;
+            }
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && StingerStateManager.shouldEnterDowned(serverPlayer, event.getAmount())) {
+            event.setAmount(0.0f);
+            StingerStateManager.enterDowned(serverPlayer);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && VlinderStateManager.shouldEnterDowned(serverPlayer, event.getAmount())) {
+            event.setAmount(0.0f);
+            VlinderStateManager.enterDowned(serverPlayer);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer
+                && CatDadStateManager.tryEnterFatalDowned(serverPlayer, source, event.getAmount())) {
+            event.setAmount(0.0f);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer
+                && ManbaStateManager.tryPreventFatalDamage(serverPlayer, source, event.getAmount())) {
+            event.setAmount(0.0f);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && event.getAmount() > 0.0f && ManbaStateManager.isManba(player)) {
+            ManbaStateManager.recordDamageTaken(serverPlayer);
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && event.getAmount() > 0.0f) {
+            CatDadStateManager.tryReflectDamage(serverPlayer, source, event.getAmount());
+        }
+
+        if (event.getAmount() > 0.0f) {
+            ManbaStateManager.addAffectionForDamagedTarget(hurtEntity, source, event.getAmount());
+            NoxStateManager.tryApplyDelayedWound(source, hurtEntity, event.getAmount());
+        }
+
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingHeal(LivingHealEvent event) {
+        if (event.getEntity().hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (StingerStateManager.hasStimSuppression(event.getEntity())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (VlinderStateManager.hasMedicalWasteInterference(event.getEntity())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof ServerPlayer player
+                && UndeadStateManager.isUndead(player)) {
+            event.setAmount(event.getAmount() * UndeadUpgradeManager.healingMultiplier(player));
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingUseItemFinish(LivingEntityUseItemEvent.Finish event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
+            NoxDelayedWoundEffect.enforceCaps(entity);
+        }
+        if (!entity.level().isClientSide) {
+            ManbaStateManager.onUseItemFinished(entity);
+            LexNinjiaStateManager.handleFoodFinished(entity, event.getItem());
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onLivingUseItemStart(LivingEntityUseItemEvent.Start event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide) {
+            return;
+        }
+        if (entity instanceof ServerPlayer player) {
+            MorseStateManager.recordPlayerAction(player);
+            LexNinjiaStateManager.onPlayerAction(player);
+        }
+        if (entity instanceof Player player
+                && (TempestStateManager.isActionLocked(player)
+                || CatDadStateManager.isDowned(player)
+                || NikaidouHiroStateManager.isWeaponActive(player)
+                || DepartmentOfTransportationStateManager.hasEquippedTool(player)
+                || UndeadStateManager.isActionLocked(player)
+                || UndeadStateManager.isRitualDancing(player))) {
+            boolean tempestDisarmed = effectApplies(player, ModEffects.TEMPEST_DISARMED.get());
+            if (tempestDisarmed) {
+                cancelBlockedUseItem(event, player);
+            } else {
+                stopBlockedUseItem(event, player);
+            }
+            if (tempestDisarmed && player instanceof ServerPlayer serverPlayer) {
+                cooldownTempestDisarmedHands(serverPlayer);
+                cancelOptionalTaczReload(serverPlayer);
+            }
+            return;
+        }
+        if (shouldAdjustUseDuration(event.getItem())) {
+            double multiplier = ManbaStateManager.behaviorSpeedMultiplier(entity)
+                    * ToxikStateManager.behaviorSpeedMultiplier(entity)
+                    * ModItemEffectHelper.medicineUseSpeedMultiplier(entity)
+                    * equipmentActionSpeedMultiplier(entity)
+                    * UndeadUpgradeManager.interactionSpeedMultiplier(entity instanceof Player player ? player : null)
+                    * UndeadStateManager.frozenInteractionMultiplier(entity);
+            multiplier = normalizedUseSpeedMultiplier(multiplier);
+            if (multiplier > 0.0D && Math.abs(multiplier - 1.0D) > 0.0001D) {
+                event.setDuration(Math.max(1, (int) Math.ceil(event.getDuration() / multiplier)));
+            }
+        }
+    }
+
+    private static void stopBlockedUseItem(LivingEntityUseItemEvent event, LivingEntity entity) {
+        entity.stopUsingItem();
+        event.setDuration(0);
+    }
+
+    private static void cancelBlockedUseItem(LivingEntityUseItemEvent event, LivingEntity entity) {
+        stopBlockedUseItem(event, entity);
+        if (event.isCancelable()) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
+        if (TempestStateManager.isActionLocked(event.getEntity())
+                || CatDadStateManager.isDowned(event.getEntity())
+                || NikaidouHiroStateManager.isWeaponActive(event.getEntity())
+                || DepartmentOfTransportationStateManager.hasEquippedTool(event.getEntity())) {
+            event.setNewSpeed(0.0F);
+            return;
+        }
+        double multiplier = ToxikStateManager.behaviorSpeedMultiplier(event.getEntity())
+                * ModItemEffectHelper.medicineBreakSpeedMultiplier(event.getEntity())
+                * equipmentActionSpeedMultiplier(event.getEntity())
+                * UndeadUpgradeManager.interactionSpeedMultiplier(event.getEntity())
+                * UndeadStateManager.frozenInteractionMultiplier(event.getEntity());
+        if (multiplier > 0.0D && Math.abs(multiplier - 1.0D) > 0.0001D) {
+            event.setNewSpeed((float) (event.getNewSpeed() * multiplier));
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onItemToss(ItemTossEvent event) {
+        if (TempestStateManager.isActionLocked(event.getPlayer())
+                || CatDadStateManager.isDowned(event.getPlayer())
+                || NikaidouHiroStateManager.isWeaponActive(event.getPlayer())
+                || DepartmentOfTransportationStateManager.hasEquippedTool(event.getPlayer())) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickDelayedWound(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
+            NoxDelayedWoundEffect.enforceCaps(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickNoxFlashedAi(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.NOX_FLASHED.get())) {
+            NoxFlashedEffect.suppressHostileTargeting(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickMorseFlashedAi(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.MORSE_FLASH_BLIND.get())) {
+            MorseFlashedEffect.suppressHostileTargeting(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickManbaBlindedAi(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.MANBA_BLINDED.get())) {
+            ManbaBlindedEffect.suppressHostileTargeting(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickHackclawFlashBlindAi(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.HACKCLAW_FLASH_BLIND.get())) {
+            HackclawFlashBlindEffect.applySuppression(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickToxikTearGasBlindAi(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide && entity.hasEffect(ModEffects.TOXIK_TEAR_GAS_BLIND.get())) {
+            ToxikTearGasBlindEffect.suppressHostileTargeting(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingTickManbaDuelTaunt(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (!entity.level().isClientSide) {
+            ManbaStateManager.enforceDuelTaunt(entity);
+            DepartmentOfTransportationStateManager.suppressOwnedSummonTarget(entity);
+            UndeadSupportManager.tickOwnedSummon(entity);
+            UndeadStateManager.tickExternalEffects(entity);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onPlayerTickDelayedWound(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+        Player player = event.player;
+        if (!player.level().isClientSide && player.hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
+            NoxDelayedWoundEffect.enforceCaps(player);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLevelTickDelayedWound(TickEvent.LevelTickEvent event) {
+        if (event.phase == TickEvent.Phase.END && event.level instanceof ServerLevel serverLevel) {
+            NoxDelayedWoundEffect.enforceTracked(serverLevel);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onCharacterHitFeedback(LivingHurtEvent event) {
+        if (event.getEntity().level().isClientSide || event.getAmount() <= 0.0f) {
+            return;
+        }
+
+        Entity attacker = event.getSource().getEntity();
+        if (!(attacker instanceof ServerPlayer player)
+                || attacker == event.getEntity()
+                || !CharacterSelectionManager.hasSelectedCharacter(player)) {
+            return;
+        }
+
+        NetworkHandler.sendToPlayer(new S2C_CharacterHitFeedback(event.getEntity().getId(), event.getAmount()), player);
+    }
+
+    @SubscribeEvent
+    public static void onLivingFall(LivingFallEvent event) {
+        if (event.getEntity() instanceof Player player
+                && UndeadStateManager.isUndead(player)
+                && UndeadStateManager.profession(player) == UndeadProfession.HUNTER) {
+            event.setDamageMultiplier(0.0F);
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof Player player && UluruStateManager.isUluru(player)) {
+            event.setDamageMultiplier(event.getDamageMultiplier() * 0.64f);
+        }
+        if (event.getEntity() instanceof Player player && VyronStateManager.isVyron(player)) {
+            event.setDamageMultiplier(event.getDamageMultiplier() * 0.64f);
+            if (event.getDistance() > 3.5f && player instanceof ServerPlayer serverPlayer) {
+                VyronStateManager.grantPowered(serverPlayer, true);
+                VyronStateManager.syncToClient(serverPlayer);
+            }
+        }
+        if (event.getEntity() instanceof ServerPlayer player && TempestStateManager.consumeFallProtection(player)) {
+            event.setDamageMultiplier(0.0f);
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMobEffectApplicable(MobEffectEvent.Applicable event) {
+        MobEffectInstance effect = event.getEffectInstance();
+        if (event.getEntity() instanceof Player player
+                && (SinevaStateManager.isBombSuitActive(player) || DWolfStateManager.isOverloadActive(player))
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+            event.setResult(Event.Result.DENY);
+        }
+        if (event.getEntity() instanceof Player player
+                && player.hasEffect(ModEffects.STINGER_STIM_HEAL.get())
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+            event.setResult(Event.Result.DENY);
+        }
+        if (event.getEntity() instanceof Player player
+                && player.hasEffect(ModEffects.TOXIK_ADRENALINE.get())
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+            event.setResult(Event.Result.DENY);
+        }
+        if (event.getEntity() instanceof Player player
+                && player.hasEffect(ModEffects.SEDATION.get())
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+            event.setResult(Event.Result.DENY);
+        }
+        if (ModItemEffectHelper.shouldSuppressHarmful(event.getEntity(), effect)) {
+            if (event.getEntity() instanceof Player player) {
+                ModItemEffectHelper.suppressIncomingHarmful(player, effect);
+            }
+        }
+        if (event.getEntity() instanceof Player player
+                && player.hasEffect(ModEffects.VLINDER_HEALING_DUST.get())
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+            event.setResult(Event.Result.DENY);
+        }
+        if (event.getEntity() instanceof ServerPlayer player
+                && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL
+                && CatDadStateManager.tryBlockIncoming(player)) {
+            event.setResult(Event.Result.DENY);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onMobEffectAdded(MobEffectEvent.Added event) {
+        boolean rescaled = !event.getEntity().level().isClientSide
+                && ToxikStateManager.tryRescaleAddedEffect(
+                event.getEntity(), event.getEffectInstance(), event.getEffectSource());
+        if (!rescaled && !event.getEntity().level().isClientSide) {
+            rescaled = UndeadUpgradeManager.tryRescaleAddedEffect(
+                    event.getEntity(), event.getEffectInstance(), event.getEffectSource());
+        }
+        if (!rescaled && !event.getEntity().level().isClientSide) {
+            ManbaStateManager.addAffectionForControlledTarget(event.getEntity(), event.getEffectInstance());
+        }
+        if (!event.getEntity().level().isClientSide
+                && (event.getEffectInstance().getEffect() == ModEffects.FATIGUE_REMOVAL.get()
+                || event.getEffectInstance().getEffect() == ModEffects.SEDATION.get())) {
+            ModItemEffectHelper.removeActiveHarmfulEffects(event.getEntity());
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onMobEffectRemove(MobEffectEvent.Remove event) {
+        if (event.getEffect() == ModEffects.NOX_DELAYED_WOUND.get()) {
+            NoxDelayedWoundEffect.clearCaps(event.getEntity());
+        } else if (event.getEffect() == ModEffects.TOXIK_FIREFLY_INTERFERENCE.get()) {
+            ToxikFireflyInterferenceEffect.clearCaps(event.getEntity());
+        } else if (event.getEffect() == ModEffects.MANBA_BLINDED.get()) {
+            ManbaStateManager.restoreDuelTauntAfterBlind(event.getEntity());
+        } else if (event.getEffect() == ModEffects.MORSE_FLASH_BLIND.get()) {
+            MorseFlashedEffect.restoreMobAi(event.getEntity());
+        } else if (event.getEffect() == ModEffects.PAIN_RELIEF.get()) {
+            ModItemEffectHelper.restorePainReliefSuppression(event.getEntity());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMobEffectExpired(MobEffectEvent.Expired event) {
+        MobEffectInstance effect = event.getEffectInstance();
+        if (effect != null && effect.getEffect() == ModEffects.NOX_DELAYED_WOUND.get()) {
+            NoxDelayedWoundEffect.clearCaps(event.getEntity());
+        } else if (effect != null && effect.getEffect() == ModEffects.TOXIK_FIREFLY_INTERFERENCE.get()) {
+            ToxikFireflyInterferenceEffect.clearCaps(event.getEntity());
+        } else if (effect != null && effect.getEffect() == ModEffects.MANBA_BLINDED.get()) {
+            ManbaStateManager.restoreDuelTauntAfterBlind(event.getEntity());
+        } else if (effect != null && effect.getEffect() == ModEffects.MORSE_FLASH_BLIND.get()) {
+            MorseFlashedEffect.restoreMobAi(event.getEntity());
+        } else if (effect != null && effect.getEffect() == ModEffects.PAIN_RELIEF.get()) {
+            ModItemEffectHelper.restorePainReliefSuppression(event.getEntity());
+        }
+    }
+
+
+    @SubscribeEvent
+    public static void onPlayerTickUluruRestoreTerrain(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) {
+            return;
+        }
+        if (event.player instanceof ServerPlayer serverPlayer) {
+            UluruLoiteringMissileEntity.tickRestoreTerrain(serverPlayer);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickSuitSlow(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
+        if (player.level().isClientSide) return;
+
+        var attr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr == null) return;
+
+        boolean shouldSlow = SinevaStateManager.isShieldDeployed(player);
+        AttributeModifier existing = attr.getModifier(SinevaStateManager.BOMB_SUIT_SLOW_UUID);
+
+        double damageSlow = shouldSlow ? SinevaStateManager.shieldDamageSlow(player) : 0.0D;
+        double targetSlowAmount = -Math.min(SHIELD_DAMAGE_SLOW_MAX_TOTAL,
+                Math.max(0.0D, -SHIELD_DEPLOYED_SLOW_AMOUNT) + damageSlow);
+        if (damageSlow <= 0.0D && shouldSlow) {
+            SinevaStateManager.clearShieldDamageSlow(player);
+        }
+
+        if (shouldSlow && (existing == null || Math.abs(existing.getAmount() - targetSlowAmount) > 0.0001)) {
+            if (existing != null) {
+                attr.removeModifier(SinevaStateManager.BOMB_SUIT_SLOW_UUID);
+            }
+            attr.addTransientModifier(new AttributeModifier(
+                    SinevaStateManager.BOMB_SUIT_SLOW_UUID, "shield_deployed_slow", targetSlowAmount, AttributeModifier.Operation.MULTIPLY_TOTAL
+            ));
+        }
+        if (!shouldSlow && existing != null) {
+            attr.removeModifier(SinevaStateManager.BOMB_SUIT_SLOW_UUID);
+        }
+        if (!shouldSlow && SinevaStateManager.isSineva(player)) {
+            SinevaStateManager.clearShieldDamageSlow(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickDfsEquipment(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.player.level().isClientSide) {
+            return;
+        }
+        if (event.player instanceof ServerPlayer player) {
+            HaffCoinManager.awardSurvivalMinute(player);
+            UndeadSoulManager.awardSurvivalMinute(player);
+            LexNinjiaCurrencyManager.awardSurvivalMinute(player);
+            tickDfsEquipment(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickSinevaEffectImmunity(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
+        if (player.level().isClientSide
+                || (!SinevaStateManager.isBombSuitActive(player) && !DWolfStateManager.isOverloadActive(player))) {
+            return;
+        }
+
+        for (MobEffectInstance effect : new ArrayList<>(player.getActiveEffects())) {
+            if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+                player.removeEffect(effect.getEffect());
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDeath(LivingDeathEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level() instanceof ServerLevel serverLevel
+                && DepartmentOfTransportationStateManager.isDepartmentChargedCreeper(entity)) {
+            DepartmentOfTransportationStateManager.triggerChargedCreeperDeathExplosion(serverLevel, entity);
+        }
+        if (entity instanceof ServerPlayer protectedPlayer
+                && !StingerStateManager.isExecutingDownedDeath(protectedPlayer)
+                && !VlinderStateManager.isExecutingDownedDeath(protectedPlayer)
+                && !ManbaStateManager.isExecutingDuelTarget(protectedPlayer)) {
+            if (StingerStateManager.isDowned(protectedPlayer)) {
+                event.setCanceled(true);
+                protectedPlayer.setHealth(Math.max(1.0f, protectedPlayer.getHealth()));
+                return;
+            }
+            if (VlinderStateManager.isDowned(protectedPlayer)) {
+                event.setCanceled(true);
+                protectedPlayer.setHealth(Math.max(1.0f, protectedPlayer.getHealth()));
+                return;
+            }
+            if (CatDadStateManager.shouldCancelDeath(protectedPlayer)) {
+                event.setCanceled(true);
+                protectedPlayer.setHealth(Math.max(1.0f, protectedPlayer.getHealth()));
+                return;
+            }
+            if (StingerStateManager.canEnterDowned(protectedPlayer)) {
+                event.setCanceled(true);
+                StingerStateManager.enterDowned(protectedPlayer);
+                return;
+            }
+            if (VlinderStateManager.canEnterDowned(protectedPlayer)) {
+                event.setCanceled(true);
+                VlinderStateManager.enterDowned(protectedPlayer);
+                return;
+            }
+            if (CatDadStateManager.tryEnterFatalDowned(protectedPlayer, event.getSource())) {
+                event.setCanceled(true);
+                return;
+            }
+            recordRedOwlRevengeOnDeath(protectedPlayer, event.getSource());
+        }
+        // Clear control effects on death so players can click Respawn and move after respawn.
+        entity.removeEffect(ModEffects.STUN.get());
+        entity.removeEffect(ModEffects.WEBBED.get());
+        entity.removeEffect(ModEffects.CORROSION.get());
+        entity.removeEffect(ModEffects.SONIC_SHOCK.get());
+        entity.removeEffect(ModEffects.STINGER_DOWNED.get());
+        entity.removeEffect(ModEffects.STINGER_STIM_HEAL.get());
+        entity.removeEffect(ModEffects.STINGER_STIM_SUPPRESSION.get());
+        entity.removeEffect(ModEffects.STINGER_SMOKE_REGEN.get());
+        entity.removeEffect(ModEffects.NOX_DELAYED_WOUND.get());
+        NoxDelayedWoundEffect.clearCaps(entity);
+        entity.removeEffect(ModEffects.NOX_CRIPPLED.get());
+        entity.removeEffect(ModEffects.NOX_FLASHED.get());
+        entity.removeEffect(ModEffects.HACKCLAW_FLASH_BLIND.get());
+        entity.removeEffect(ModEffects.NOX_STEALTH.get());
+        entity.removeEffect(ModEffects.MANBA_BLINDED.get());
+        MorseFlashedEffect.restoreMobAi(entity);
+        entity.removeEffect(ModEffects.NIKAIDOU_RIFT_STACKS.get());
+        entity.removeEffect(ModEffects.NIKAIDOU_CORRECTION.get());
+        entity.removeEffect(ModEffects.NIKAIDOU_CORE.get());
+        entity.removeEffect(ModEffects.NIKAIDOU_DOOMED.get());
+        entity.removeEffect(ModEffects.CATDAD_HISS_SLOW.get());
+        entity.removeEffect(ModEffects.CATDAD_ARMOR_REDUCED.get());
+        entity.removeEffect(ModEffects.CATDAD_DOWNED.get());
+        entity.removeEffect(ModEffects.DEPARTMENT_CALIBRATION.get());
+        entity.removeEffect(ModEffects.DEPARTMENT_VULNERABLE.get());
+        entity.removeEffect(ModEffects.DEPARTMENT_CONCEALMENT.get());
+        entity.removeEffect(ModEffects.MORSE_STRONG_SHOCK.get());
+        entity.removeEffect(ModEffects.MORSE_FLASH_BLIND.get());
+        entity.removeEffect(ModEffects.MORSE_SONAR_REVEALED.get());
+        entity.removeEffect(ModEffects.PAIN_RELIEF.get());
+        entity.removeEffect(ModEffects.ITEM_WEAKNESS.get());
+        entity.removeEffect(ModEffects.HELA.get());
+        entity.removeEffect(ModEffects.LAUGHING_MANIA_I.get());
+        entity.removeEffect(ModEffects.LAUGHING_MANIA_II.get());
+        entity.removeEffect(ModEffects.LAUGHING_MANIA_III.get());
+        entity.removeEffect(ModEffects.TOXIK_ADRENALINE.get());
+        entity.removeEffect(ModEffects.TOXIK_TEAR_GAS_BLIND.get());
+        ToxikFireflyInterferenceEffect.clearCaps(entity);
+        entity.removeEffect(ModEffects.TOXIK_FIREFLY_INTERFERENCE.get());
+        entity.removeEffect(ModEffects.RAPTOR_ACTION_PAUSE.get());
+        entity.removeEffect(ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get());
+        entity.removeEffect(ModEffects.RAPTOR_HUMMINGBIRD_MARKED.get());
+        entity.removeEffect(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get());
+        entity.removeEffect(ModEffects.TEMPEST_DISARMED.get());
+        entity.removeEffect(ModEffects.TEMPEST_EMERGENCY_DOWNED.get());
+        entity.removeEffect(ModEffects.VLINDER_HEALING_DUST.get());
+        entity.removeEffect(ModEffects.VLINDER_MEDICAL_WASTE_INTERFERENCE.get());
+        entity.removeEffect(ModEffects.VLINDER_VITAL_DOWNED.get());
+        entity.removeEffect(ModEffects.VLINDER_RESCUE_PROTECTION.get());
+        entity.removeEffect(ModEffects.VLINDER_PLASMA_INJECTED.get());
+        if (entity instanceof ServerPlayer serverPlayer) {
+            SinevaSkills.clearForPlayer(serverPlayer);
+            SinevaKnockdownState.clear(serverPlayer);
+            UluruLoiteringMissileEntity.stopPlayerControl(serverPlayer);
+            RaptorFalconDroneEntity.stopPlayerControl(serverPlayer);
+            GizmoStateManager.clearWebControl(serverPlayer);
+            NoxStateManager.clearRuntimeOnDeath(serverPlayer);
+            StingerStateManager.clearDownedOnDeath(serverPlayer);
+            ManbaStateManager.clearRuntimeOnDeath(serverPlayer);
+            NikaidouHiroStateManager.clearRuntimeOnDeath(serverPlayer);
+            CatDadStateManager.clearRuntimeOnDeath(serverPlayer);
+            DepartmentOfTransportationStateManager.clearRuntimeOnDeath(serverPlayer);
+            MorseStateManager.clearRuntimeOnDeath(serverPlayer);
+            ToxikStateManager.clearRuntimeOnDeath(serverPlayer);
+            RaptorStateManager.clearRuntimeOnDeath(serverPlayer);
+            VlinderStateManager.clearRuntimeOnDeath(serverPlayer);
+            TempestStateManager.clearRuntimeOnDeath(serverPlayer);
+            LexNinjiaStateManager.clearRuntimeOnDeath(serverPlayer);
+            WEBBED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
+            TEMPEST_ACTION_LOCKED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
+            WEBBED_LOOK_LOCKS.remove(serverPlayer.getUUID());
+        }
+
+        ModItemEffectHelper.handleLivingDeath(entity, event.getSource());
+        if (entity instanceof ServerPlayer deadPlayer) {
+            HaffCoinManager.awardDeath(deadPlayer);
+            UndeadSoulManager.awardDeath(deadPlayer);
+            LexNinjiaCurrencyManager.awardDeath(deadPlayer);
+        }
+
+        Entity attacker = event.getSource().getEntity();
+        if (!(attacker instanceof ServerPlayer player) || attacker == event.getEntity()) {
+            return;
+        }
+        HaffCoinManager.awardKill(player, entity);
+        UndeadSoulManager.awardKill(player, entity);
+        LexNinjiaCurrencyManager.awardKill(player, entity);
+        if (DWolfStateManager.isOverloadActive(player)) {
+            DWolfSkills.handleOverloadKill(player);
+        }
+        if (VyronStateManager.isVyron(player)) {
+            VyronSkills.handleKill(player);
+            VyronStateManager.syncToClient(player);
+        }
+        if (TempestStateManager.isTempest(player)) {
+            TempestStateManager.resetRollCooldownOnKill(player);
+        }
+        NoxStateManager.onKill(player);
+        if (NikaidouHiroStateManager.isNikaidouHiro(player)) {
+            NikaidouHiroStateManager.onKill(player);
+        }
+        if (DepartmentOfTransportationStateManager.isDepartment(player)) {
+            DepartmentOfTransportationStateManager.revealFromOffense(player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDrops(LivingDropsEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity.level().isClientSide) {
+            return;
+        }
+        if (entity instanceof Animal) {
+            int looting = Math.max(0, event.getLootingLevel());
+            float chance = Math.min(1.0F, 0.10F + 0.10F * looting);
+            if (entity.getRandom().nextFloat() < chance) {
+                int count = 1 + entity.getRandom().nextInt(3);
+                for (int i = 0; i < looting; i++) {
+                    count += entity.getRandom().nextInt(2);
+                }
+                event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(),
+                        new ItemStack(ModItems.ANIMAL_GLAND.get(), count)));
+            }
+        }
+        if (event.getSource().getEntity() instanceof ServerPlayer killer) {
+            duplicateDropsForEquipment(event, killer);
+            int extraCopies = 0;
+            if (UndeadStateManager.isUndead(killer)
+                    && UndeadStateManager.profession(killer) == UndeadProfession.EXPLORER) {
+                extraCopies++;
+            }
+            if (UndeadStateManager.consumeRogueExecutionMarker(entity, killer)) {
+                extraCopies += 4;
+            }
+            duplicateLivingDrops(event, extraCopies);
+        }
+        if (entity.getType() != EntityType.VINDICATOR) {
+            return;
+        }
+        boolean rolf = entity.hasCustomName()
+                && ("罗尔夫".equals(entity.getCustomName().getString())
+                || "Rolf".equalsIgnoreCase(entity.getCustomName().getString()));
+        int count = 0;
+        if (rolf) {
+            count = 1 + entity.getRandom().nextInt(3);
+        } else if (entity.getRandom().nextFloat() < 0.05F) {
+            count = 1;
+        }
+        if (count > 0) {
+            event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(),
+                    new ItemStack(ModItems.DARK_ZONE_RAINBOW_INJECTION.get(), count)));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onOceanBlockBreak(BlockEvent.BreakEvent event) {
+        if (!(event.getLevel() instanceof Level level) || level.isClientSide) {
+            return;
+        }
+        Player player = event.getPlayer();
+        int fortune = Math.max(0, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE,
+                player.getMainHandItem()));
+        tryAwardCoarseSalt(player, level, event.getPos(), fortune);
+        tryAwardPremiumCoffeeBeans(player, level, event.getState(), fortune);
+        tryDuplicateNewRecruitMiningDrops(player, level, event.getState(), event.getPos());
+        tryDuplicateUndeadExplorerMiningDrops(player, level, event.getState(), event.getPos());
+    }
+
+    @SubscribeEvent
+    public static void onLexNinjiaBlockPlaced(BlockEvent.EntityPlaceEvent event) {
+        LexNinjiaStateManager.handleBlockPlaced(event);
+    }
+
+    @SubscribeEvent
+    public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
+        handleFrugalDisassemblyCraft(event);
+        ItemStack crafted = event.getCrafting();
+        if (crafted.isEmpty() || !crafted.is(ModItems.PREMIUM_COFFEE_BEANS.get())) {
+            return;
+        }
+        Player player = event.getEntity();
+        int bonusLevel = premiumCoffeeBonusLevel(player, 0);
+        double failureChance = Math.max(0.0D,
+                PREMIUM_COFFEE_FAILURE_BASE - bonusLevel * PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL);
+        if (player.getRandom().nextDouble() >= failureChance) {
+            return;
+        }
+        crafted.setCount(0);
+        player.displayClientMessage(Component.translatable(
+                "message.dealt_force_skills.premium_coffee_beans.failed",
+                Math.round(failureChance * 100.0D)), true);
+    }
+
+    @SubscribeEvent
+    public static void onVillagerTrades(VillagerTradesEvent event) {
+        if (!BLUEPRINT_PROFESSIONS.contains(event.getType())) {
+            return;
+        }
+        VillagerTrades.ItemListing trade = CommonEvents::blueprintTradeOffer;
+        for (int level : BLUEPRINT_TRADE_LEVELS) {
+            event.getTrades().computeIfAbsent(level, ignored -> new ArrayList<>()).add(trade);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onWandererTrades(WandererTradesEvent event) {
+        event.getRareTrades().add(CommonEvents::blueprintTradeOffer);
+    }
+
+    @SubscribeEvent
+    public static void onOceanBucketUse(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getLevel().isClientSide) {
+            return;
+        }
+        tryDuplicateUndeadExplorerContainerLoot(event);
+        if (!event.getItemStack().is(Items.BUCKET)) {
+            return;
+        }
+        tryAwardCoarseSalt(event.getEntity(), event.getLevel(), event.getPos(), 0);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickUluruEffectResistance(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
+        if (player.level().isClientSide) return;
+
+        if (!UluruStateManager.isUluru(player)) {
+            ULURU_EFFECT_TRACKING.remove(player.getUUID());
+            return;
+        }
+
+        Map<MobEffect, TrackedEffect> tracked = ULURU_EFFECT_TRACKING.computeIfAbsent(player.getUUID(), id -> new HashMap<>());
+        Set<MobEffect> activeTypes = new HashSet<>();
+        for (MobEffectInstance effect : new ArrayList<>(player.getActiveEffects())) {
+            MobEffect type = effect.getEffect();
+            if (type.getCategory() != MobEffectCategory.HARMFUL || effect.isInfiniteDuration()) {
+                continue;
+            }
+
+            activeTypes.add(type);
+            TrackedEffect previous = tracked.get(type);
+            int currentDuration = effect.getDuration();
+            if (previous != null
+                    && previous.amplifier() == effect.getAmplifier()
+                    && currentDuration <= previous.duration() + EFFECT_REAPPLY_GRACE_TICKS) {
+                tracked.put(type, new TrackedEffect(currentDuration, effect.getAmplifier()));
+                continue;
+            }
+
+            int reducedDuration = Math.max(1, currentDuration / 2);
+            MobEffectInstance reduced = new MobEffectInstance(
+                    type,
+                    reducedDuration,
+                    effect.getAmplifier(),
+                    effect.isAmbient(),
+                    effect.isVisible(),
+                    effect.showIcon()
+            );
+            player.removeEffect(type);
+            player.addEffect(reduced);
+            tracked.put(type, new TrackedEffect(reducedDuration, effect.getAmplifier()));
+        }
+        tracked.keySet().removeIf(type -> !activeTypes.contains(type));
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getEntity();
+        if (player instanceof ServerPlayer serverPlayer) {
+            MorseStateManager.recordPlayerAction(serverPlayer);
+            LexNinjiaStateManager.onPlayerAction(serverPlayer);
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && (UluruLoiteringMissileEntity.isPlayerControlling(serverPlayer)
+                || RaptorFalconDroneEntity.isPlayerControlling(serverPlayer))) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+            return;
+        }
+
+        if (StingerStateManager.isDowned(player)
+                || VlinderStateManager.isDowned(player)
+                || CatDadStateManager.isDowned(player)
+                || TempestStateManager.isActionLocked(player)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+            return;
+        }
+
+        boolean webbedLeftClick = effectApplies(player, ModEffects.WEBBED.get())
+                && event instanceof PlayerInteractEvent.LeftClickBlock;
+        if (effectApplies(player, ModEffects.MORSE_STRONG_SHOCK.get()) && shouldMorseShockSkipAction(player)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+            return;
+        }
+        if (effectApplies(player, ModEffects.SONIC_SHOCK.get()) && shouldSonicShockSkipAction(player)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+            return;
+        }
+        if (effectApplies(player, ModEffects.STUN.get())
+                || effectApplies(player, ModEffects.RAPTOR_ACTION_PAUSE.get())
+                || (effectApplies(player, ModEffects.WEBBED.get()) && !webbedLeftClick)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+            return;
+        }
+
+        if (isAnyToolEquipped(player)) {
+            event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onAttackEntity(AttackEntityEvent event) {
+        Player player = event.getEntity();
+        if (player instanceof ServerPlayer serverPlayer) {
+            MorseStateManager.recordPlayerAction(serverPlayer);
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && (UluruLoiteringMissileEntity.isPlayerControlling(serverPlayer)
+                || RaptorFalconDroneEntity.isPlayerControlling(serverPlayer))) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (StingerStateManager.isDowned(player)
+                || VlinderStateManager.isDowned(player)
+                || CatDadStateManager.isDowned(player)
+                || TempestStateManager.isActionLocked(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (effectApplies(player, ModEffects.STUN.get()) || effectApplies(player, ModEffects.RAPTOR_ACTION_PAUSE.get())) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (effectApplies(player, ModEffects.MORSE_STRONG_SHOCK.get()) && shouldMorseShockSkipAction(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (effectApplies(player, ModEffects.SONIC_SHOCK.get()) && shouldSonicShockSkipAction(player)) {
+            event.setCanceled(true);
+            return;
+        }
+
+        if (player instanceof ServerPlayer serverPlayer && event.getTarget() instanceof LivingEntity target) {
+            LexNinjiaStateManager.handleAttackEntity(serverPlayer, target);
+        }
+
+        if (isAnyToolEquipped(player)) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onUseItemTick(net.minecraftforge.event.entity.living.LivingEntityUseItemEvent.Tick event) {
+        if (event.getEntity() instanceof Player player
+                && (StingerStateManager.isDowned(player)
+                || VlinderStateManager.isDowned(player)
+                || CatDadStateManager.isDowned(player)
+                || NikaidouHiroStateManager.isWeaponActive(player)
+                || DepartmentOfTransportationStateManager.hasEquippedTool(player)
+                || TempestStateManager.isActionLocked(player)
+                || UndeadStateManager.isActionLocked(player)
+                || UndeadStateManager.isRitualDancing(player))) {
+            boolean tempestDisarmed = effectApplies(player, ModEffects.TEMPEST_DISARMED.get());
+            if (tempestDisarmed) {
+                cancelBlockedUseItem(event, player);
+            } else {
+                stopBlockedUseItem(event, player);
+            }
+            if (tempestDisarmed && player instanceof ServerPlayer serverPlayer) {
+                cooldownTempestDisarmedHands(serverPlayer);
+                cancelOptionalTaczReload(serverPlayer);
+            }
+            return;
+        }
+        if (event.getEntity() instanceof ServerPlayer player
+                && RaptorFalconDroneEntity.isPlayerControlling(player)) {
+            stopBlockedUseItem(event, player);
+            return;
+        }
+        if (event.getEntity() instanceof ServerPlayer player) {
+            MorseStateManager.recordPlayerAction(player);
+            LexNinjiaStateManager.onPlayerAction(player);
+        }
+        if (event.getEntity() instanceof Player player && effectApplies(player, ModEffects.RAPTOR_ACTION_PAUSE.get())) {
+            stopBlockedUseItem(event, player);
+            return;
+        }
+        if (!shouldAdjustUseDuration(event.getItem())) {
+            return;
+        }
+        if (event.getEntity() instanceof Player player
+                && effectApplies(player, ModEffects.SONIC_SHOCK.get())
+                && shouldSonicShockSkipAction(player)) {
+            event.setDuration(event.getDuration() + 1);
+        }
+        if (event.getEntity() instanceof Player player
+                && effectApplies(player, ModEffects.MORSE_STRONG_SHOCK.get())
+                && shouldMorseShockSkipAction(player)) {
+            event.setDuration(event.getDuration() + 1);
+        }
+    }
+
+    /**
+     * Returns true if the player has any character pseudo-tool equipped that should block
+     * vanilla left/right click interactions (attack, use item, interact).
+     */
+    private static boolean isAnyToolEquipped(Player player) {
+        // Sineva: shield deployed
+        if (SinevaSkills.canUseShieldAction(player)) {
+            return true;
+        }
+        // Uluru: any tool equipped (incendiary, cover, missile)
+        if (UluruStateManager.isUluru(player) && UluruStateManager.equippedTool(player) != UluruTool.NONE) {
+            return true;
+        }
+        // D-Wolf: hand cannon equipped
+        if (DWolfStateManager.isDWolf(player) && DWolfStateManager.equippedTool(player) != DWolfTool.NONE) {
+            return true;
+        }
+        // Gizmo: any trap or T-boy pseudo-tool equipped
+        if (GizmoStateManager.isGizmo(player) && GizmoStateManager.equippedTool(player) != GizmoTool.NONE) {
+            return true;
+        }
+        // Shepherd: sonic trap or frag grenade equipped
+        if (ShepherdStateManager.isShepherd(player) && ShepherdStateManager.equippedTool(player) != ShepherdTool.NONE) {
+            return true;
+        }
+        // Luna: shock bow, composite grenade, or recon bow equipped
+        if (LunaStateManager.isLuna(player) && LunaStateManager.equippedTool(player) != LunaTool.NONE) {
+            return true;
+        }
+        // Vyron: magnetic bomb or Tiger Crouching Cannon equipped
+        if (VyronStateManager.isVyron(player) && VyronStateManager.equippedTool(player) != VyronTool.NONE) {
+            return true;
+        }
+        // Stinger: smoke grenade, smoke drone, or stim gun equipped
+        if (StingerStateManager.isStinger(player) && StingerStateManager.equippedTool(player) != StingerTool.NONE) {
+            return true;
+        }
+        if (ManbaStateManager.isManba(player) && ManbaStateManager.isFlashlightActive(player)) {
+            return true;
+        }
+        if (NikaidouHiroStateManager.isNikaidouHiro(player) && NikaidouHiroStateManager.equippedTool(player) != NikaidouHiroTool.NONE) {
+            return true;
+        }
+        if (DepartmentOfTransportationStateManager.hasEquippedTool(player)) {
+            return true;
+        }
+        if (MorseStateManager.isMorse(player) && MorseStateManager.equippedTool(player) != MorseTool.NONE) {
+            return true;
+        }
+        if (ToxikStateManager.isToxik(player) && ToxikStateManager.equippedTool(player) != ToxikTool.NONE) {
+            return true;
+        }
+        if (RaptorStateManager.isRaptor(player) && RaptorStateManager.equippedTool(player) != RaptorTool.NONE) {
+            return true;
+        }
+        if (VlinderStateManager.isVlinder(player) && VlinderStateManager.equippedTool(player) != VlinderTool.NONE) {
+            return true;
+        }
+        if (TempestStateManager.isTempest(player) && TempestStateManager.equippedTool(player) != TempestTool.NONE) {
+            return true;
+        }
+        return false;
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickStun(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        Player player = event.player;
+        if (player instanceof ServerPlayer serverPlayer) {
+            SinevaKnockdownState.tick(serverPlayer);
+            GizmoStateManager.tickWebbedEscape(serverPlayer);
+            StingerStateManager.tickDowned(serverPlayer);
+            VlinderStateManager.tickDowned(serverPlayer);
+            ToxikStateManager.tickFireflyPullout(serverPlayer);
+            ToxikStateManager.accelerateCooldowns(player);
+            ModItemEffectHelper.tickItemEffects(serverPlayer);
+        }
+        accelerateTaczAdrenalineTimers(player);
+        if (StingerStateManager.isDowned(player) || VlinderStateManager.isDowned(player) || CatDadStateManager.isDowned(player)) {
+            player.stopUsingItem();
+            player.setSprinting(false);
+            if (!player.level().isClientSide && player.containerMenu != player.inventoryMenu) {
+                player.closeContainer();
+            }
+            if (player instanceof ServerPlayer downedPlayer) {
+                UluruLoiteringMissileEntity.stopPlayerControl(downedPlayer);
+                RaptorFalconDroneEntity.stopPlayerControl(downedPlayer);
+            }
+            return;
+        }
+        if (NikaidouHiroStateManager.isWeaponActive(player)) {
+            player.stopUsingItem();
+            if (player instanceof ServerPlayer nikaidouPlayer) {
+                cancelOptionalTaczReload(nikaidouPlayer);
+            }
+        }
+        if (DepartmentOfTransportationStateManager.hasEquippedTool(player)) {
+            player.stopUsingItem();
+            if (player instanceof ServerPlayer departmentPlayer) {
+                cancelOptionalTaczReload(departmentPlayer);
+            }
+        }
+        if (TempestStateManager.isActionLocked(player)) {
+            player.stopUsingItem();
+            if (TempestStateManager.isDowned(player) || TempestStateManager.isRecalling(player)) {
+                player.setSprinting(false);
+            }
+            if (player instanceof ServerPlayer tempestLockedPlayer) {
+                TempestStateManager.setEquippedTool(tempestLockedPlayer, TempestTool.NONE);
+                lockTempestActionHotbar(tempestLockedPlayer);
+                cooldownTempestDisarmedHands(tempestLockedPlayer);
+                cancelOptionalTaczReload(tempestLockedPlayer);
+                if (tempestLockedPlayer.containerMenu != tempestLockedPlayer.inventoryMenu) {
+                    tempestLockedPlayer.closeContainer();
+                }
+                if (TempestStateManager.isDowned(tempestLockedPlayer) || TempestStateManager.isRecalling(tempestLockedPlayer)) {
+                    UluruLoiteringMissileEntity.stopPlayerControl(tempestLockedPlayer);
+                    RaptorFalconDroneEntity.stopPlayerControl(tempestLockedPlayer);
+                    return;
+                }
+            }
+        } else if (player instanceof ServerPlayer serverPlayer) {
+            TEMPEST_ACTION_LOCKED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
+        }
+        if (effectApplies(player, ModEffects.STUN.get())) {
+            Vec3 velocity = player.getDeltaMovement();
+            player.setDeltaMovement(0, velocity.y, 0);
+            player.stopUsingItem();
+            if (!player.level().isClientSide && player.containerMenu != player.inventoryMenu) {
+                player.closeContainer();
+            }
+            if (player instanceof ServerPlayer stunnedPlayer) {
+                UluruLoiteringMissileEntity.stopPlayerControl(stunnedPlayer);
+                RaptorFalconDroneEntity.stopPlayerControl(stunnedPlayer);
+            }
+        }
+        if (effectApplies(player, ModEffects.RAPTOR_ACTION_PAUSE.get())) {
+            Vec3 velocity = player.getDeltaMovement();
+            player.setDeltaMovement(0.0D, velocity.y, 0.0D);
+            player.stopUsingItem();
+            if (!player.level().isClientSide && player.containerMenu != player.inventoryMenu) {
+                player.closeContainer();
+            }
+        }
+        MobEffectInstance morseStrongShock = activeEffectInstance(player, ModEffects.MORSE_STRONG_SHOCK.get());
+        if (morseStrongShock != null) {
+            Vec3 velocity = player.getDeltaMovement();
+            double factor = morseStrongShock.getAmplifier() >= 1 ? 0.25D : 0.55D;
+            player.setDeltaMovement(velocity.x * factor, velocity.y, velocity.z * factor);
+            player.setSprinting(false);
+            player.hurtMarked = true;
+        }
+        if (effectApplies(player, ModEffects.WEBBED.get())) {
+            Vec3 velocity = player.getDeltaMovement();
+            player.setDeltaMovement(0.0D, Math.min(0.0D, velocity.y), 0.0D);
+            player.stopUsingItem();
+            if (!player.level().isClientSide && player.containerMenu != player.inventoryMenu) {
+                player.closeContainer();
+            }
+            if (player instanceof ServerPlayer webbedPlayer) {
+                lockWebbedHotbar(webbedPlayer);
+                lockWebbedLook(webbedPlayer);
+                cancelOptionalTaczReload(webbedPlayer);
+                UluruLoiteringMissileEntity.stopPlayerControl(webbedPlayer);
+                RaptorFalconDroneEntity.stopPlayerControl(webbedPlayer);
+            }
+        } else if (player instanceof ServerPlayer serverPlayer) {
+            WEBBED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
+            WEBBED_LOOK_LOCKS.remove(serverPlayer.getUUID());
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickSonicShockTimeFlow(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+
+        Player player = event.player;
+        MobEffectInstance sonicShock = activeEffectInstance(player, ModEffects.SONIC_SHOCK.get());
+        if (sonicShock == null) {
+            return;
+        }
+
+        double factor = sonicShock.getAmplifier() >= 1 ? 0.25D : 0.55D;
+        Vec3 velocity = player.getDeltaMovement();
+        player.setDeltaMovement(velocity.x * factor, velocity.y, velocity.z * factor);
+        player.setSprinting(false);
+        player.hurtMarked = true;
+
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTickMissileControlLock(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
+            return;
+        }
+        boolean uluruControl = UluruLoiteringMissileEntity.isPlayerControlling(player);
+        boolean raptorControl = RaptorFalconDroneEntity.isPlayerControlling(player);
+        if (!uluruControl && !raptorControl) {
+            return;
+        }
+
+        if (uluruControl) {
+            UluruLoiteringMissileEntity.lockControllingPlayer(player);
+        }
+        if (raptorControl) {
+            RaptorFalconDroneEntity.lockControllingPlayer(player);
+        }
+        player.stopUsingItem();
+        if (player.containerMenu != player.inventoryMenu) {
+            player.closeContainer();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onWorldTickCharge(TickEvent.LevelTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+        if (event.level.isClientSide) return;
+        SinevaSkills.tickChargingPlayers(event.level);
+    }
+
+    @SubscribeEvent
+    public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        Entity directSource = event.getExplosion().getDirectSourceEntity();
+        boolean departmentChargedCreeper =
+                DepartmentOfTransportationStateManager.isDepartmentChargedCreeper(directSource);
+        if (!departmentChargedCreeper) {
+            UluruExplosionHelper.destroyQuickCovers(serverLevel, event.getExplosion().getPosition(), 6.0);
+        }
+        TempestStateManager.triggerExplosionSpineForNearby(serverLevel,
+                event.getExplosion().getPosition(), event.getAffectedEntities());
+        if (departmentChargedCreeper) {
+            event.getAffectedBlocks().clear();
+            DepartmentOfTransportationStateManager.handleDepartmentChargedCreeperExplosion(serverLevel, directSource);
+        }
+        for (BlockPos pos : event.getAffectedBlocks()) {
+            if (serverLevel.getBlockState(pos).is(ModBlocks.QUICK_COVER.get())) {
+                QuickCoverBlockEntity.destroyCoverAt(serverLevel, pos);
+            }
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onExplosionStart(ExplosionEvent.Start event) {
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        Entity directSource = event.getExplosion().getDirectSourceEntity();
+        if (UndeadStateManager.isHunterRetreatTnt(directSource)) {
+            event.setCanceled(true);
+            UndeadStateManager.handleHunterRetreatExplosion(serverLevel, directSource);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onAnyForgeEvent(Event event) {
+        String eventName = event.getClass().getName();
+        if (TACZ_GUN_RELOAD_EVENT.equals(eventName)) {
+            recordMorseTaczAction(event);
+            if (cancelLexNinjiaTaczAction(event) || cancelUndeadTaczAction(event) || cancelDownedTaczAction(event)) {
+                return;
+            }
+            cancelTaczReloadEvent(event);
+            if (throttleMorseShockTaczTimeEvent(event) || throttleSonicTaczTimeEvent(event)) {
+                return;
+            }
+            return;
+        }
+
+        if (isTaczSonicTimeEvent(eventName)) {
+            recordMorseTaczAction(event);
+            accelerateTaczAdrenalineForEvent(eventName, event);
+            if (cancelLexNinjiaTaczAction(event)
+                    || cancelUndeadTaczAction(event)
+                    || cancelDownedTaczAction(event)
+                    || throttleMorseShockTaczTimeEvent(event)
+                    || throttleSonicTaczTimeEvent(event)) {
+                return;
+            }
+            snapshotMhsTaczAmmo(eventName, event);
+        }
+
+        if (!TACZ_AMMO_HIT_BLOCK_EVENT.equals(eventName)) {
+            return;
+        }
+
+        try {
+            Object levelObject = event.getClass().getMethod("getLevel").invoke(event);
+            Object hitObject = event.getClass().getMethod("getHitResult").invoke(event);
+            Object ammoObject = event.getClass().getMethod("getAmmo").invoke(event);
+            if (!(levelObject instanceof Level level) || level.isClientSide
+                    || !(hitObject instanceof BlockHitResult hit)) {
+                return;
+            }
+
+            BlockPos pos = hit.getBlockPos();
+            int damage = ammoObject instanceof Projectile projectile
+                    ? QuickCoverBlock.projectileDamage(projectile, hit.getLocation())
+                    : 25;
+            if (level.getBlockState(pos).is(ModBlocks.QUICK_COVER.get())) {
+                QuickCoverBlockEntity.damageCoverAt(level, pos, damage);
+                return;
+            }
+            if (level.getBlockState(pos).is(ModBlocks.BLADE_WIRE_CORE.get())
+                    || level.getBlockState(pos).is(ModBlocks.BLADE_WIRE.get())) {
+                BladeWireBlockEntity.damageWireAt(level, pos, damage);
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // TACZ is optional; reflection keeps this mod loadable without a hard dependency.
+        }
+    }
+
+
+    private static void accelerateTaczAdrenalineTimers(Player player) {
+        TaczSpeedMultipliers multipliers = taczSpeedMultipliers(player);
+        if (!multipliers.hasChange()) {
+            return;
+        }
+        if (player.level().isClientSide) {
+            return;
+        }
+        shiftTaczServerDataHolder(player, multipliers);
+    }
+
+    private static void accelerateTaczAdrenalineForEvent(String eventName, Event event) {
+        if (!TACZ_GUN_SHOOT_EVENT.equals(eventName) && !TACZ_GUN_FIRE_EVENT.equals(eventName)) {
+            return;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (!(entity instanceof Player player)) {
+            return;
+        }
+        TaczSpeedMultipliers multipliers = taczSpeedMultipliers(player);
+        if (!multipliers.hasChange()) {
+            return;
+        }
+        if (player.level().isClientSide) {
+            shiftTaczClientDataHolder(player, multipliers);
+        } else {
+            shiftTaczServerDataHolder(player, multipliers);
+        }
+    }
+
+    private static void snapshotMhsTaczAmmo(String eventName, Event event) {
+        if (!TACZ_GUN_SHOOT_EVENT.equals(eventName) && !TACZ_GUN_FIRE_EVENT.equals(eventName)) {
+            return;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (!(entity instanceof ServerPlayer player) || !isMhsFuryActive(player)) {
+            return;
+        }
+        ItemStack gun = taczEventGunItem(event);
+        if (isTaczGunStack(gun)) {
+            rememberMhsTaczAmmo(player, gun, player.level().getGameTime() + 5L);
+        }
+    }
+
+    private static TaczSpeedMultipliers taczSpeedMultipliers(LivingEntity entity) {
+        double adrenaline = ToxikStateManager.adrenalineSpeedMultiplier(entity);
+        double equipment = equipmentTaczAssaultMultiplier(entity);
+        return new TaczSpeedMultipliers(
+                adrenaline * equipment * ModItemEffectHelper.medicineTaczFireRateMultiplier(entity),
+                adrenaline * ModItemEffectHelper.medicineTaczReloadMultiplier(entity),
+                adrenaline * equipment * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(entity),
+                ModItemEffectHelper.medicineTaczAimPenaltyMultiplier(entity)
+        );
+    }
+
+    private static void shiftTaczServerDataHolder(LivingEntity entity, TaczSpeedMultipliers multipliers) {
+        try {
+            Class<?> operatorClass = Class.forName(TACZ_GUN_OPERATOR);
+            Object operator = operatorClass.getMethod("fromLivingEntity", LivingEntity.class).invoke(null, entity);
+            Object dataHolder = operatorClass.getMethod("getDataHolder").invoke(operator);
+            long fireExtraMillis = extraTaczMillis(multipliers.fireRate());
+            long reloadExtraMillis = extraTaczMillis(multipliers.reload());
+            long aimExtraMillis = extraTaczMillis(multipliers.aim());
+            long aimPenaltyMillis = extraTaczMillis(multipliers.aimPenalty());
+            // 射速：TaCZ 用 shootTimestamp 计算冷却，时间戳往过去推等价于冷却更快结束。
+            shiftLongFieldIfNonNegative(dataHolder, "shootTimestamp", -fireExtraMillis);
+            shiftLongFieldIfNonNegative(dataHolder, "lastShootTimestamp", -fireExtraMillis);
+            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, reloadExtraMillis));
+            // 换弹/拉栓/切枪：这些也是时间戳驱动，正在进行时加速推进。
+            if (isTaczReloading(dataHolder)) {
+                shiftLongFieldIfNonNegative(dataHolder, "reloadTimestamp", -reloadExtraMillis);
+            }
+            if (booleanField(dataHolder, "isBolting")) {
+                shiftLongFieldIfNonNegative(dataHolder, "boltTimestamp", -reloadExtraMillis);
+            }
+            shiftLongFieldIfNonNegative(dataHolder, "drawTimestamp", -Math.max(0L, reloadExtraMillis / 2L));
+            // 开镜：只改时间戳在部分事件顺序下体感不明显，所以额外直接推进 aimingProgress。
+            if (booleanField(dataHolder, "isAiming")) {
+                shiftLongFieldIfNonNegative(dataHolder, "aimingTimestamp", -aimExtraMillis + aimPenaltyMillis);
+                boostFloatField(dataHolder, "aimingProgress", adrenalineAimProgressBoost(multipliers.aim()), 0.0F, 1.0F);
+                reduceFloatField(dataHolder, "aimingProgress", taczAimPenaltyProgress(multipliers.aimPenalty()), 0.0F, 1.0F);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // TACZ is optional; missing or changed APIs should not break this mod.
+        }
+    }
+
+    private static void shiftTaczClientDataHolder(Player player, TaczSpeedMultipliers multipliers) {
+        try {
+            Class<?> clientOperatorClass = Class.forName(TACZ_CLIENT_GUN_OPERATOR);
+            Method fromLocalPlayer = null;
+            for (Method method : clientOperatorClass.getMethods()) {
+                if ("fromLocalPlayer".equals(method.getName()) && method.getParameterCount() == 1) {
+                    fromLocalPlayer = method;
+                    break;
+                }
+            }
+            if (fromLocalPlayer == null) {
+                return;
+            }
+            Object operator = fromLocalPlayer.invoke(null, player);
+            Object dataHolder = clientOperatorClass.getMethod("getDataHolder").invoke(operator);
+            long fireExtraMillis = extraTaczMillis(multipliers.fireRate());
+            long reloadExtraMillis = extraTaczMillis(multipliers.reload());
+            long aimExtraMillis = extraTaczMillis(multipliers.aim());
+            long aimPenaltyMillis = extraTaczMillis(multipliers.aimPenalty());
+            // 客户端射速判定读取 clientShootTimestamp；服务端读取 shootTimestamp，两边都要推。
+            shiftLongFieldIfNonNegative(dataHolder, "clientShootTimestamp", -fireExtraMillis);
+            shiftLongFieldIfNonNegative(dataHolder, "clientLastShootTimestamp", -fireExtraMillis);
+            // 客户端状态锁会挡住连射/换弹表现，也要同步加速释放。
+            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, reloadExtraMillis));
+            // 开镜表现读取 clientAimingProgress。参考牧羊人“周期性打断开镜”的反向思路，
+            // 这里直接推进进度，避免只改 timestamp 但视觉仍然慢。
+            if (booleanField(dataHolder, "clientIsAiming")) {
+                shiftLongFieldIfNonNegative(dataHolder, "clientAimingTimestamp", -aimExtraMillis + aimPenaltyMillis);
+                boostFloatField(dataHolder, "clientAimingProgress", adrenalineAimProgressBoost(multipliers.aim()), 0.0F, 1.0F);
+                reduceFloatField(dataHolder, "clientAimingProgress", taczAimPenaltyProgress(multipliers.aimPenalty()), 0.0F, 1.0F);
+            }
+            // 蓄力武器也属于“枪械行为速度”，给充能进度补一份额外推进。
+            if (booleanField(dataHolder, "isCharging")) {
+                boostFloatField(dataHolder, "chargeProgress", adrenalineChargeProgressBoost(Math.max(multipliers.fireRate(), multipliers.aim())), 0.0F, Float.MAX_VALUE);
+            }
+            // 如果 TaCZ 正在等待异步射击记录，肾上腺素下不要让这个锁成为额外射速瓶颈。
+            setBooleanFieldIfPresent(dataHolder, "isShootRecorded", true);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Client-side TACZ bridge is best-effort and safe when TACZ is absent.
+        }
+    }
+
+    private static float adrenalineAimProgressBoost(double multiplier) {
+        // 20 TPS 下：基础 1 级约每 tick 额外 +1%，蛊自身 20 级约每 tick 额外 +20%。
+        return (float) Math.min(0.5D, Math.max(0.0D, 0.08D * (multiplier - 1.0D)));
+    }
+
+    private static float adrenalineChargeProgressBoost(double multiplier) {
+        return (float) Math.max(0.0D, 0.2D * (multiplier - 1.0D));
+    }
+
+    private static long extraTaczMillis(double multiplier) {
+        return multiplier <= 1.0001D ? 0L : Math.max(1L, Math.round(50.0D * (multiplier - 1.0D)));
+    }
+
+    private static float taczAimPenaltyProgress(double multiplier) {
+        return multiplier <= 1.0001D ? 0.0F : (float) Math.min(0.8D, 0.08D * (multiplier - 1.0D));
+    }
+
+    private record TaczSpeedMultipliers(double fireRate, double reload, double aim, double aimPenalty) {
+        boolean hasChange() {
+            return fireRate > 1.0001D || reload > 1.0001D || aim > 1.0001D || aimPenalty > 1.0001D;
+        }
+    }
+
+    private record TaczAmmoSnapshot(String gunId, int ammoCount, boolean bulletInBarrel, long expiresAt) {
+    }
+
+    private static void shiftLongFieldIfNonNegative(Object target, String fieldName, long delta) throws ReflectiveOperationException {
+        if (target == null) {
+            return;
+        }
+        Field field = fieldIfPresent(target, fieldName);
+        if (field == null || field.getType() != long.class) {
+            return;
+        }
+        long value = field.getLong(target);
+        if (value >= 0L) {
+            field.setLong(target, value + delta);
+        }
+    }
+
+    private static boolean booleanField(Object target, String fieldName) throws ReflectiveOperationException {
+        if (target == null) {
+            return false;
+        }
+        Field field = fieldIfPresent(target, fieldName);
+        return field != null && field.getType() == boolean.class && field.getBoolean(target);
+    }
+
+    private static void setBooleanFieldIfPresent(Object target, String fieldName, boolean value) throws ReflectiveOperationException {
+        if (target == null) {
+            return;
+        }
+        Field field = fieldIfPresent(target, fieldName);
+        if (field != null && field.getType() == boolean.class) {
+            field.setBoolean(target, value);
+        }
+    }
+
+    private static void boostFloatField(Object target, String fieldName, float delta, float min, float max) throws ReflectiveOperationException {
+        if (target == null || delta <= 0.0F) {
+            return;
+        }
+        Field field = fieldIfPresent(target, fieldName);
+        if (field == null || field.getType() != float.class) {
+            return;
+        }
+        float value = field.getFloat(target);
+        if (!Float.isFinite(value)) {
+            return;
+        }
+        float boosted = Math.max(min, Math.min(max, value + delta));
+        field.setFloat(target, boosted);
+    }
+
+    private static void reduceFloatField(Object target, String fieldName, float delta, float min, float max) throws ReflectiveOperationException {
+        if (target == null || delta <= 0.0F) {
+            return;
+        }
+        Field field = fieldIfPresent(target, fieldName);
+        if (field == null || field.getType() != float.class) {
+            return;
+        }
+        float value = field.getFloat(target);
+        if (!Float.isFinite(value)) {
+            return;
+        }
+        field.setFloat(target, Math.max(min, Math.min(max, value - delta)));
+    }
+
+    private static Field fieldIfPresent(Object target, String fieldName) {
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Field field = type.getField(fieldName);
+                field.setAccessible(true);
+                return field;
+            } catch (NoSuchFieldException ignored) {
+                type = type.getSuperclass();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isTaczReloading(Object dataHolder) throws ReflectiveOperationException {
+        if (dataHolder == null) {
+            return false;
+        }
+        Field field = fieldIfPresent(dataHolder, "reloadStateType");
+        if (field == null) {
+            return false;
+        }
+        Object state = field.get(dataHolder);
+        if (state == null) {
+            return false;
+        }
+        try {
+            Method method = state.getClass().getMethod("isReloading");
+            Object result = method.invoke(state);
+            return result instanceof Boolean b && b;
+        } catch (ReflectiveOperationException ignored) {
+            return state.toString().contains("RELOAD");
+        }
+    }
+
+    private static boolean isTaczSonicTimeEvent(String eventName) {
+        return TACZ_GUN_SHOOT_EVENT.equals(eventName)
+                || TACZ_GUN_FIRE_EVENT.equals(eventName)
+                || TACZ_GUN_MELEE_EVENT.equals(eventName)
+                || TACZ_GUN_FIRE_SELECT_EVENT.equals(eventName);
+    }
+
+    private static boolean isMovementOrLandingSound(ResourceLocation soundId) {
+        String path = soundId.getPath();
+        return path.endsWith(".step")
+                || path.endsWith(".fall")
+                || path.contains(".step.")
+                || path.contains(".fall.")
+                || path.contains("small_fall")
+                || path.contains("big_fall")
+                || path.contains("splash")
+                || path.contains("swim");
+    }
+
+    private static void recordMorseTaczAction(Event event) {
+        LivingEntity entity = taczEventEntity(event);
+        if (entity instanceof ServerPlayer player) {
+            MorseStateManager.recordPlayerAction(player);
+        }
+    }
+
+    private static boolean cancelDownedTaczAction(Event event) {
+        if (!event.isCancelable()) {
+            return false;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (entity instanceof Player player
+                && (StingerStateManager.isDowned(player)
+                || VlinderStateManager.isDowned(player)
+                || CatDadStateManager.isDowned(player)
+                || NikaidouHiroStateManager.isWeaponActive(player)
+                || DepartmentOfTransportationStateManager.hasEquippedTool(player)
+                || TempestStateManager.isActionLocked(player))) {
+            event.setCanceled(true);
+            cancelOptionalTaczReload(entity);
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean cancelLexNinjiaTaczAction(Event event) {
+        if (!event.isCancelable()) {
+            return false;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (!(entity instanceof ServerPlayer player) || !LexNinjiaStateManager.isLexNinjia(player)) {
+            return false;
+        }
+        event.setCanceled(true);
+        if (TACZ_GUN_RELOAD_EVENT.equals(event.getClass().getName())) {
+            cancelOptionalTaczReload(player);
+        }
+        player.displayClientMessage(Component.translatable(
+                "message.dealt_force_skills.lex_ninjia.tacz_forbidden"), true);
+        return true;
+    }
+
+    private static boolean cancelUndeadTaczAction(Event event) {
+        if (!event.isCancelable()) {
+            return false;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (!(entity instanceof ServerPlayer player) || !UndeadStateManager.isUndead(player)) {
+            return false;
+        }
+        event.setCanceled(true);
+        if (TACZ_GUN_RELOAD_EVENT.equals(event.getClass().getName())) {
+            cancelOptionalTaczReload(player);
+        }
+        player.displayClientMessage(Component.translatable(
+                "message.dealt_force_skills.undead.tacz_forbidden"), true);
+        return true;
+    }
+
+    private static boolean throttleSonicTaczTimeEvent(Event event) {
+        if (!event.isCancelable()) {
+            return false;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (entity != null && effectApplies(entity, ModEffects.SONIC_SHOCK.get()) && shouldSonicShockSkipAction(entity)) {
+            event.setCanceled(true);
+            if (TACZ_GUN_RELOAD_EVENT.equals(event.getClass().getName())) {
+                cancelOptionalTaczReload(entity);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean throttleMorseShockTaczTimeEvent(Event event) {
+        if (!event.isCancelable()) {
+            return false;
+        }
+        LivingEntity entity = taczEventEntity(event);
+        if (entity != null && effectApplies(entity, ModEffects.MORSE_STRONG_SHOCK.get()) && shouldMorseShockSkipAction(entity)) {
+            event.setCanceled(true);
+            if (TACZ_GUN_RELOAD_EVENT.equals(event.getClass().getName())) {
+                cancelOptionalTaczReload(entity);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static LivingEntity taczEventEntity(Event event) {
+        for (String methodName : new String[]{"getEntity", "getShooter"}) {
+            try {
+                Object entityObject = event.getClass().getMethod(methodName).invoke(event);
+                if (entityObject instanceof LivingEntity entity) {
+                    return entity;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // Try the next TACZ event accessor.
+            }
+        }
+        return null;
+    }
+
+    private static ItemStack taczEventGunItem(Event event) {
+        try {
+            Object stackObject = event.getClass().getMethod("getGunItemStack").invoke(event);
+            if (stackObject instanceof ItemStack stack) {
+                return stack;
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // TACZ is optional and may change event internals between versions.
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static void cancelTaczReloadEvent(Event event) {
+        try {
+            Object entityObject = event.getClass().getMethod("getEntity").invoke(event);
+            if (entityObject instanceof LivingEntity entity
+                    && (effectApplies(entity, ModEffects.WEBBED.get())
+                    || effectApplies(entity, ModEffects.TEMPEST_DISARMED.get()))) {
+                event.setCanceled(true);
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // TACZ is optional and may change event internals between versions.
+        }
+    }
+
+    private static void lockWebbedHotbar(ServerPlayer player) {
+        int lockedSlot = WEBBED_SELECTED_SLOTS.computeIfAbsent(player.getUUID(), id -> player.getInventory().selected);
+        if (player.getInventory().selected != lockedSlot) {
+            player.getInventory().selected = lockedSlot;
+            player.connection.send(new ClientboundSetCarriedItemPacket(lockedSlot));
+        }
+    }
+
+    private static void lockTempestActionHotbar(ServerPlayer player) {
+        int lockedSlot = TEMPEST_ACTION_LOCKED_SELECTED_SLOTS.computeIfAbsent(player.getUUID(),
+                id -> player.getInventory().selected);
+        if (player.getInventory().selected != lockedSlot) {
+            player.getInventory().selected = lockedSlot;
+            player.connection.send(new ClientboundSetCarriedItemPacket(lockedSlot));
+        }
+    }
+
+    private static void cooldownTempestDisarmedHands(ServerPlayer player) {
+        if (!effectApplies(player, ModEffects.TEMPEST_DISARMED.get())) {
+            return;
+        }
+        cooldownHeldItem(player, player.getMainHandItem());
+        cooldownHeldItem(player, player.getOffhandItem());
+    }
+
+    private static void cooldownHeldItem(Player player, ItemStack stack) {
+        if (!stack.isEmpty()) {
+            player.getCooldowns().addCooldown(stack.getItem(), 3);
+        }
+    }
+
+    private static void lockWebbedLook(ServerPlayer player) {
+        LockedLook locked = WEBBED_LOOK_LOCKS.computeIfAbsent(player.getUUID(),
+                id -> new LockedLook(player.getYRot(), player.getXRot()));
+        player.setYRot(locked.yaw());
+        player.setXRot(locked.pitch());
+        player.setYHeadRot(locked.yaw());
+        player.setYBodyRot(locked.yaw());
+    }
+
+    private static void cancelOptionalTaczReload(LivingEntity entity) {
+        if (!ensureTaczReloadBridge()) {
+            return;
+        }
+        try {
+            Object operator = taczFromLivingEntity.invoke(null, entity);
+            taczCancelReload.invoke(operator);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // Keep the optional TACZ bridge best-effort and non-fatal.
+        }
+    }
+
+    private static boolean ensureTaczReloadBridge() {
+        if (taczReloadBridgeChecked) {
+            return taczReloadBridgeAvailable;
+        }
+        taczReloadBridgeChecked = true;
+        try {
+            Class<?> operatorClass = Class.forName(TACZ_GUN_OPERATOR);
+            taczFromLivingEntity = operatorClass.getMethod("fromLivingEntity", LivingEntity.class);
+            taczCancelReload = operatorClass.getMethod("cancelReload");
+            taczReloadBridgeAvailable = true;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            taczReloadBridgeAvailable = false;
+        }
+        return taczReloadBridgeAvailable;
+    }
+
+    private static boolean tryAbsorbFrontShield(Player player, DamageSource source, Vec3 sourcePos, float amount) {
+        if (!SinevaStateManager.isShieldDeployed(player)) {
+            return false;
+        }
+        // Hemisphere check: absorb any damage whose source is in front of the player
+        Vec3 forward = player.getLookAngle();
+        Vec3 toSource = sourcePos.subtract(player.position().add(0, player.getBbHeight() * 0.5, 0));
+        if (toSource.lengthSqr() < 0.0001D) {
+            return true;
+        }
+        if (forward.dot(toSource.normalize()) <= 0.0D) {
+            return false;
+        }
+
+        boolean viewportHit = isSinevaViewportHit(player, source, sourcePos);
+        if (viewportHit && SinevaStateManager.viewportHealth(player) <= 0) {
+            return false;
+        }
+
+        boolean broken = viewportHit
+                && SinevaStateManager.damageViewport(player, amount);
+        if (!player.level().isClientSide) {
+            if (viewportHit) {
+                SoundEvent glassSound = broken
+                        ? SoundEvents.GLASS_BREAK
+                        : net.minecraft.world.level.block.Blocks.GLASS.defaultBlockState()
+                                .getSoundType().getHitSound();
+                player.level().playSound(null, player.getEyePosition().x, player.getEyePosition().y,
+                        player.getEyePosition().z, glassSound, SoundSource.PLAYERS,
+                        broken ? 0.9f : 0.6f, broken ? 1.0f : 1.4f);
+                // Hit feedback: notify attacker they hit the viewport
+                if (source.getEntity() instanceof ServerPlayer attacker && player instanceof ServerPlayer sp) {
+                    NetworkHandler.sendToPlayer(new S2C_CharacterHitFeedback(sp.getId(), amount), attacker);
+                }
+            } else {
+                player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_SHIELD_BLOCK.get(),
+                        SoundSource.PLAYERS, 0.9f, 1.0f);
+            }
+        }
+        if (broken && player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.viewport_broken"), true);
+            SinevaStateManager.syncToClient(serverPlayer);
+            SinevaStateManager.syncRenderStateToClients(serverPlayer);
+            // Notify the attacker who broke the viewport
+            if (source.getEntity() instanceof ServerPlayer attacker) {
+                attacker.displayClientMessage(
+                        Component.translatable("message.dealt_force_skills.sineva.viewport_broken_by_you",
+                                serverPlayer.getName()), true);
+            }
+        }
+        return true;
+    }
+
+    private static boolean isSinevaViewportHit(Player player, DamageSource source, Vec3 sourcePos) {
+        Vec3 forward = player.getLookAngle();
+        if (forward.lengthSqr() < 0.0001D) {
+            return false;
+        }
+        forward = forward.normalize();
+
+        Vec3 worldUp = new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 right = forward.cross(worldUp);
+        if (right.lengthSqr() < 0.0001D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D);
+        } else {
+            right = right.normalize();
+        }
+        Vec3 up = right.cross(forward).normalize();
+
+        Vec3 eye = player.getEyePosition().add(up.scale(SinevaShieldGeometry.VIEWPORT_CENTER_EYE_OFFSET));
+        Vec3 viewportCenter = eye.add(forward.scale(SinevaShieldGeometry.VIEWPORT_FORWARD_OFFSET));
+
+        if (!isInViewportRange(viewportCenter, forward, sourcePos)) {
+            return false;
+        }
+
+        Entity direct = source.getDirectEntity();
+        if (direct != null && direct != player) {
+            Vec3 start = direct.position();
+            Vec3 motion = direct.getDeltaMovement();
+            if (motion.lengthSqr() > 0.0001D) {
+                Vec3 end = start.add(motion);
+                if (lineHitsViewport(start, end, viewportCenter, forward, right, up)
+                        || lineHitsViewport(start.subtract(motion), end, viewportCenter, forward, right, up)) {
+                    return true;
+                }
+            }
+
+            Entity attacker = source.getEntity();
+            if (attacker != null && attacker != direct) {
+                return lineHitsViewport(entityAimOrigin(attacker), direct.position(), viewportCenter, forward, right, up);
+            }
+            return lineHitsViewport(sourcePos, playerBodyCenter(player), viewportCenter, forward, right, up);
+        }
+
+        Entity attacker = source.getEntity();
+        Vec3 start = attacker != null ? entityAimOrigin(attacker) : sourcePos;
+        return lineHitsViewport(start, playerBodyCenter(player), viewportCenter, forward, right, up);
+    }
+
+    private static boolean isInViewportRange(Vec3 viewportCenter, Vec3 forward, Vec3 sourcePos) {
+        double distance = sourcePos.subtract(viewportCenter).dot(forward);
+        return distance >= -0.25D && distance <= SinevaShieldGeometry.VIEWPORT_RAY_LENGTH;
+    }
+
+    private static boolean lineHitsViewport(
+            Vec3 start,
+            Vec3 end,
+            Vec3 viewportCenter,
+            Vec3 forward,
+            Vec3 right,
+            Vec3 up
+    ) {
+        Vec3 line = end.subtract(start);
+        double denom = line.dot(forward);
+        if (Math.abs(denom) < 0.0001D) {
+            return false;
+        }
+
+        double t = viewportCenter.subtract(start).dot(forward) / denom;
+        if (t < -0.05D || t > 1.05D) {
+            return false;
+        }
+
+        Vec3 hit = start.add(line.scale(t));
+        Vec3 local = hit.subtract(viewportCenter);
+        return Math.abs(local.dot(right)) <= SinevaShieldGeometry.VIEWPORT_WORLD_WIDTH * 0.5D
+                && Math.abs(local.dot(up)) <= SinevaShieldGeometry.VIEWPORT_WORLD_HEIGHT * 0.5D;
+    }
+
+    private static Vec3 entityAimOrigin(Entity entity) {
+        if (entity instanceof LivingEntity living) {
+            return living.getEyePosition();
+        }
+        return entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D);
+    }
+
+    private static Vec3 playerBodyCenter(Player player) {
+        return player.position().add(0.0D, player.getBbHeight() * 0.5D, 0.0D);
+    }
+
+    @SuppressWarnings("unused")
+    private static boolean isSinevaViewportHitLegacy(Player player, Vec3 sourcePos) {
+        // Hit only counts as "viewport" when the impact is at head height AND
+        // the damage direction aligns tightly with the player's gaze.
+        double eyeY = player.getEyeY();
+        if (Math.abs(sourcePos.y - eyeY) > 0.3D) return false; // not at head level
+        Vec3 eye = player.getEyePosition();
+        Vec3 toSource = sourcePos.subtract(eye);
+        double dist = toSource.length();
+        if (dist < 0.01D) return true;
+        Vec3 toSourceDir = toSource.scale(1.0 / dist);
+        Vec3 look = player.getLookAngle();
+        return look.dot(toSourceDir) > 0.97D; // ~14° cone
+    }
+
+    private static float equipmentOutgoingDamageMultiplier(ServerPlayer attacker, LivingEntity target, DamageSource source) {
+        double multiplier = 1.0D;
+        ItemStack chest = attacker.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack head = attacker.getItemBySlot(EquipmentSlot.HEAD);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.LONELY_DAMAGE
+                && attacker.level().getEntitiesOfClass(Player.class,
+                attacker.getBoundingBox().inflate(5.0D),
+                other -> other != attacker && other.isAlive()).isEmpty()) {
+            multiplier *= 1.75D;
+        }
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.RED_OWL_REVENGE) {
+            String revengeType = attacker.getPersistentData().getString(RED_OWL_REVENGE_TYPE);
+            if (!revengeType.isBlank() && revengeType.equals(target.getType().getDescriptionId())) {
+                multiplier *= 1.75D;
+            }
+        }
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+            multiplier *= 1.0D + chest.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+            multiplier *= 1.0D + head.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+            multiplier *= 1.10D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+            multiplier *= 1.20D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT) {
+            addTimedEquipmentStacks(head, DICH9_STACKS, DICH9_UNTIL, attacker.level().getGameTime(), 20, 7 * 20L);
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.ELBOW_SPIRIT
+                && chestProfile != null && chestProfile.id().equals("samurai_ballistic_vest")
+                && isMeleeDamage(source, attacker)) {
+            multiplier *= 12.45D;
+        }
+        return (float) multiplier;
+    }
+
+    private static float handleEquipmentDefense(ServerPlayer player, DamageSource source, float amount) {
+        // Fall, void and magic-like damage are not physical impacts.  They must not be
+        // converted into equipment durability loss or prevented by the equipment layer.
+        if (isEquipmentBypassDamage(source)) {
+            return amount;
+        }
+
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        if (chestProfile == null && headProfile == null) {
+            return amount;
+        }
+
+        if (tryRedOwlMaskDodge(player, source, headProfile)) {
+            return 0.0F;
+        }
+
+        if (isMhsFuryActive(player)) {
+            amount *= 0.05F;
+            if (amount <= 0.0F) {
+                return 0.0F;
+            }
+        }
+
+        boolean chestCovered = chestProfile != null && isEquipmentCoveredHit(player, source, chestProfile);
+        boolean headCovered = headProfile != null && isEquipmentCoveredHit(player, source, headProfile);
+        if (!chestCovered && !headCovered) {
+            return amount;
+        }
+
+        if (tryEquipmentHurtTriggers(player, source, amount, chest, chestProfile, chestCovered,
+                head, headProfile, headCovered)) {
+            return 0.0F;
+        }
+
+        float adjusted = applyEquipmentPassiveReductions(player, source, amount, chestProfile, chestCovered,
+                headProfile, headCovered);
+        if (adjusted <= 0.0F) {
+            return 0.0F;
+        }
+
+        if (headCovered) {
+            adjusted = absorbWithEquipment(player, head, headProfile, adjusted);
+        }
+        if (chestCovered) {
+            adjusted = absorbWithEquipment(player, chest, chestProfile, adjusted);
+        }
+        if (adjusted <= 0.0F) {
+            return 0.0F;
+        }
+
+        long now = player.level().getGameTime();
+        if (adjusted >= player.getHealth()) {
+            if (chestCovered && chestProfile.ability() == SpecialAbility.FATAL_GUARD
+                    && now >= player.getPersistentData().getLong(EQUIPMENT_FATAL_GUARD_UNTIL)) {
+                player.getPersistentData().putLong(EQUIPMENT_FATAL_GUARD_UNTIL, now + 600L * 20L);
+                player.invulnerableTime = Math.max(player.invulnerableTime, 10);
+                return 0.0F;
+            }
+            if ((chestCovered || headCovered) && equipmentFactionCount(player, Faction.ASARA) >= 2
+                    && now >= player.getPersistentData().getLong(ASARA_SET_FATAL_GUARD_UNTIL)) {
+                player.getPersistentData().putLong(ASARA_SET_FATAL_GUARD_UNTIL, now + 360L * 20L);
+                player.setHealth(player.getMaxHealth());
+                return 0.0F;
+            }
+        }
+        return adjusted;
+    }
+
+    private static boolean tryEquipmentHurtTriggers(ServerPlayer player, DamageSource source, float amount,
+                                                    ItemStack chest, Profile chestProfile, boolean chestCovered,
+                                                    ItemStack head, Profile headProfile, boolean headCovered) {
+        Entity attackerEntity = source.getEntity();
+        LivingEntity livingAttacker = attackerEntity instanceof LivingEntity living ? living : null;
+        Vec3 sourcePos = damageSourcePosition(source);
+
+        if (chestCovered && chestProfile.ability() == SpecialAbility.FRONT_IMMUNE
+                && sourcePos != null && Util.isFromFront(player, sourcePos, 70.0F)
+                && player.getRandom().nextFloat() < 0.25F) {
+            return true;
+        }
+        if (chestCovered && chestProfile.ability() == SpecialAbility.RANDOM_F4) {
+            int roll = player.getRandom().nextInt(4);
+            if (roll == 0) {
+                return true;
+            }
+            if (roll == 1 && livingAttacker != null) {
+                livingAttacker.setSecondsOnFire(5);
+            }
+            if (roll == 2 && livingAttacker != null) {
+                livingAttacker.hurt(player.damageSources().playerAttack(player), amount);
+            }
+            if (roll == 3) {
+                player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 10, 0, false, true, true));
+                return true;
+            }
+        }
+        if (headCovered && headProfile.ability() == SpecialAbility.H09_RIOT_DODGE
+                && chestProfile != null && chestProfile.id().equals("elite_ballistic_vest")
+                && !head.getOrCreateTag().getBoolean(EQUIPMENT_STATIONARY)
+                && player.getRandom().nextFloat() < 0.75F) {
+            return true;
+        }
+        if (chestCovered && chestProfile.ability() == SpecialAbility.HEAVY_DODGE_SUMMON
+                && livingAttacker != null && livingAttacker != player
+                && player.getRandom().nextFloat() < 0.50F) {
+            spawnEquipmentSupport(player, livingAttacker, 2, true, true);
+            return true;
+        }
+        if (chestCovered && chestProfile.ability() == SpecialAbility.KING_KONG_EXECUTION
+                && livingAttacker != null && livingAttacker != player
+                && livingAttacker.distanceToSqr(player) <= 9.0D) {
+            tryStartKingKongExecution(player, chest, livingAttacker);
+        }
+        if (chestCovered && chestProfile.ability() == SpecialAbility.SUMMON_REINFORCEMENTS) {
+            CompoundTag tag = chest.getOrCreateTag();
+            long now = player.level().getGameTime();
+            if (now >= tag.getLong(EQUIPMENT_SUMMON_UNTIL)) {
+                tag.putLong(EQUIPMENT_SUMMON_UNTIL, now + 20L * 20L);
+                spawnEquipmentSupport(player, livingAttacker, 1 + player.getRandom().nextInt(4), false);
+            }
+        }
+        if (chestCovered && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT) {
+            addTimedEquipmentStacks(chest, TRICK_STACKS, TRICK_UNTIL, player.level().getGameTime(), 20, 7 * 20L);
+        }
+        if (chestCovered) {
+            triggerCounterKick(player, source, amount, chestProfile);
+        }
+        if (headCovered) {
+            triggerCounterKick(player, source, amount, headProfile);
+        }
+        return false;
+    }
+
+    private static boolean tryRedOwlMaskDodge(ServerPlayer player, DamageSource source, Profile headProfile) {
+        if (headProfile == null || headProfile.ability() != SpecialAbility.RED_OWL_MASK
+                || player.getRandom().nextFloat() >= 0.50F) {
+            return false;
+        }
+        Entity attackerEntity = source.getEntity();
+        if (attackerEntity instanceof LivingEntity livingAttacker
+                && livingAttacker != player && isTaczGunStack(player.getMainHandItem())) {
+            lookAtAim(player, livingAttacker);
+        }
+        return true;
+    }
+
+    private static void triggerCounterKick(ServerPlayer player, DamageSource source, float amount, Profile profile) {
+        if (profile == null || profile.ability() != SpecialAbility.COUNTER_KICK || !isMeleeDamage(source, source.getEntity())) {
+            return;
+        }
+        Entity attacker = source.getEntity();
+        if (!(attacker instanceof LivingEntity target) || target.distanceToSqr(player) > 4.0D
+                || player.getRandom().nextFloat() >= 0.10F) {
+            return;
+        }
+        double attackDamage = player.getAttributeValue(Attributes.ATTACK_DAMAGE);
+        target.hurt(player.damageSources().playerAttack(player), (float) Math.max(amount, attackDamage * 3.0D));
+    }
+
+    private static float applyEquipmentPassiveReductions(ServerPlayer player, DamageSource source, float amount,
+                                                         Profile chestProfile, boolean chestCovered,
+                                                         Profile headProfile, boolean headCovered) {
+        double multiplier = 1.0D;
+        if (chestCovered) {
+            multiplier *= 1.0D - Math.min(0.95D, chestProfile.kineticAbsorption());
+            if (isMeleeDamage(source, source.getEntity())) {
+                multiplier *= 1.0D - Math.min(0.95D, chestProfile.bluntResistance());
+            }
+        }
+        if (headCovered) {
+            multiplier *= 1.0D - Math.min(0.95D, headProfile.kineticAbsorption());
+            if (isMeleeDamage(source, source.getEntity())) {
+                multiplier *= 1.0D - Math.min(0.95D, headProfile.bluntResistance());
+            }
+        }
+        if (headCovered && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+            multiplier *= 0.95D;
+        }
+        if (headCovered && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+            multiplier *= 0.90D;
+        }
+        if (headCovered && headProfile.ability() == SpecialAbility.GT5_STATIONARY_REDUCTION
+                && player.getItemBySlot(EquipmentSlot.HEAD).getOrCreateTag().getBoolean(EQUIPMENT_STATIONARY)) {
+            multiplier *= 0.20D;
+        }
+        return (float) (amount * Math.max(0.0D, multiplier));
+    }
+
+    private static float absorbWithEquipment(ServerPlayer player, ItemStack stack, Profile profile, float amount) {
+        if (amount <= 0.0F || stack.isEmpty() || !stack.isDamageableItem()) {
+            return amount;
+        }
+        boolean noDurabilityLoss = profile.ability() == SpecialAbility.NO_DURABILITY_LOSS;
+        boolean broken = DfsEquipmentItem.isBroken(stack);
+        boolean gtiOverload = canGtiOverloadEquipment(player, stack);
+        if (!noDurabilityLoss && broken && !gtiOverload) {
+            return amount;
+        }
+
+        double ratio = DfsEquipmentItem.qualityProtectionRatio(profile.quality());
+        if (equipmentFactionCount(player, Faction.HVK) >= 1) {
+            ratio += 0.04D;
+        }
+        if (profile.ability() == SpecialAbility.STATIONARY_STACKS) {
+            ratio += stack.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
+        }
+        ratio = Math.min(0.98D, ratio);
+
+        double desiredAbsorb = amount * ratio;
+        if (desiredAbsorb <= 0.0D) {
+            return amount;
+        }
+
+        int durabilityCost = adjustedEquipmentDurabilityCost(player, profile);
+        double durabilityMultiplier = adjustedEquipmentDurabilityMultiplier(player, profile);
+        double effectiveCost = Math.max(0.0D, durabilityCost * durabilityMultiplier);
+        double absorbed = desiredAbsorb;
+        if (!noDurabilityLoss && effectiveCost > 0.0D) {
+            int durabilityLimit = gtiOverload ? gtiOverloadLimit(stack) : DfsEquipmentItem.breakDamageLimit(stack);
+            absorbed = Math.min(desiredAbsorb, (durabilityLimit - stack.getDamageValue()) / effectiveCost);
+        }
+        if (absorbed <= 0.0D) {
+            return amount;
+        }
+
+        if (!noDurabilityLoss && effectiveCost > 0.0D && !shouldSkipEquipmentDurability(player)) {
+            int rawCost = Math.max(1, (int) Math.ceil(absorbed * effectiveCost));
+            damageEquipmentStack(player, stack, profile, rawCost);
+        }
+        return (float) Math.max(0.0D, amount - absorbed);
+    }
+
+    private static int adjustedEquipmentDurabilityCost(ServerPlayer player, Profile profile) {
+        int cost = DfsEquipmentItem.qualityDurabilityCost(profile.quality());
+        if (equipmentFactionCount(player, Faction.ASARA) >= 1) {
+            cost -= 1;
+        }
+        return Math.max(1, cost);
+    }
+
+    private static double adjustedEquipmentDurabilityMultiplier(ServerPlayer player, Profile profile) {
+        double multiplier = 1.0D;
+        if (equipmentFactionCount(player, Faction.ASARA) >= 1) {
+            multiplier *= 1.05D;
+        }
+        if (equipmentFactionCount(player, Faction.HVK) >= 1) {
+            multiplier *= 0.90D;
+        }
+        if (profile.ability() == SpecialAbility.DURABLE) {
+            multiplier *= 0.50D;
+        }
+        if (profile.ability() == SpecialAbility.GN_HEAVY) {
+            multiplier *= 0.80D;
+        }
+        if (profile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+            multiplier *= 0.70D;
+        }
+        return multiplier;
+    }
+
+    private static boolean shouldSkipEquipmentDurability(ServerPlayer player) {
+        return equipmentFactionCount(player, Faction.HVK) >= 2 && player.getRandom().nextFloat() < 0.25F;
+    }
+
+    private static boolean canGtiOverloadEquipment(ServerPlayer player, ItemStack stack) {
+        return equipmentFactionCount(player, Faction.GTI) >= 2
+                && DfsEquipmentItem.profile(stack) != null
+                && stack.isDamageableItem()
+                && stack.getDamageValue() < gtiOverloadLimit(stack);
+    }
+
+    private static int gtiOverloadLimit(ItemStack stack) {
+        return Math.max(stack.getMaxDamage() + 1, (int) Math.ceil(stack.getMaxDamage() * GTI_OVERLOAD_LIMIT_MULTIPLIER));
+    }
+
+    private static void damageEquipmentStack(ServerPlayer player, ItemStack stack, Profile profile, int rawCost) {
+        int unbreaking = Math.max(0, EnchantmentHelper.getItemEnchantmentLevel(Enchantments.UNBREAKING, stack));
+        int cost = Math.max(1, (int) Math.ceil(rawCost / (double) (unbreaking + 1)));
+        boolean gtiOverload = canGtiOverloadEquipment(player, stack);
+        int damageLimit = gtiOverload ? gtiOverloadLimit(stack) : DfsEquipmentItem.breakDamageLimit(stack);
+        int newDamage = Math.min(damageLimit, stack.getDamageValue() + cost);
+        stack.setDamageValue(newDamage);
+        if (gtiOverload && newDamage >= damageLimit) {
+            stack.shrink(1);
+            return;
+        }
+        if (newDamage >= DfsEquipmentItem.breakDamageLimit(stack) && profile.ability() == SpecialAbility.DURABILITY_RESTORE) {
+            CompoundTag tag = stack.getOrCreateTag();
+            long now = player.level().getGameTime();
+            if (now >= tag.getLong(EQUIPMENT_RESTORE_UNTIL)) {
+                stack.setDamageValue(0);
+                tag.putLong(EQUIPMENT_RESTORE_UNTIL, now + 1800L * 20L);
+            }
+        }
+    }
+
+    private static void tickHelmetVisionEffect(ServerPlayer player, ItemStack head) {
+        int visionMode = DfsEquipmentItem.activeVisionMode(head);
+        if (visionMode == DfsEquipmentItem.VISION_NIGHT) {
+            MobEffectInstance current = player.getEffect(MobEffects.NIGHT_VISION);
+            if (current == null || current.getDuration() < 220) {
+                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false, true), player);
+            }
+            return;
+        }
+
+        MobEffectInstance current = player.getEffect(MobEffects.NIGHT_VISION);
+        if (current != null && current.getAmplifier() == 0 && current.isAmbient()
+                && !current.isVisible() && current.getDuration() <= 280) {
+            player.removeEffect(MobEffects.NIGHT_VISION);
+        }
+    }
+
+    private static void tickDfsEquipment(ServerPlayer player) {
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+
+        tickHelmetVisionEffect(player, head);
+        if (equipmentFactionCount(player, Faction.GLOBAL_FORCES) >= 1 && player.tickCount % 100 == 0) {
+            regenerateEquipmentDurability(head);
+            regenerateEquipmentDurability(chest);
+        }
+        tickGlobalForcesAllyLock(player);
+        tickEquipmentStationaryFlag(player, head);
+        tickEquipmentStationaryFlag(player, chest);
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+            tickFsStationaryStacks(player, chest);
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+            tickFsStationaryStacks(player, head);
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.H09_RIOT_DODGE
+                && chestProfile != null && chestProfile.id().equals("elite_ballistic_vest")) {
+            tickH09StationaryDamage(player, head);
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.ENDURANCE_TRANSFORM) {
+            tickEnduranceHelmetTransform(player, head);
+        }
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
+                && player.level().getGameTime() > chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
+            chest.getOrCreateTag().remove(TRICK_STACKS);
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
+                && player.level().getGameTime() > head.getOrCreateTag().getLong(DICH9_UNTIL)) {
+            head.getOrCreateTag().remove(DICH9_STACKS);
+        }
+        tickMhsFury(player, head, headProfile);
+        updateEquipmentMovementBonus(player, chest, chestProfile, head, headProfile);
+        tickKingKongExecution(player);
+    }
+
+    private static void tickGlobalForcesAllyLock(ServerPlayer player) {
+        CompoundTag tag = player.getPersistentData();
+        if (equipmentFactionCount(player, Faction.GLOBAL_FORCES) < 2) {
+            clearGlobalForcesLock(tag);
+            return;
+        }
+
+        if (tag.hasUUID(GLOBAL_FORCES_LOCK_TARGET)) {
+            ServerPlayer locked = player.getServer().getPlayerList().getPlayer(tag.getUUID(GLOBAL_FORCES_LOCK_TARGET));
+            if (!isValidGlobalForcesAlly(player, locked)) {
+                tag.remove(GLOBAL_FORCES_LOCK_TARGET);
+            }
+        }
+
+        if (!player.isShiftKeyDown()) {
+            clearGlobalForcesLockProgress(tag);
+            return;
+        }
+
+        ServerPlayer target = findGlobalForcesLookTarget(player);
+        if (target == null) {
+            clearGlobalForcesLockProgress(tag);
+            return;
+        }
+
+        UUID targetId = target.getUUID();
+        int ticks = 1;
+        if (tag.hasUUID(GLOBAL_FORCES_LOCK_PROGRESS_TARGET)
+                && tag.getUUID(GLOBAL_FORCES_LOCK_PROGRESS_TARGET).equals(targetId)) {
+            ticks = tag.getInt(GLOBAL_FORCES_LOCK_PROGRESS_TICKS) + 1;
+        } else {
+            tag.putUUID(GLOBAL_FORCES_LOCK_PROGRESS_TARGET, targetId);
+        }
+        tag.putInt(GLOBAL_FORCES_LOCK_PROGRESS_TICKS, ticks);
+
+        if (ticks >= GLOBAL_FORCES_LOCK_TICKS_REQUIRED) {
+            boolean changedTarget = !tag.hasUUID(GLOBAL_FORCES_LOCK_TARGET)
+                    || !tag.getUUID(GLOBAL_FORCES_LOCK_TARGET).equals(targetId);
+            tag.putUUID(GLOBAL_FORCES_LOCK_TARGET, targetId);
+            clearGlobalForcesLockProgress(tag);
+            if (changedTarget) {
+                player.displayClientMessage(Component.translatable(
+                        "message.dealt_force_skills.global_forces.locked", target.getDisplayName()), true);
+            }
+        }
+    }
+
+    private static float tryAbsorbGlobalForcesAllyDamage(ServerPlayer victim, DamageSource source, float amount) {
+        if (amount <= 0.0F || isEquipmentBypassDamage(source)) {
+            return amount;
+        }
+        float adjusted = amount;
+        for (ServerPlayer protector : victim.serverLevel().players()) {
+            if (!isGlobalForcesProtecting(protector, victim)) {
+                continue;
+            }
+            adjusted = absorbWithGlobalForcesAllyEquipment(protector, adjusted);
+            if (adjusted <= 0.0F) {
+                return 0.0F;
+            }
+        }
+        return adjusted;
+    }
+
+    private static boolean isGlobalForcesProtecting(ServerPlayer protector, ServerPlayer victim) {
+        if (protector == victim || equipmentFactionCount(protector, Faction.GLOBAL_FORCES) < 2) {
+            return false;
+        }
+        CompoundTag tag = protector.getPersistentData();
+        return tag.hasUUID(GLOBAL_FORCES_LOCK_TARGET)
+                && tag.getUUID(GLOBAL_FORCES_LOCK_TARGET).equals(victim.getUUID())
+                && isValidGlobalForcesAlly(protector, victim);
+    }
+
+    private static float absorbWithGlobalForcesAllyEquipment(ServerPlayer protector, float amount) {
+        ItemStack head = protector.getItemBySlot(EquipmentSlot.HEAD);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        if (headProfile != null) {
+            amount = absorbWithEquipment(protector, head, headProfile, amount);
+        }
+        if (amount <= 0.0F) {
+            return 0.0F;
+        }
+        ItemStack chest = protector.getItemBySlot(EquipmentSlot.CHEST);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+        if (chestProfile != null) {
+            amount = absorbWithEquipment(protector, chest, chestProfile, amount);
+        }
+        return amount;
+    }
+
+    private static ServerPlayer findGlobalForcesLookTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        Vec3 end = eye.add(look.scale(GLOBAL_FORCES_ALLY_RANGE));
+        AABB search = player.getBoundingBox().expandTowards(look.scale(GLOBAL_FORCES_ALLY_RANGE))
+                .inflate(GLOBAL_FORCES_LOCK_RAY_RADIUS);
+        ServerPlayer best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (ServerPlayer target : player.serverLevel().getEntitiesOfClass(ServerPlayer.class, search,
+                target -> isValidGlobalForcesAlly(player, target) && player.hasLineOfSight(target))) {
+            double distanceToRay = distanceToSegment(target.getBoundingBox().getCenter(), eye, end);
+            if (distanceToRay > GLOBAL_FORCES_LOCK_RAY_RADIUS) {
+                continue;
+            }
+            double eyeDistance = eye.distanceToSqr(target.getEyePosition());
+            if (eyeDistance < bestDistance) {
+                bestDistance = eyeDistance;
+                best = target;
+            }
+        }
+        return best;
+    }
+
+    private static boolean isValidGlobalForcesAlly(ServerPlayer player, ServerPlayer target) {
+        return target != null
+                && target != player
+                && target.isAlive()
+                && !target.isSpectator()
+                && target.level() == player.level()
+                && player.distanceToSqr(target) <= GLOBAL_FORCES_ALLY_RANGE * GLOBAL_FORCES_ALLY_RANGE
+                && player.isAlliedTo(target);
+    }
+
+    private static double distanceToSegment(Vec3 point, Vec3 start, Vec3 end) {
+        Vec3 segment = end.subtract(start);
+        double lengthSqr = segment.lengthSqr();
+        if (lengthSqr < 1.0E-6D) {
+            return point.distanceTo(start);
+        }
+        double t = point.subtract(start).dot(segment) / lengthSqr;
+        t = Math.max(0.0D, Math.min(1.0D, t));
+        return point.distanceTo(start.add(segment.scale(t)));
+    }
+
+    private static void clearGlobalForcesLock(CompoundTag tag) {
+        tag.remove(GLOBAL_FORCES_LOCK_TARGET);
+        clearGlobalForcesLockProgress(tag);
+    }
+
+    private static void clearGlobalForcesLockProgress(CompoundTag tag) {
+        tag.remove(GLOBAL_FORCES_LOCK_PROGRESS_TARGET);
+        tag.remove(GLOBAL_FORCES_LOCK_PROGRESS_TICKS);
+    }
+
+    private static void regenerateEquipmentDurability(ItemStack stack) {
+        if (stack.isEmpty() || !stack.isDamageableItem() || !stack.isDamaged()) {
+            return;
+        }
+        int repair = Math.max(1, stack.getMaxDamage() / 100);
+        stack.setDamageValue(Math.max(0, stack.getDamageValue() - repair));
+    }
+
+    private static void tickFsStationaryStacks(ServerPlayer player, ItemStack stack) {
+        CompoundTag tag = stack.getOrCreateTag();
+        Vec3 position = player.position();
+        if (!tag.contains(FS_LAST_X)) {
+            tag.putDouble(FS_LAST_X, position.x);
+            tag.putDouble(FS_LAST_Y, position.y);
+            tag.putDouble(FS_LAST_Z, position.z);
+            return;
+        }
+
+        Vec3 previous = new Vec3(tag.getDouble(FS_LAST_X), tag.getDouble(FS_LAST_Y), tag.getDouble(FS_LAST_Z));
+        boolean stationary = previous.distanceToSqr(position) < 0.0025D;
+        tag.putDouble(FS_LAST_X, position.x);
+        tag.putDouble(FS_LAST_Y, position.y);
+        tag.putDouble(FS_LAST_Z, position.z);
+
+        if (stationary) {
+            int stationaryTicks = tag.getInt(FS_STATIONARY_TICKS) + 1;
+            tag.putInt(FS_STATIONARY_TICKS, stationaryTicks);
+            tag.putInt(FS_MOVING_TICKS, 0);
+            if (stationaryTicks >= 5 * 20) {
+                tag.putInt(FS_STATIONARY_STACKS, Math.min(8, tag.getInt(FS_STATIONARY_STACKS) + 1));
+                tag.putInt(FS_STATIONARY_TICKS, 0);
+            }
+        } else {
+            int movingTicks = tag.getInt(FS_MOVING_TICKS) + 1;
+            tag.putInt(FS_MOVING_TICKS, movingTicks);
+            tag.putInt(FS_STATIONARY_TICKS, 0);
+            if (movingTicks >= 10 * 20) {
+                tag.putInt(FS_STATIONARY_STACKS, Math.max(0, tag.getInt(FS_STATIONARY_STACKS) - 1));
+                tag.putInt(FS_MOVING_TICKS, 0);
+            }
+        }
+    }
+
+    private static void tickEquipmentStationaryFlag(ServerPlayer player, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        CompoundTag tag = stack.getOrCreateTag();
+        Vec3 position = player.position();
+        if (!tag.contains(EQUIPMENT_LAST_X)) {
+            tag.putDouble(EQUIPMENT_LAST_X, position.x);
+            tag.putDouble(EQUIPMENT_LAST_Y, position.y);
+            tag.putDouble(EQUIPMENT_LAST_Z, position.z);
+            tag.putBoolean(EQUIPMENT_STATIONARY, true);
+            return;
+        }
+        Vec3 previous = new Vec3(tag.getDouble(EQUIPMENT_LAST_X), tag.getDouble(EQUIPMENT_LAST_Y), tag.getDouble(EQUIPMENT_LAST_Z));
+        tag.putDouble(EQUIPMENT_LAST_X, position.x);
+        tag.putDouble(EQUIPMENT_LAST_Y, position.y);
+        tag.putDouble(EQUIPMENT_LAST_Z, position.z);
+        tag.putBoolean(EQUIPMENT_STATIONARY, previous.distanceToSqr(position) < 0.0025D);
+    }
+
+    private static void tickH09StationaryDamage(ServerPlayer player, ItemStack head) {
+        CompoundTag tag = head.getOrCreateTag();
+        if (!tag.getBoolean(EQUIPMENT_STATIONARY)) {
+            tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, 0);
+            return;
+        }
+        int ticks = tag.getInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS) + 1;
+        if (ticks < 20) {
+            tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, ticks);
+            return;
+        }
+        tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, 0);
+        player.hurt(player.damageSources().generic(), Math.max(0.5F, player.getMaxHealth() * 0.01F));
+    }
+
+    private static void tickEnduranceHelmetTransform(ServerPlayer player, ItemStack head) {
+        CompoundTag tag = head.getOrCreateTag();
+        if (head.isDamaged()) {
+            tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, 0);
+            return;
+        }
+        int wornTicks = tag.getInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS) + 1;
+        if (wornTicks < 180 * 20) {
+            tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, wornTicks);
+            return;
+        }
+        ItemStack replacement = new ItemStack(ModItems.GN_HEAVY_NIGHT_VISION_HELMET.get());
+        if (head.hasTag()) {
+            replacement.setTag(head.getTag().copy());
+            replacement.setDamageValue(0);
+        }
+        player.setItemSlot(EquipmentSlot.HEAD, replacement);
+    }
+
+    private static void tickMhsFury(ServerPlayer player, ItemStack head, Profile headProfile) {
+        long now = player.level().getGameTime();
+        boolean active = headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+                && now <= head.getOrCreateTag().getLong(MHS_FURY_UNTIL);
+
+        if (!active && headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+                && isTaczGunStack(player.getMainHandItem()) && hasMhsFuryTriggerTarget(player)) {
+            CompoundTag tag = head.getOrCreateTag();
+            tag.putLong(MHS_FURY_UNTIL, now + MHS_FURY_DURATION_TICKS);
+            tag.putInt(MHS_FURY_SLOT, player.getInventory().selected);
+            active = true;
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.mhs_fury.started"), true);
+        }
+
+        if (!active) {
+            MHS_TACTICAL_AMMO_SNAPSHOTS.remove(player.getUUID());
+            return;
+        }
+
+        lockMhsFuryHotbar(player, head);
+        Vec3 velocity = player.getDeltaMovement();
+        player.setDeltaMovement(0.0D, Math.min(velocity.y, 0.0D), 0.0D);
+        player.setSprinting(false);
+        player.hurtMarked = true;
+        if (player.containerMenu != player.inventoryMenu) {
+            player.closeContainer();
+        }
+
+        ItemStack gun = player.getMainHandItem();
+        if (isTaczGunStack(gun)) {
+            rememberMhsTaczAmmo(player, gun, now + 5L);
+            restoreMhsTaczAmmo(player, gun, now);
+        }
+    }
+
+    private static boolean hasMhsFuryTriggerTarget(ServerPlayer player) {
+        AABB area = player.getBoundingBox().inflate(MHS_FURY_TRIGGER_RANGE);
+        for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, area,
+                entity -> entity != player && entity.isAlive() && !entity.isSpectator()
+                        && entity.getType() != EntityType.ARMOR_STAND)) {
+            if (target.distanceToSqr(player) <= MHS_FURY_TRIGGER_RANGE * MHS_FURY_TRIGGER_RANGE) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void lockMhsFuryHotbar(ServerPlayer player, ItemStack head) {
+        CompoundTag tag = head.getOrCreateTag();
+        int lockedSlot = tag.contains(MHS_FURY_SLOT) ? tag.getInt(MHS_FURY_SLOT) : player.getInventory().selected;
+        if (lockedSlot < 0 || lockedSlot > 8) {
+            lockedSlot = player.getInventory().selected;
+            tag.putInt(MHS_FURY_SLOT, lockedSlot);
+        }
+        if (player.getInventory().selected != lockedSlot) {
+            player.getInventory().selected = lockedSlot;
+            player.connection.send(new ClientboundSetCarriedItemPacket(lockedSlot));
+        }
+    }
+
+    private static boolean isMhsFuryActive(Player player) {
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        return headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+                && player.level().getGameTime() <= head.getOrCreateTag().getLong(MHS_FURY_UNTIL);
+    }
+
+    private static void rememberMhsTaczAmmo(ServerPlayer player, ItemStack gun, long expiresAt) {
+        CompoundTag tag = gun.getOrCreateTag();
+        String gunId = mhsGunId(gun);
+        int ammoCount = tag.getInt(TACZ_GUN_CURRENT_AMMO_COUNT_TAG);
+        boolean bulletInBarrel = tag.getBoolean(TACZ_GUN_HAS_BULLET_IN_BARREL_TAG);
+        TaczAmmoSnapshot existing = MHS_TACTICAL_AMMO_SNAPSHOTS.get(player.getUUID());
+        if (existing != null && existing.gunId().equals(gunId)) {
+            if (existing.ammoCount() > ammoCount) {
+                ammoCount = existing.ammoCount();
+                bulletInBarrel = existing.bulletInBarrel();
+            } else if (existing.ammoCount() == ammoCount) {
+                bulletInBarrel = bulletInBarrel || existing.bulletInBarrel();
+            }
+        }
+        MHS_TACTICAL_AMMO_SNAPSHOTS.put(player.getUUID(),
+                new TaczAmmoSnapshot(gunId, ammoCount, bulletInBarrel, expiresAt));
+    }
+
+    private static void restoreMhsTaczAmmo(ServerPlayer player, ItemStack gun, long now) {
+        TaczAmmoSnapshot snapshot = MHS_TACTICAL_AMMO_SNAPSHOTS.get(player.getUUID());
+        if (snapshot == null) {
+            return;
+        }
+        if (now > snapshot.expiresAt() || !snapshot.gunId().equals(mhsGunId(gun))) {
+            MHS_TACTICAL_AMMO_SNAPSHOTS.remove(player.getUUID());
+            return;
+        }
+        CompoundTag tag = gun.getOrCreateTag();
+        if (tag.getInt(TACZ_GUN_CURRENT_AMMO_COUNT_TAG) < snapshot.ammoCount()) {
+            tag.putInt(TACZ_GUN_CURRENT_AMMO_COUNT_TAG, snapshot.ammoCount());
+        }
+        if (snapshot.bulletInBarrel() && !tag.getBoolean(TACZ_GUN_HAS_BULLET_IN_BARREL_TAG)) {
+            tag.putBoolean(TACZ_GUN_HAS_BULLET_IN_BARREL_TAG, true);
+        }
+    }
+
+    private static String mhsGunId(ItemStack gun) {
+        CompoundTag tag = gun.getTag();
+        if (tag != null && tag.contains(TACZ_GUN_ID_TAG)) {
+            String gunId = tag.getString(TACZ_GUN_ID_TAG);
+            if (!gunId.isEmpty()) {
+                return gunId;
+            }
+        }
+        return gun.getItem().getClass().getName();
+    }
+
+    private static boolean isTaczGunStack(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag != null && tag.contains(TACZ_GUN_ID_TAG)) {
+            return true;
+        }
+        return stack.getItem().getClass().getName().startsWith("com.tacz.guns.");
+    }
+
+    private static void updateEquipmentMovementBonus(ServerPlayer player, ItemStack chest, Profile chestProfile,
+                                                     ItemStack head, Profile headProfile) {
+        var attr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr == null) {
+            return;
+        }
+        AttributeModifier existing = attr.getModifier(EQUIPMENT_ASSAULT_MOVEMENT_UUID);
+        if (existing != null) {
+            attr.removeModifier(EQUIPMENT_ASSAULT_MOVEMENT_UUID);
+        }
+        AttributeModifier existingRoot = attr.getModifier(EQUIPMENT_MHS_ROOT_UUID);
+        if (existingRoot != null) {
+            attr.removeModifier(EQUIPMENT_MHS_ROOT_UUID);
+        }
+
+        double bonus = 0.0D;
+        long now = player.level().getGameTime();
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
+                && now <= chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
+            bonus += chest.getOrCreateTag().getInt(TRICK_STACKS) * 0.05D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
+                && now <= head.getOrCreateTag().getLong(DICH9_UNTIL)) {
+            bonus += head.getOrCreateTag().getInt(DICH9_STACKS) * 0.04D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+            bonus += 0.05D;
+        }
+        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+            bonus += 0.10D;
+        }
+        if (bonus > 0.0001D) {
+            attr.addTransientModifier(new AttributeModifier(
+                    EQUIPMENT_ASSAULT_MOVEMENT_UUID, "dfs_equipment_assault_movement", bonus, AttributeModifier.Operation.MULTIPLY_TOTAL
+            ));
+        }
+        if (isMhsFuryActive(player)) {
+            attr.addTransientModifier(new AttributeModifier(
+                    EQUIPMENT_MHS_ROOT_UUID, "dfs_mhs_fury_root", -1.0D, AttributeModifier.Operation.MULTIPLY_TOTAL
+            ));
+        }
+    }
+
+    private static void addTimedEquipmentStacks(ItemStack stack, String stacksKey, String untilKey,
+                                                long now, int maxStacks, long durationTicks) {
+        CompoundTag tag = stack.getOrCreateTag();
+        int stacks = now <= tag.getLong(untilKey) ? tag.getInt(stacksKey) : 0;
+        tag.putInt(stacksKey, Math.min(maxStacks, stacks + 1));
+        tag.putLong(untilKey, now + durationTicks);
+    }
+
+    private static double equipmentTaczAssaultMultiplier(LivingEntity entity) {
+        if (!(entity instanceof Player player)) {
+            return 1.0D;
+        }
+        double multiplier = 1.0D;
+        long now = entity.level().getGameTime();
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
+                && now <= chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
+            multiplier *= 1.0D + chest.getOrCreateTag().getInt(TRICK_STACKS) * 0.04D;
+        }
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
+                && now <= head.getOrCreateTag().getLong(DICH9_UNTIL)) {
+            multiplier *= 1.0D + head.getOrCreateTag().getInt(DICH9_STACKS) * 0.06D;
+        }
+        if (isMhsFuryActive(player)) {
+            multiplier *= 2.0D;
+        }
+        return multiplier;
+    }
+
+    private static void duplicateDropsForEquipment(LivingDropsEvent event, ServerPlayer killer) {
+        double chance = equipmentLootDuplicateChance(killer);
+        if (chance <= 0.0D || killer.getRandom().nextDouble() >= chance) {
+            return;
+        }
+        for (ItemEntity original : new ArrayList<>(event.getDrops())) {
+            ItemStack copy = original.getItem().copy();
+            if (!copy.isEmpty()) {
+                LivingEntity entity = event.getEntity();
+                event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(), copy));
+            }
+        }
+    }
+
+    private static void duplicateLivingDrops(LivingDropsEvent event, int extraCopies) {
+        if (extraCopies <= 0) {
+            return;
+        }
+        LivingEntity entity = event.getEntity();
+        List<ItemEntity> originals = new ArrayList<>(event.getDrops());
+        for (int copyIndex = 0; copyIndex < extraCopies; copyIndex++) {
+            for (ItemEntity original : originals) {
+                ItemStack copy = original.getItem().copy();
+                if (!copy.isEmpty()) {
+                    event.getDrops().add(new ItemEntity(
+                            entity.level(), entity.getX(), entity.getY(), entity.getZ(), copy));
+                }
+            }
+        }
+    }
+
+    private static double equipmentLootDuplicateChance(ServerPlayer player) {
+        if (equipmentFactionCount(player, Faction.GTI) >= 1) {
+            return 1.0D;
+        }
+        double chance = 0.0D;
+        Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
+        Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
+        if (chest != null && chest.ability() == SpecialAbility.LOOT_DUPLICATE) {
+            chance = Math.max(chance, chest.lootDuplicateChance());
+        }
+        if (head != null && head.ability() == SpecialAbility.LOOT_DUPLICATE) {
+            chance = Math.max(chance, head.lootDuplicateChance());
+        }
+        return chance;
+    }
+
+    private static void recordRedOwlRevengeOnDeath(ServerPlayer player, DamageSource source) {
+        Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
+        Entity attacker = source.getEntity();
+        if (chest != null && chest.ability() == SpecialAbility.RED_OWL_REVENGE && attacker != null) {
+            player.getPersistentData().putString(RED_OWL_REVENGE_TYPE, attacker.getType().getDescriptionId());
+        }
+    }
+
+    private static double equipmentActionSpeedMultiplier(LivingEntity entity) {
+        if (!(entity instanceof Player player)) {
+            return 1.0D;
+        }
+        boolean hvkTwoPiece = equipmentFactionCount(player, Faction.HVK) >= 2;
+        double multiplier = 1.0D;
+        Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
+        Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
+        if (chest != null) {
+            multiplier *= chest.actionSpeedMultiplier(hvkTwoPiece);
+        }
+        if (head != null) {
+            multiplier *= head.actionSpeedMultiplier(hvkTwoPiece);
+        }
+        return Math.max(0.1D, multiplier);
+    }
+
+    private static double normalizedUseSpeedMultiplier(double multiplier) {
+        if (!Double.isFinite(multiplier)) {
+            return 1.0D;
+        }
+        return Mth.clamp(multiplier, 0.05D, 20.0D);
+    }
+
+    private static boolean shouldAdjustUseDuration(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (id == null) {
+            return false;
+        }
+        return "minecraft".equals(id.getNamespace()) || DealtForceSkillsMod.MODID.equals(id.getNamespace());
+    }
+
+    private static int equipmentFactionCount(Player player, Faction faction) {
+        int count = 0;
+        Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
+        Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
+        if (chest != null && chest.faction() == faction) {
+            count++;
+        }
+        if (head != null && head.faction() == faction) {
+            count++;
+        }
+        return count;
+    }
+
+    private static boolean isEquipmentBypassDamage(DamageSource source) {
+        return source.is(DamageTypes.FALL)
+                || source.is(DamageTypes.FELL_OUT_OF_WORLD)
+                || source.is(DamageTypes.MAGIC)
+                || source.is(DamageTypes.INDIRECT_MAGIC);
+    }
+
+    private static boolean isEquipmentCoveredHit(Player player, DamageSource source, Profile profile) {
+        if (profile == null) {
+            return false;
+        }
+        Double ratio = estimateEquipmentHitHeightRatio(player, source);
+        if (ratio == null) {
+            return false;
+        }
+        if (profile.isHelmet()) {
+            return ratio >= 0.78D;
+        }
+        return switch (profile.coverageKey()) {
+            case "upper_torso" -> ratio >= 0.46D && ratio < 0.74D;
+            case "full_torso" -> ratio >= 0.40D && ratio < 0.74D;
+            case "full_torso_arms" -> ratio >= 0.36D && ratio < 0.80D;
+            default -> ratio >= 0.40D && ratio < 0.74D;
+        };
+    }
+
+    private static Double estimateEquipmentHitHeightRatio(Player player, DamageSource source) {
+        if (isMeleeDamage(source, source.getEntity())) {
+            return 0.55D;
+        }
+
+        Vec3 impact = source.getSourcePosition();
+        if (impact != null && isNearPlayerHitbox(player, impact, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
+            return playerHeightRatio(player, impact.y);
+        }
+
+        Entity direct = source.getDirectEntity();
+        if (direct instanceof Projectile && direct != player) {
+            Double ratio = estimateProjectileHitHeightRatio(player, source, direct);
+            if (ratio != null) {
+                return ratio;
+            }
+        }
+
+        if (isLikelyRangedDamage(source)) {
+            Double ratio = estimateRangedAttackerHitHeightRatio(player, source);
+            if (ratio != null) {
+                return ratio;
+            }
+        }
+        return null;
+    }
+
+    private static Double estimateProjectileHitHeightRatio(Player player, DamageSource source, Entity projectile) {
+        Vec3 projectileCenter = projectile.getBoundingBox().getCenter();
+        if (isNearPlayerHitbox(player, projectileCenter, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
+            return playerHeightRatio(player, projectileCenter.y);
+        }
+
+        Vec3 motion = projectile.getDeltaMovement();
+        if (motion.lengthSqr() > 0.000001D) {
+            Double ratio = rayHitHeightRatio(player, projectileCenter.subtract(motion), projectileCenter.add(motion), EQUIPMENT_RANGED_TRACE_INFLATE);
+            if (ratio != null) {
+                return ratio;
+            }
+        }
+
+        Entity attacker = source.getEntity();
+        if (attacker != null && attacker != player && attacker != projectile) {
+            return rayHitHeightRatio(player, entityAimOrigin(attacker), projectileCenter, EQUIPMENT_RANGED_TRACE_INFLATE);
+        }
+        return null;
+    }
+
+    private static Double estimateRangedAttackerHitHeightRatio(Player player, DamageSource source) {
+        Entity attacker = source.getEntity();
+        if (!(attacker instanceof LivingEntity) || attacker == player) {
+            return null;
+        }
+
+        Vec3 from = entityAimOrigin(attacker);
+        Vec3 look = attacker.getLookAngle();
+        if (look.lengthSqr() > 0.000001D) {
+            double distance = Math.max(6.0D, from.distanceTo(player.getBoundingBox().getCenter()) + 2.0D);
+            Double ratio = rayHitHeightRatio(player, from, from.add(look.normalize().scale(distance)), EQUIPMENT_RANGED_TRACE_INFLATE);
+            if (ratio != null) {
+                return ratio;
+            }
+        }
+
+        Vec3 impact = source.getSourcePosition();
+        if (impact != null && impact.distanceToSqr(from) > 0.01D) {
+            return rayHitHeightRatio(player, from, impact, EQUIPMENT_RANGED_TRACE_INFLATE);
+        }
+        return null;
+    }
+
+    private static boolean isNearPlayerHitbox(Player player, Vec3 pos, double inflate) {
+        return player.getBoundingBox().inflate(inflate).contains(pos);
+    }
+
+    private static Double rayHitHeightRatio(Player player, Vec3 from, Vec3 target) {
+        return rayHitHeightRatio(player, from, target, 0.08D);
+    }
+
+    private static Double rayHitHeightRatio(Player player, Vec3 from, Vec3 target, double inflate) {
+        Vec3 delta = target.subtract(from);
+        double length = delta.length();
+        if (length < 0.0001D) {
+            return null;
+        }
+        Vec3 end = from.add(delta.scale((length + 1.0D) / length));
+        Optional<Vec3> hit = player.getBoundingBox().inflate(inflate).clip(from, end);
+        return hit.map(vec3 -> playerHeightRatio(player, vec3.y)).orElse(null);
+    }
+
+    private static double playerHeightRatio(Player player, double y) {
+        return Mth.clamp((y - player.getY()) / Math.max(0.001D, player.getBbHeight()), 0.0D, 1.0D);
+    }
+
+    private static boolean isLikelyHeadDamage(Player player, DamageSource source) {
+        Double ratio = estimateEquipmentHitHeightRatio(player, source);
+        return ratio != null && ratio >= 0.72D;
+    }
+
+    private static boolean isMeleeDamage(DamageSource source, Entity expectedAttacker) {
+        Entity attacker = source.getEntity();
+        Entity direct = source.getDirectEntity();
+        if (!(attacker instanceof LivingEntity) || direct instanceof Projectile || isLikelyRangedDamage(source)) {
+            return false;
+        }
+        return expectedAttacker == null || attacker == expectedAttacker;
+    }
+
+    private static boolean isLikelyRangedDamage(DamageSource source) {
+        Entity direct = source.getDirectEntity();
+        if (direct instanceof Projectile || source.is(TACZ_BULLETS_TAG)) {
+            return true;
+        }
+        String msgId = source.getMsgId();
+        return msgId != null
+                && (msgId.contains("bullet") || msgId.contains("projectile") || msgId.contains("arrow"));
+    }
+
+    private static void tryStartKingKongExecution(ServerPlayer player, ItemStack chest, LivingEntity target) {
+        CompoundTag chestTag = chest.getOrCreateTag();
+        long now = player.level().getGameTime();
+        if (now < chestTag.getLong(KING_KONG_COOLDOWN_UNTIL)) {
+            return;
+        }
+        chestTag.putLong(KING_KONG_COOLDOWN_UNTIL, now + 60L * 20L);
+        CompoundTag playerTag = player.getPersistentData();
+        playerTag.putInt(KING_KONG_TARGET_ID, target.getId());
+        playerTag.putLong(KING_KONG_STRIKE_TICK, now + 20L);
+
+        Vec3 direction = player.position().subtract(target.position());
+        if (direction.lengthSqr() < 0.0001D) {
+            direction = target.getLookAngle().reverse();
+        }
+        Vec3 offset = direction.normalize().scale(1.3D);
+        Vec3 destination = target.position().add(offset);
+        player.teleportTo(destination.x, target.getY(), destination.z);
+        lookAt(player, target);
+        lookAt(target, player);
+    }
+
+    private static void tickKingKongExecution(ServerPlayer player) {
+        CompoundTag tag = player.getPersistentData();
+        long strikeTick = tag.getLong(KING_KONG_STRIKE_TICK);
+        if (strikeTick <= 0L || player.level().getGameTime() < strikeTick) {
+            return;
+        }
+        int targetId = tag.getInt(KING_KONG_TARGET_ID);
+        tag.remove(KING_KONG_TARGET_ID);
+        tag.remove(KING_KONG_STRIKE_TICK);
+        if (!(player.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        Entity entity = serverLevel.getEntity(targetId);
+        if (!(entity instanceof LivingEntity target) || !target.isAlive() || target == player
+                || target.distanceToSqr(player) > 16.0D) {
+            return;
+        }
+        target.hurt(player.damageSources().playerAttack(player), Math.max(1.0F, target.getHealth() * 20.0F));
+    }
+
+    private static void lookAt(LivingEntity entity, LivingEntity target) {
+        double dx = target.getX() - entity.getX();
+        double dz = target.getZ() - entity.getZ();
+        float yaw = (float) (Mth.atan2(dz, dx) * (180F / Math.PI)) - 90.0F;
+        entity.setYRot(yaw);
+        entity.setYHeadRot(yaw);
+        entity.setYBodyRot(yaw);
+    }
+
+    private static void lookAtAim(LivingEntity entity, LivingEntity target) {
+        Vec3 eye = entity.getEyePosition();
+        Vec3 targetEye = target.getEyePosition();
+        double dx = targetEye.x - eye.x;
+        double dy = targetEye.y - eye.y;
+        double dz = targetEye.z - eye.z;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        if (horizontal < 0.0001D) {
+            return;
+        }
+        float yaw = (float) (Mth.atan2(dz, dx) * (180F / Math.PI)) - 90.0F;
+        float pitch = (float) -(Mth.atan2(dy, horizontal) * (180F / Math.PI));
+        entity.setYRot(yaw);
+        entity.setXRot(Mth.clamp(pitch, -89.0F, 89.0F));
+        entity.setYHeadRot(yaw);
+        entity.setYBodyRot(yaw);
+    }
+
+    private static void spawnEquipmentSupport(ServerPlayer player, LivingEntity target, int count, boolean boosted) {
+        spawnEquipmentSupport(player, target, count, boosted, false);
+    }
+
+    private static void spawnEquipmentSupport(ServerPlayer player, LivingEntity target, int count, boolean boosted, boolean ironOnly) {
+        if (!(player.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        for (int i = 0; i < count; i++) {
+            Mob mob = ironOnly || player.getRandom().nextBoolean()
+                    ? EntityType.IRON_GOLEM.create(serverLevel)
+                    : EntityType.SNOW_GOLEM.create(serverLevel);
+            if (mob == null) {
+                continue;
+            }
+            double angle = player.getRandom().nextDouble() * Math.PI * 2.0D;
+            double radius = 1.5D + player.getRandom().nextDouble() * 2.0D;
+            mob.moveTo(player.getX() + Math.cos(angle) * radius, player.getY(), player.getZ() + Math.sin(angle) * radius,
+                    player.getRandom().nextFloat() * 360.0F, 0.0F);
+            if (boosted) {
+                var maxHealth = mob.getAttribute(Attributes.MAX_HEALTH);
+                if (maxHealth != null) {
+                    maxHealth.setBaseValue(Math.max(maxHealth.getBaseValue(), player.getAttributeValue(Attributes.MAX_HEALTH) * supportAttributeMultiplier(player)));
+                }
+                var attackDamage = mob.getAttribute(Attributes.ATTACK_DAMAGE);
+                if (attackDamage != null) {
+                    attackDamage.setBaseValue(Math.max(attackDamage.getBaseValue(), player.getAttributeValue(Attributes.ATTACK_DAMAGE) * supportAttributeMultiplier(player)));
+                }
+                var movementSpeed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+                if (movementSpeed != null) {
+                    movementSpeed.setBaseValue(Math.max(movementSpeed.getBaseValue(), player.getAttributeValue(Attributes.MOVEMENT_SPEED) * supportAttributeMultiplier(player)));
+                }
+                var armor = mob.getAttribute(Attributes.ARMOR);
+                if (armor != null) {
+                    armor.setBaseValue(Math.max(armor.getBaseValue(), player.getAttributeValue(Attributes.ARMOR) * supportAttributeMultiplier(player)));
+                }
+                var toughness = mob.getAttribute(Attributes.ARMOR_TOUGHNESS);
+                if (toughness != null) {
+                    toughness.setBaseValue(Math.max(toughness.getBaseValue(), player.getAttributeValue(Attributes.ARMOR_TOUGHNESS) * supportAttributeMultiplier(player)));
+                }
+                mob.setHealth(mob.getMaxHealth());
+            }
+            if (target != null && target.isAlive() && target != player) {
+                mob.setTarget(target);
+            }
+            serverLevel.addFreshEntity(mob);
+        }
+    }
+
+    private static double supportAttributeMultiplier(ServerPlayer player) {
+        Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
+        double multiplier = 5.0D;
+        if (head != null && head.ability() == SpecialAbility.H70_FOLLOWER_BOOST) {
+            multiplier *= 2.0D;
+        } else if (head != null && head.ability() == SpecialAbility.H70_NIGHT_FOLLOWER_BOOST) {
+            multiplier *= 3.5D;
+        }
+        return multiplier;
+    }
+
+
+    private static Entity damageSourceEntity(DamageSource source) {
+        Entity attacker = source.getDirectEntity();
+        return attacker != null ? attacker : source.getEntity();
+    }
+
+    private static boolean isPlayerSourcedDamage(DamageSource source) {
+        if (source.getEntity() instanceof Player || source.getDirectEntity() instanceof Player) {
+            return true;
+        }
+        return source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player;
+    }
+
+    private static boolean effectApplies(LivingEntity entity, MobEffect effect) {
+        return entity.hasEffect(effect) && !ModItemEffectHelper.shouldSuppressHarmfulImpact(entity, effect);
+    }
+
+    private static MobEffectInstance activeEffectInstance(LivingEntity entity, MobEffect effect) {
+        MobEffectInstance instance = entity.getEffect(effect);
+        return instance != null && !ModItemEffectHelper.shouldSuppressHarmfulImpact(entity, effect) ? instance : null;
+    }
+
+    private static boolean suppressesPotionDamage(Player player, DamageSource source) {
+        return player.hasEffect(ModEffects.PAIN_RELIEF.get())
+                && (source.is(DamageTypes.MAGIC)
+                || source.is(DamageTypes.INDIRECT_MAGIC)
+                || source.is(DamageTypes.WITHER)
+                || source.is(DamageTypes.STARVE));
+    }
+
+    private static boolean shouldSonicShockSkipAction(LivingEntity entity) {
+        MobEffectInstance effect = activeEffectInstance(entity, ModEffects.SONIC_SHOCK.get());
+        if (effect == null) {
+            return false;
+        }
+        int period = effect.getAmplifier() >= 1 ? 4 : 2;
+        return Math.floorMod(entity.tickCount, period) != 0;
+    }
+
+    private static boolean shouldMorseShockSkipAction(LivingEntity entity) {
+        MobEffectInstance effect = activeEffectInstance(entity, ModEffects.MORSE_STRONG_SHOCK.get());
+        if (effect == null) {
+            return false;
+        }
+        int period = effect.getAmplifier() >= 1 ? 4 : 2;
+        return Math.floorMod(entity.tickCount, period) != 0;
+    }
+
+    private static boolean isExplosionDamage(DamageSource source) {
+        return source.is(DamageTypes.EXPLOSION) || source.is(DamageTypes.PLAYER_EXPLOSION);
+    }
+
+    private static void tryAwardCoarseSalt(Player player, Level level, BlockPos pos, int fortune) {
+        if (player == null || !level.getBiome(pos).is(BiomeTags.IS_OCEAN)) {
+            return;
+        }
+        float chance = Math.min(1.0F, 0.05F + 0.10F * Math.max(0, fortune));
+        if (player.getRandom().nextFloat() >= chance) {
+            return;
+        }
+        ItemStack salt = new ItemStack(ModItems.COARSE_SALT.get());
+        if (!player.addItem(salt)) {
+            player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), salt));
+        }
+    }
+
+    private static void tryAwardPremiumCoffeeBeans(Player player, Level level, BlockState state, int fortune) {
+        if (player == null || !state.is(Blocks.COCOA) || state.getValue(CocoaBlock.AGE) < 2) {
+            return;
+        }
+        int bonusLevel = premiumCoffeeBonusLevel(player, fortune);
+        double chance = Math.min(1.0D, PREMIUM_COFFEE_DROP_BASE + bonusLevel * PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL);
+        if (player.getRandom().nextDouble() >= chance) {
+            return;
+        }
+        giveOrDrop(player, new ItemStack(ModItems.PREMIUM_COFFEE_BEANS.get()));
+    }
+
+    private static void tryDuplicateNewRecruitMiningDrops(Player player, Level level, BlockState state, BlockPos pos) {
+        if (!(level instanceof ServerLevel serverLevel) || player == null || player.isCreative()
+                || !serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)
+                || !hasEquipmentAbility(player, SpecialAbility.NEW_RECRUIT)
+                || player.getRandom().nextDouble() >= NEW_RECRUIT_MINING_DUPLICATE_CHANCE) {
+            return;
+        }
+        var drops = Block.getDrops(state, serverLevel, pos, serverLevel.getBlockEntity(pos), player, player.getMainHandItem());
+        for (ItemStack stack : drops) {
+            if (!stack.isEmpty()) {
+                serverLevel.addFreshEntity(new ItemEntity(serverLevel,
+                        pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, stack.copy()));
+            }
+        }
+    }
+
+    private static void tryDuplicateUndeadExplorerMiningDrops(
+            Player player,
+            Level level,
+            BlockState state,
+            BlockPos pos
+    ) {
+        if (!(player instanceof ServerPlayer serverPlayer)
+                || !(level instanceof ServerLevel serverLevel)
+                || player.isCreative()
+                || !UndeadStateManager.isUndead(player)
+                || UndeadStateManager.profession(player) != UndeadProfession.EXPLORER
+                || !serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
+            return;
+        }
+        for (ItemStack stack : Block.getDrops(
+                state,
+                serverLevel,
+                pos,
+                serverLevel.getBlockEntity(pos),
+                serverPlayer,
+                player.getMainHandItem())) {
+            if (!stack.isEmpty()) {
+                serverLevel.addFreshEntity(new ItemEntity(
+                        serverLevel,
+                        pos.getX() + 0.5D,
+                        pos.getY() + 0.5D,
+                        pos.getZ() + 0.5D,
+                        stack.copy()
+                ));
+            }
+        }
+    }
+
+    private static void tryDuplicateUndeadExplorerContainerLoot(PlayerInteractEvent.RightClickBlock event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || !UndeadStateManager.isUndead(player)
+                || UndeadStateManager.profession(player) != UndeadProfession.EXPLORER
+                || !(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        BlockEntity blockEntity = level.getBlockEntity(event.getPos());
+        if (!(blockEntity instanceof RandomizableContainerBlockEntity)
+                || !(blockEntity instanceof Container)) {
+            return;
+        }
+        CompoundTag saved = blockEntity.saveWithoutMetadata();
+        CompoundTag persistent = blockEntity.getPersistentData();
+        if (!saved.contains("LootTable", net.minecraft.nbt.Tag.TAG_STRING)
+                || persistent.getBoolean(UNDEAD_EXPLORER_LOOT_CLAIMED)) {
+            return;
+        }
+        persistent.putBoolean(UNDEAD_EXPLORER_LOOT_CLAIMED, true);
+        blockEntity.setChanged();
+        BlockPos pos = event.getPos().immutable();
+        level.getServer().tell(new TickTask(level.getServer().getTickCount() + 1, () -> {
+            BlockEntity current = level.getBlockEntity(pos);
+            if (!(current instanceof Container container)) {
+                return;
+            }
+            for (int slot = 0; slot < container.getContainerSize(); slot++) {
+                ItemStack stack = container.getItem(slot);
+                if (stack.isEmpty()) {
+                    continue;
+                }
+                ItemStack copy = stack.copy();
+                if (!player.getInventory().add(copy)) {
+                    player.drop(copy, false);
+                }
+            }
+        }));
+    }
+
+    private static boolean hasEquipmentAbility(Player player, SpecialAbility ability) {
+        Profile chestProfile = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
+        if (chestProfile != null && chestProfile.ability() == ability) {
+            return true;
+        }
+        Profile headProfile = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
+        return headProfile != null && headProfile.ability() == ability;
+    }
+
+    private static void handleFrugalDisassemblyCraft(PlayerEvent.ItemCraftedEvent event) {
+        Player player = event.getEntity();
+        if (player.level().isClientSide) {
+            return;
+        }
+        Container inventory = event.getInventory();
+        if (craftingContains(inventory, ModItems.SIMPLE_STAB_VEST.get())) {
+            giveOrDrop(player, new ItemStack(Items.STRING, 3));
+            giveOrDrop(player, new ItemStack(Items.WHITE_WOOL, 3));
+        } else if (craftingContains(inventory, ModItems.UNIVERSAL_TACTICAL_VEST.get())) {
+            giveOrDrop(player, new ItemStack(Items.WHITE_WOOL, 2));
+            giveOrDrop(player, new ItemStack(Items.STRING, 2));
+        } else if (craftingContains(inventory, ModItems.H01_TACTICAL_HELMET.get())) {
+            giveOrDrop(player, new ItemStack(Items.STRING, 2));
+            giveOrDrop(player, new ItemStack(ModItems.RAW_WOOD_PLANK.get(), 2));
+        } else if (craftingContains(inventory, ModItems.MC_BALLISTIC_HELMET.get())) {
+            giveOrDrop(player, new ItemStack(Items.STRING, 2));
+            giveOrDrop(player, new ItemStack(ModItems.RAW_WOOD_PLANK.get(), 3));
+        }
+    }
+
+    private static boolean craftingContains(Container inventory, Item item) {
+        if (inventory == null) {
+            return false;
+        }
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            if (inventory.getItem(i).is(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static MerchantOffer blueprintTradeOffer(Entity trader, RandomSource random) {
+        int emeralds = 30 + random.nextInt(35);
+        int count = 1 + random.nextInt(2);
+        return new MerchantOffer(new ItemStack(Items.EMERALD, emeralds),
+                new ItemStack(ModItems.BLUEPRINT.get(), count), 12, 10, 0.05F);
+    }
+
+    private static int premiumCoffeeBonusLevel(Player player, int fortune) {
+        int handFortune = Math.max(
+                EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, player.getMainHandItem()),
+                EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_FORTUNE, player.getOffhandItem()));
+        int luck = Math.max(0, Mth.floor(player.getLuck()));
+        return Math.max(Math.max(0, fortune), Math.max(handFortune, luck));
+    }
+
+    private static void giveOrDrop(Player player, ItemStack stack) {
+        if (!player.addItem(stack)) {
+            player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack));
+        }
+    }
+
+    private static Vec3 damageSourcePosition(DamageSource source) {
+        // 1. Direct entity (bullet/projectile) position = actual impact point
+        Entity direct = source.getDirectEntity();
+        if (direct != null) return direct.position();
+        // 2. Source position (may be impact point or shooter depending on damage type)
+        Vec3 impact = source.getSourcePosition();
+        if (impact != null) return impact;
+        // 3. Fallback: attacker position
+        Entity attacker = source.getEntity();
+        if (attacker instanceof LivingEntity living) {
+            return living.position().add(0.0D, living.getBbHeight() * 0.5D, 0.0D);
+        }
+        if (attacker != null) {
+            return attacker.position().add(0.0D, attacker.getBbHeight() * 0.5D, 0.0D);
+        }
+        return null;
+    }
+
+    private record TrackedEffect(int duration, int amplifier) {
+    }
+
+    private record LockedLook(float yaw, float pitch) {
+    }
+
+}

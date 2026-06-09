@@ -1,0 +1,367 @@
+package com.rzy.dealt_force_skills.registry;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaArt;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class ModSounds {
+    public static final DeferredRegister<SoundEvent> SOUNDS =
+            DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, DealtForceSkillsMod.MODID);
+
+    public static final Map<String, RegistryObject<SoundEvent>> LEX_NINJIA_SOUNDS = registerLexNinjiaSounds();
+
+    public static final RegistryObject<SoundEvent> SHIELD_BASH = reg("shield_bash");
+
+    public static final RegistryObject<SoundEvent> GRAPPLE_FIRE = reg("grapple_fire");
+    public static final RegistryObject<SoundEvent> GRAPPLE_HIT = reg("grapple_hit");
+
+    public static final RegistryObject<SoundEvent> WIRE_PLACE = reg("wire_place");
+    public static final RegistryObject<SoundEvent> WIRE_STEP = reg("wire_step");
+
+    public static final RegistryObject<SoundEvent> BOMB_SUIT_EQUIP = reg("bomb_suit_equip");
+    public static final RegistryObject<SoundEvent> SINEVA_WALK = reg("sineva_walk");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_HIT = reg("sineva_shield_hit");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BLOCK = reg("sineva_shield_block");
+
+    public static final RegistryObject<SoundEvent> INCENDIARY_READY = reg("incendiary_ready");
+    public static final RegistryObject<SoundEvent> INCENDIARY_THROW = reg("incendiary_throw");
+    public static final RegistryObject<SoundEvent> INCENDIARY_EXPLODE = reg("incendiary_explode");
+
+    public static final RegistryObject<SoundEvent> QUICK_COVER_READY = reg("quick_cover_ready");
+    public static final RegistryObject<SoundEvent> QUICK_COVER_THROW = reg("quick_cover_throw");
+    public static final RegistryObject<SoundEvent> QUICK_COVER_DEPLOY = reg("quick_cover_deploy");
+
+    public static final RegistryObject<SoundEvent> MISSILE_FIRE = reg("missile_fire");
+    public static final RegistryObject<SoundEvent> MISSILE_FLY = reg("missile_fly");
+    public static final RegistryObject<SoundEvent> MISSILE_EXPLODE = reg("missile_explode");
+    public static final RegistryObject<SoundEvent> BOMBLET_EXPLODE = reg("bomblet_explode");
+
+    public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_EQUIP = reg("d_wolf_hand_cannon_equip");
+    public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_FIRE = reg("d_wolf_hand_cannon_fire");
+    public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_IMPACT = reg("d_wolf_hand_cannon_impact");
+    public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_EXPLODE = reg("d_wolf_hand_cannon_explode");
+    public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_EQUIP = reg("d_wolf_smoke_equip");
+    public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_THROW = reg("d_wolf_smoke_throw");
+    public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_BURST = reg("d_wolf_smoke_burst");
+    public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_START = reg("d_wolf_overload_start");
+    public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_KILL_EXTENSION = reg("d_wolf_overload_kill_extension");
+    public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_END = reg("d_wolf_overload_end");
+
+    public static final RegistryObject<SoundEvent> GIZMO_SMOKE_TRAP_EQUIP = reg("gizmo_smoke_trap_equip");
+    public static final RegistryObject<SoundEvent> GIZMO_SMOKE_TRAP_DEPLOY = reg("gizmo_smoke_trap_deploy");
+    public static final RegistryObject<SoundEvent> GIZMO_SMOKE_TRAP_READY = reg("gizmo_smoke_trap_ready");
+    public static final RegistryObject<SoundEvent> GIZMO_SMOKE_TRAP_TRIGGER = reg("gizmo_smoke_trap_trigger");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_NEST_EQUIP = reg("gizmo_spider_nest_equip");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_NEST_DEPLOY = reg("gizmo_spider_nest_deploy");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_NEST_READY = reg("gizmo_spider_nest_ready");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_NEST_TRIGGER = reg("gizmo_spider_nest_trigger");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_HIT_VOICE_1 = reg("gizmo_spider_hit_voice_1");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_HIT_VOICE_2 = reg("gizmo_spider_hit_voice_2");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDER_HIT_VOICE_3 = reg("gizmo_spider_hit_voice_3");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDERLING_CRAWL = reg("gizmo_spiderling_crawl");
+    public static final RegistryObject<SoundEvent> GIZMO_SPIDERLING_EXPLODE = reg("gizmo_spiderling_explode");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_EQUIP = reg("gizmo_t_boy_equip");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_DEPLOY = reg("gizmo_t_boy_deploy");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_HIT_VOICE_1 = reg("gizmo_t_boy_hit_voice_1");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_HIT_VOICE_2 = reg("gizmo_t_boy_hit_voice_2");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_HIT_VOICE_3 = reg("gizmo_t_boy_hit_voice_3");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_TRIGGER = reg("gizmo_t_boy_trigger");
+    public static final RegistryObject<SoundEvent> GIZMO_T_BOY_CRAWL = reg("gizmo_t_boy_crawl");
+
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_TRAP_EQUIP = reg("shepherd_sonic_trap_equip");
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_TRAP_DEPLOY = reg("shepherd_sonic_trap_deploy");
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_TRAP_READY = reg("shepherd_sonic_trap_ready");
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_TRAP_TRIGGER = reg("shepherd_sonic_trap_trigger");
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_TRAP_EXPLODE = reg("shepherd_sonic_trap_explode");
+    public static final RegistryObject<SoundEvent> SHEPHERD_SONIC_SHOCK_HIT = reg("shepherd_sonic_shock_hit");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_EQUIP = reg("shepherd_frag_grenade_equip");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_PIN = reg("shepherd_frag_grenade_pin");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_THROW = reg("shepherd_frag_grenade_throw");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_BOUNCE = reg("shepherd_frag_grenade_bounce");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_EXPLODE = reg("shepherd_frag_grenade_explode");
+    public static final RegistryObject<SoundEvent> SHEPHERD_FRAG_GRENADE_HIT = reg("shepherd_frag_grenade_hit");
+    public static final RegistryObject<SoundEvent> SHEPHERD_ARMOR_BREAK = reg("shepherd_armor_break");
+    public static final RegistryObject<SoundEvent> SHEPHERD_DRONE_TAKEOFF = reg("shepherd_drone_takeoff");
+    public static final RegistryObject<SoundEvent> SHEPHERD_DRONE_FLY = reg("shepherd_drone_fly");
+    public static final RegistryObject<SoundEvent> SHEPHERD_DRONE_COUNTDOWN = reg("shepherd_drone_countdown");
+    public static final RegistryObject<SoundEvent> SHEPHERD_DRONE_STUN = reg("shepherd_drone_stun");
+
+    public static final RegistryObject<SoundEvent> LUNA_BOW_EQUIP = reg("luna_bow_equip");
+    public static final RegistryObject<SoundEvent> LUNA_BOW_CHARGE = reg("luna_bow_charge");
+    public static final RegistryObject<SoundEvent> LUNA_ARROW_RELEASE = reg("luna_arrow_release");
+    public static final RegistryObject<SoundEvent> LUNA_SHOCK_ARROW_PULSE = reg("luna_shock_arrow_pulse");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_EQUIP = reg("luna_grenade_equip");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_PIN = reg("luna_grenade_pin");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_THROW = reg("luna_grenade_throw");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_BOUNCE = reg("luna_grenade_bounce");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_EXPLODE = reg("luna_grenade_explode");
+    public static final RegistryObject<SoundEvent> LUNA_GRENADE_HIT = reg("luna_grenade_hit");
+    public static final RegistryObject<SoundEvent> LUNA_ARMOR_BREAK = reg("luna_armor_break");
+    public static final RegistryObject<SoundEvent> LUNA_RECON_ARROW_FLY = reg("luna_recon_arrow_fly");
+    public static final RegistryObject<SoundEvent> LUNA_POSITION_REVEAL = reg("luna_position_reveal");
+    public static final RegistryObject<SoundEvent> LUNA_REVEAL_VOICE = reg("luna_reveal_voice");
+
+    public static final RegistryObject<SoundEvent> HACKCLAW_KNIFE_EQUIP = reg("hackclaw_knife_equip");
+    public static final RegistryObject<SoundEvent> HACKCLAW_KNIFE_THROW = reg("hackclaw_knife_throw");
+    public static final RegistryObject<SoundEvent> HACKCLAW_INTERFERENCE_DEPLOY = reg("hackclaw_interference_deploy");
+    public static final RegistryObject<SoundEvent> HACKCLAW_HACK_SUCCESS = reg("hackclaw_hack_success");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ELECTRONIC_DEVICE_DESTROYED = reg("hackclaw_electronic_device_destroyed");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_THROW = reg("hackclaw_flash_drone_throw");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_FLASH = reg("hackclaw_flash_drone_flash");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_DESTROYED = reg("hackclaw_flash_drone_destroyed");
+
+    public static final RegistryObject<SoundEvent> VYRON_POWERED_LAND = reg("vyron_powered_land");
+    public static final RegistryObject<SoundEvent> VYRON_POWERED_ACTIVATE = reg("vyron_powered_activate");
+    public static final RegistryObject<SoundEvent> VYRON_DASH = reg("vyron_dash");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_EQUIP = reg("vyron_magnetic_bomb_equip");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_THROW = reg("vyron_magnetic_bomb_throw");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_COUNTDOWN = reg("vyron_magnetic_bomb_countdown");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_EXPLODE = reg("vyron_magnetic_bomb_explode");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_EQUIP = reg("vyron_tiger_cannon_equip");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_READY = reg("vyron_tiger_cannon_ready");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_FIRE = reg("vyron_tiger_cannon_fire");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_BOUNCE = reg("vyron_tiger_cannon_bounce");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_EXPLODE = reg("vyron_tiger_cannon_explode");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_HIT_FEEDBACK = reg("vyron_tiger_cannon_hit_feedback");
+
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_EQUIP = reg("nox_rotor_equip");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_LOCK = reg("nox_rotor_lock");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_THROW = reg("nox_rotor_throw");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_BOUNCE = reg("nox_rotor_bounce");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_EXPLODE = reg("nox_rotor_explode");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_EQUIP = reg("nox_flash_equip");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_THROW = reg("nox_flash_throw");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_BOUNCE = reg("nox_flash_bounce");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_EXPLODE = reg("nox_flash_explode");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_HIT = reg("nox_flash_hit");
+    public static final RegistryObject<SoundEvent> NOX_STEALTH_START = reg("nox_stealth_start");
+    public static final RegistryObject<SoundEvent> NOX_STEALTH_WARNING = reg("nox_stealth_warning");
+    public static final RegistryObject<SoundEvent> NOX_DECOY_BREAK = reg("nox_decoy_break");
+
+    public static final RegistryObject<SoundEvent> MANBA_ELBOW_START = reg("manba_elbow_start");
+    public static final RegistryObject<SoundEvent> MANBA_ELBOW_HIT = reg("manba_elbow_hit");
+    public static final RegistryObject<SoundEvent> MANBA_FLASHLIGHT_BLIND = reg("manba_flashlight_blind");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_BGM = reg("manba_duel_bgm");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_CONTROL_1 = reg("manba_duel_control_1");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_CONTROL_2 = reg("manba_duel_control_2");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_CONTROL_3 = reg("manba_duel_control_3");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_CONTROL_4 = reg("manba_duel_control_4");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_REVIVE = reg("manba_duel_revive");
+    public static final RegistryObject<SoundEvent> MANBA_DUEL_EXECUTE = reg("manba_duel_execute");
+
+    public static final RegistryObject<SoundEvent> STINGER_SMOKE_EQUIP = reg("stinger_smoke_equip");
+    public static final RegistryObject<SoundEvent> STINGER_SMOKE_THROW = reg("stinger_smoke_throw");
+    public static final RegistryObject<SoundEvent> STINGER_SMOKE_BURST = reg("stinger_smoke_burst");
+    public static final RegistryObject<SoundEvent> STINGER_DRONE_EQUIP = reg("stinger_drone_equip");
+    public static final RegistryObject<SoundEvent> STINGER_DRONE_LAUNCH = reg("stinger_drone_launch");
+    public static final RegistryObject<SoundEvent> STINGER_DRONE_FLY = reg("stinger_drone_fly");
+    public static final RegistryObject<SoundEvent> STINGER_STIM_EQUIP = reg("stinger_stim_equip");
+    public static final RegistryObject<SoundEvent> STINGER_STIM_MODE = reg("stinger_stim_mode");
+    public static final RegistryObject<SoundEvent> STINGER_STIM_FIRE = reg("stinger_stim_fire");
+    public static final RegistryObject<SoundEvent> STINGER_STIM_HIT = reg("stinger_stim_hit");
+
+    // Planned sound hooks reserved from characters_records/需要完成的角色.
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_EQUIP = reg("hackclaw_flash_drone_equip");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_CHARGE = reg("hackclaw_flash_drone_charge");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_PATH_LOCK = reg("hackclaw_flash_drone_path_lock");
+    public static final RegistryObject<SoundEvent> HACKCLAW_FLASH_DRONE_WARNING = reg("hackclaw_flash_drone_warning");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ADVANCED_HACK_CHANNEL_START = reg("hackclaw_advanced_hack_channel_start");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ADVANCED_HACK_SCAN_START = reg("hackclaw_advanced_hack_scan_start");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ADVANCED_HACK_SCAN_END = reg("hackclaw_advanced_hack_scan_end");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ADVANCED_HACK_TARGET_FOUND = reg("hackclaw_advanced_hack_target_found");
+    public static final RegistryObject<SoundEvent> HACKCLAW_ADVANCED_HACK_EQUIPMENT_REPORT = reg("hackclaw_advanced_hack_equipment_report");
+    public static final RegistryObject<SoundEvent> MORSE_ALERT_HEARING_PING = reg("morse_alert_hearing_ping");
+    public static final RegistryObject<SoundEvent> MORSE_SOUND_ENHANCE = reg("morse_sound_enhance");
+    public static final RegistryObject<SoundEvent> MORSE_SHOCK_ORB_EQUIP = reg("morse_shock_orb_equip");
+    public static final RegistryObject<SoundEvent> MORSE_SHOCK_ORB_PREVIEW = reg("morse_shock_orb_preview");
+    public static final RegistryObject<SoundEvent> MORSE_SHOCK_ORB_THROW = reg("morse_shock_orb_throw");
+    public static final RegistryObject<SoundEvent> MORSE_SHOCK_ORB_BURST = reg("morse_shock_orb_burst");
+    public static final RegistryObject<SoundEvent> MORSE_STRONG_SHOCK_HIT = reg("morse_strong_shock_hit");
+    public static final RegistryObject<SoundEvent> MORSE_DEAFENED = reg("morse_deafened");
+    public static final RegistryObject<SoundEvent> MORSE_AI_DISABLED = reg("morse_ai_disabled");
+    public static final RegistryObject<SoundEvent> MORSE_FLASH_EQUIP = reg("morse_flash_equip");
+    public static final RegistryObject<SoundEvent> MORSE_FLASH_THROW = reg("morse_flash_throw");
+    public static final RegistryObject<SoundEvent> MORSE_FLASH_BOUNCE = reg("morse_flash_bounce");
+    public static final RegistryObject<SoundEvent> MORSE_FLASH_EXPLODE = reg("morse_flash_explode");
+    public static final RegistryObject<SoundEvent> MORSE_FLASH_HIT = reg("morse_flash_hit");
+    public static final RegistryObject<SoundEvent> MORSE_TINNITUS = reg("morse_tinnitus");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_EQUIP = reg("morse_sonar_equip");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_DEPLOYING = reg("morse_sonar_deploying");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_DEPLOY_COMPLETE = reg("morse_sonar_deploy_complete");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_SCAN_START = reg("morse_sonar_scan_start");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_IDLE_TICK = reg("morse_sonar_idle_tick");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_TARGET_FOUND_VOICE = reg("morse_sonar_target_found_voice");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_DESTROYED = reg("morse_sonar_destroyed");
+    public static final RegistryObject<SoundEvent> MORSE_SONAR_ACTION_REVEAL = reg("morse_sonar_action_reveal");
+    public static final RegistryObject<SoundEvent> RAPTOR_FOOTPRINT_SPAWN = reg("raptor_footprint_spawn");
+    public static final RegistryObject<SoundEvent> RAPTOR_FOOTPRINT_FADE = reg("raptor_footprint_fade");
+    public static final RegistryObject<SoundEvent> RAPTOR_FOOTPRINT_READ_START = reg("raptor_footprint_read_start");
+    public static final RegistryObject<SoundEvent> RAPTOR_FOOTPRINT_INFO = reg("raptor_footprint_info");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_EQUIP = reg("raptor_falcon_equip");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_STOW = reg("raptor_falcon_stow");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_LAUNCH = reg("raptor_falcon_launch");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_FLY = reg("raptor_falcon_fly");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_TARGET_FOUND = reg("raptor_falcon_target_found");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_POSITION_REVEAL = reg("raptor_falcon_position_reveal");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_PULSE_THROW = reg("raptor_falcon_pulse_throw");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_SELF_DESTRUCT_START = reg("raptor_falcon_self_destruct_start");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_SELF_DESTRUCT_EXPLODE = reg("raptor_falcon_self_destruct_explode");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_EQUIP = reg("raptor_pulse_grenade_equip");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_THROW = reg("raptor_pulse_grenade_throw");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_COUNTDOWN = reg("raptor_pulse_grenade_countdown");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_EXPLODE = reg("raptor_pulse_grenade_explode");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_STAGGER_HIT = reg("raptor_pulse_stagger_hit");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_TARGET_AVAILABLE = reg("raptor_hummingbird_target_available");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_ATTACH = reg("raptor_hummingbird_attach");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_REVEAL = reg("raptor_hummingbird_reveal");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_VIEW_ENTER = reg("raptor_hummingbird_view_enter");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_VIEW_EXIT = reg("raptor_hummingbird_view_exit");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_LOST = reg("raptor_hummingbird_lost");
+    public static final RegistryObject<SoundEvent> TEMPEST_EXPLOSIVE_SPINE_ACTIVATE = reg("tempest_explosive_spine_activate");
+    public static final RegistryObject<SoundEvent> TEMPEST_DANGER_NEAR_MISS = reg("tempest_danger_near_miss");
+    public static final RegistryObject<SoundEvent> TEMPEST_EXPLOSION_TRIGGER = reg("tempest_explosion_trigger");
+    public static final RegistryObject<SoundEvent> TEMPEST_SPEED_REFRESH = reg("tempest_speed_refresh");
+    public static final RegistryObject<SoundEvent> TEMPEST_TACTICAL_ROLL_START = reg("tempest_tactical_roll_start");
+    public static final RegistryObject<SoundEvent> TEMPEST_TACTICAL_ROLL_KILL_RESET = reg("tempest_tactical_roll_kill_reset");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_EQUIP = reg("tempest_wall_drill_equip");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_THROW = reg("tempest_wall_drill_throw");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_ATTACH = reg("tempest_wall_drill_attach");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_CHARGE_START = reg("tempest_wall_drill_charge_start");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_CHARGE_TICK = reg("tempest_wall_drill_charge_tick");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_RELEASE = reg("tempest_wall_drill_release");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_DISARM_HIT = reg("tempest_wall_drill_disarm_hit");
+    public static final RegistryObject<SoundEvent> TEMPEST_WALL_DRILL_DESTROYED = reg("tempest_wall_drill_destroyed");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_ANCHOR_PLACE = reg("tempest_recall_anchor_place");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_ROPE_WARNING = reg("tempest_recall_rope_warning");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_ACTIVE = reg("tempest_recall_active");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_LETHAL_TRIGGER = reg("tempest_recall_lethal_trigger");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_PULL_LOOP = reg("tempest_recall_pull_loop");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_DOWNED = reg("tempest_recall_downed");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_SELF_RESCUE_START = reg("tempest_recall_self_rescue_start");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_SELF_RESCUE_COMPLETE = reg("tempest_recall_self_rescue_complete");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_ROPE_SUSPEND = reg("tempest_recall_rope_suspend");
+    public static final RegistryObject<SoundEvent> TEMPEST_RECALL_END = reg("tempest_recall_end");
+    public static final RegistryObject<SoundEvent> TOXIK_ADRENALINE_RELEASE = reg("toxik_adrenaline_release");
+    public static final RegistryObject<SoundEvent> TOXIK_ADRENALINE_END = reg("toxik_adrenaline_end");
+    public static final RegistryObject<SoundEvent> TOXIK_TEAR_GAS_EQUIP = reg("toxik_tear_gas_equip");
+    public static final RegistryObject<SoundEvent> TOXIK_TEAR_GAS_THROW = reg("toxik_tear_gas_throw");
+    public static final RegistryObject<SoundEvent> TOXIK_TEAR_GAS_BURST = reg("toxik_tear_gas_burst");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_EQUIP = reg("toxik_firefly_equip");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_STOW = reg("toxik_firefly_stow");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_MODE_SWITCH = reg("toxik_firefly_mode_switch");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_RELEASE = reg("toxik_firefly_release");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_HIT = reg("toxik_firefly_hit");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_PULLOUT_START = reg("toxik_firefly_pullout_start");
+    public static final RegistryObject<SoundEvent> TOXIK_FIREFLY_PULLOUT_COMPLETE = reg("toxik_firefly_pullout_complete");
+    public static final RegistryObject<SoundEvent> VLINDER_DOWNED_TRIGGER = reg("vlinder_downed_trigger");
+    public static final RegistryObject<SoundEvent> VLINDER_DOWNED_MARKER = reg("vlinder_downed_marker");
+    public static final RegistryObject<SoundEvent> VLINDER_RESCUE_START = reg("vlinder_rescue_start");
+    public static final RegistryObject<SoundEvent> VLINDER_RESCUE_COMPLETE = reg("vlinder_rescue_complete");
+    public static final RegistryObject<SoundEvent> VLINDER_SELF_RESCUE_START = reg("vlinder_self_rescue_start");
+    public static final RegistryObject<SoundEvent> VLINDER_SELF_RESCUE_COMPLETE = reg("vlinder_self_rescue_complete");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_EQUIP = reg("vlinder_medical_drone_equip");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_STOW = reg("vlinder_medical_drone_stow");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_LOCK = reg("vlinder_medical_drone_lock");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_MODE_SWITCH = reg("vlinder_medical_drone_mode_switch");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_LAUNCH = reg("vlinder_medical_drone_launch");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_HIT = reg("vlinder_medical_drone_hit");
+    public static final RegistryObject<SoundEvent> VLINDER_HEALING_DUST_APPLY = reg("vlinder_healing_dust_apply");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_WASTE_APPLY = reg("vlinder_medical_waste_apply");
+    public static final RegistryObject<SoundEvent> VLINDER_MEDICAL_DRONE_DESTROYED = reg("vlinder_medical_drone_destroyed");
+    public static final RegistryObject<SoundEvent> VLINDER_REMOTE_SMOKE_THROW = reg("vlinder_remote_smoke_throw");
+    public static final RegistryObject<SoundEvent> VLINDER_REMOTE_SMOKE_BURST = reg("vlinder_remote_smoke_burst");
+    public static final RegistryObject<SoundEvent> VLINDER_ACTIVE_DEFENSE_SUMMON = reg("vlinder_active_defense_summon");
+    public static final RegistryObject<SoundEvent> VLINDER_ABSORPTION_REFRESH = reg("vlinder_absorption_refresh");
+    public static final RegistryObject<SoundEvent> VLINDER_DOWNED_PLAYER_FOUND = reg("vlinder_downed_player_found");
+    public static final RegistryObject<SoundEvent> VLINDER_PLASMA_INJECTION_START = reg("vlinder_plasma_injection_start");
+    public static final RegistryObject<SoundEvent> VLINDER_PLASMA_INJECTION_COMPLETE = reg("vlinder_plasma_injection_complete");
+    public static final RegistryObject<SoundEvent> VLINDER_QUICK_RESCUE = reg("vlinder_quick_rescue");
+    public static final RegistryObject<SoundEvent> VLINDER_ACTIVE_DEFENSE_DESTROYED = reg("vlinder_active_defense_destroyed");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_RIFT_REFRESH = reg("nikaidou_rift_refresh");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_CORRECTION_START = reg("nikaidou_correction_start");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_CORRECTION_REFRESH = reg("nikaidou_correction_refresh");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_HOT_IRON_TOGGLE = reg("nikaidou_hot_iron_toggle");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WEAPON_SWING = reg("nikaidou_weapon_swing");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_HOT_IRON_HIT = reg("nikaidou_hot_iron_hit");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_CORE_START = reg("nikaidou_core_start");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_RITUAL_SWORD_HIT = reg("nikaidou_ritual_sword_hit");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_DOOM_TRIGGER = reg("nikaidou_doom_trigger");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_DOOM_DEATH = reg("nikaidou_doom_death");
+    public static final RegistryObject<SoundEvent> CATDAD_REFLECT = reg("catdad_reflect");
+    public static final RegistryObject<SoundEvent> CATDAD_HISS = reg("catdad_hiss");
+    public static final RegistryObject<SoundEvent> CATDAD_POWER_STRIKE = reg("catdad_power_strike");
+    public static final RegistryObject<SoundEvent> CATDAD_BLOCK_START = reg("catdad_block_start");
+    public static final RegistryObject<SoundEvent> CATDAD_BLOCK_SUCCESS = reg("catdad_block_success");
+    public static final RegistryObject<SoundEvent> CATDAD_ROAD_START = reg("catdad_road_start");
+    public static final RegistryObject<SoundEvent> CATDAD_ROAD_WARNING = reg("catdad_road_warning");
+    public static final RegistryObject<SoundEvent> CATDAD_TRUCK_HIT = reg("catdad_truck_hit");
+    public static final RegistryObject<SoundEvent> CATDAD_TRUCK_SELF_DOWNED = reg("catdad_truck_self_downed");
+    public static final RegistryObject<SoundEvent> CATDAD_SELF_RESCUE_START = reg("catdad_self_rescue_start");
+    public static final RegistryObject<SoundEvent> CATDAD_SELF_RESCUE_COMPLETE = reg("catdad_self_rescue_complete");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_LASER_SHOOT = reg("department_laser_shoot");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_LASER_FLY = reg("department_laser_fly");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_LASER_HIT = reg("department_laser_hit");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_TRAP_EQUIP = reg("department_trap_equip");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_TRAP_DEPLOY = reg("department_trap_deploy");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_TRAP_READY = reg("department_trap_ready");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_TRAP_TRIGGER = reg("department_trap_trigger");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_TRAP_EXPLODE = reg("department_trap_explode");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_CHARGED_CREEPER_EJECT = reg("department_charged_creeper_eject");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_BABY_ZOMBIE_EJECT = reg("department_baby_zombie_eject");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_CORE_CAST = reg("department_core_cast");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_CORE_COUNTDOWN = reg("department_core_countdown");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_CORE_RELEASE = reg("department_core_release");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_PASSIVE_FIRST_FATAL = reg("department_passive_first_fatal");
+    public static final RegistryObject<SoundEvent> DEPARTMENT_PASSIVE_SECOND_FATAL = reg("department_passive_second_fatal");
+
+    public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_START = reg("item_armor_repair_start");
+    public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_WORK = reg("item_armor_repair_work");
+    public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_FINISH = reg("item_armor_repair_finish");
+    public static final RegistryObject<SoundEvent> ITEM_HELMET_REPAIR_START = reg("item_helmet_repair_start");
+    public static final RegistryObject<SoundEvent> ITEM_HELMET_REPAIR_WORK = reg("item_helmet_repair_work");
+    public static final RegistryObject<SoundEvent> ITEM_HELMET_REPAIR_FINISH = reg("item_helmet_repair_finish");
+    public static final RegistryObject<SoundEvent> ITEM_HEMOSTATIC_START = reg("item_hemostatic_start");
+    public static final RegistryObject<SoundEvent> ITEM_HEMOSTATIC_FINISH = reg("item_hemostatic_finish");
+    public static final RegistryObject<SoundEvent> ITEM_PAINKILLER_START = reg("item_painkiller_start");
+    public static final RegistryObject<SoundEvent> ITEM_PAINKILLER_FINISH = reg("item_painkiller_finish");
+    public static final RegistryObject<SoundEvent> ITEM_SUSTAINED_RELEASE_PAINKILLER_START = reg("item_sustained_release_painkiller_start");
+    public static final RegistryObject<SoundEvent> ITEM_SUSTAINED_RELEASE_PAINKILLER_FINISH = reg("item_sustained_release_painkiller_finish");
+    public static final RegistryObject<SoundEvent> ITEM_SURGICAL_START = reg("item_surgical_start");
+    public static final RegistryObject<SoundEvent> ITEM_SURGICAL_FINISH = reg("item_surgical_finish");
+    public static final RegistryObject<SoundEvent> ITEM_INJECTION_START = reg("item_injection_start");
+    public static final RegistryObject<SoundEvent> ITEM_INJECTION_FINISH = reg("item_injection_finish");
+    public static final RegistryObject<SoundEvent> ITEM_BEVERAGE_START = reg("item_beverage_start");
+    public static final RegistryObject<SoundEvent> ITEM_BEVERAGE_FINISH = reg("item_beverage_finish");
+    public static final RegistryObject<SoundEvent> ITEM_MEDICINE_START = reg("item_medicine_start");
+    public static final RegistryObject<SoundEvent> ITEM_MEDICINE_WORK = reg("item_medicine_work");
+    public static final RegistryObject<SoundEvent> ITEM_MEDICINE_FINISH = reg("item_medicine_finish");
+    public static final RegistryObject<SoundEvent> ITEM_SPECIAL_SUPPLY_START = reg("item_special_supply_start");
+    public static final RegistryObject<SoundEvent> ITEM_SPECIAL_SUPPLY_FINISH = reg("item_special_supply_finish");
+
+    private static RegistryObject<SoundEvent> reg(String id) {
+        return SOUNDS.register(id, () -> SoundEvent.createVariableRangeEvent(
+                new ResourceLocation(DealtForceSkillsMod.MODID, id)));
+    }
+
+    private static Map<String, RegistryObject<SoundEvent>> registerLexNinjiaSounds() {
+        Map<String, RegistryObject<SoundEvent>> sounds = new LinkedHashMap<>();
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            sounds.put(art.soundId(), reg(art.soundId()));
+        }
+        sounds.put("lex_ninjia_ham_echo", reg("lex_ninjia_ham_echo"));
+        return Collections.unmodifiableMap(sounds);
+    }
+
+    public static SoundEvent lexNinjiaSound(String id) {
+        RegistryObject<SoundEvent> sound = LEX_NINJIA_SOUNDS.get(id);
+        return sound == null ? null : sound.get();
+    }
+}

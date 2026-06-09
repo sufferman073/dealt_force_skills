@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "dealt_force_skills:blade_wire",
+    "dealt_force_skills:blade_wire_core",
+    "dealt_force_skills:quick_cover"
+  ]
+}

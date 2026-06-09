@@ -1,0 +1,177 @@
+package com.rzy.dealt_force_skills.entity;
+
+import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
+import com.rzy.dealt_force_skills.character.stinger.StingerStimMode;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
+
+import java.util.UUID;
+
+public class StingerStimProjectileEntity extends Projectile implements ItemSupplier {
+    private static final int MAX_LIFE_TICKS = 120;
+    private static final double SPEED = 2.25D;
+
+    private UUID targetId;
+    private StingerStimMode mode = StingerStimMode.HEAL;
+
+    public StingerStimProjectileEntity(EntityType<? extends StingerStimProjectileEntity> type, Level level) {
+        super(type, level);
+    }
+
+    public StingerStimProjectileEntity(EntityType<? extends StingerStimProjectileEntity> type, Level level, LivingEntity owner,
+                                       UUID targetId, StingerStimMode mode) {
+        super(type, level);
+        setOwner(owner);
+        this.targetId = targetId;
+        this.mode = mode;
+    }
+
+    @Override
+    public ItemStack getItem() {
+        return new ItemStack(mode == StingerStimMode.HEAL ? Items.LIME_DYE : Items.POISONOUS_POTATO);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (!level().isClientSide && level() instanceof ServerLevel serverLevel) {
+            StingerSmokeCloudEntity.enhanceSmokeNear(serverLevel, position());
+            updateHoming(serverLevel);
+        }
+
+        Vec3 motion = getDeltaMovement();
+        Vec3 start = position();
+        Vec3 next = start.add(motion);
+        HitResult blockHit = level().clip(new ClipContext(start, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            next = blockHit.getLocation();
+        }
+
+        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(level(), this, start, next,
+                getBoundingBox().expandTowards(motion).inflate(0.42D), this::canHitEntity);
+        if (entityHit != null) {
+            hitEntity(entityHit);
+            spawnClientTrail();
+            return;
+        }
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            discard();
+            spawnClientTrail();
+            return;
+        }
+
+        setPos(next.x, next.y, next.z);
+        setDeltaMovement(motion.scale(0.995D));
+        if (tickCount > MAX_LIFE_TICKS) {
+            discard();
+        }
+        spawnClientTrail();
+    }
+
+    @Override
+    protected boolean canHitEntity(Entity target) {
+        return super.canHitEntity(target)
+                && target != getOwner()
+                && target instanceof LivingEntity living
+                && TargetingUtil.isTargetableLiving(living);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        targetId = tag.hasUUID("Target") ? tag.getUUID("Target") : null;
+        int ordinal = tag.getInt("Mode");
+        StingerStimMode[] modes = StingerStimMode.values();
+        mode = ordinal >= 0 && ordinal < modes.length ? modes[ordinal] : StingerStimMode.HEAL;
+    }
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        if (targetId != null) {
+            tag.putUUID("Target", targetId);
+        }
+        tag.putInt("Mode", mode.ordinal());
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    private void updateHoming(ServerLevel level) {
+        if (targetId == null) {
+            return;
+        }
+        Entity entity = level.getEntity(targetId);
+        if (!(entity instanceof LivingEntity target) || !TargetingUtil.isTargetableLiving(target)) {
+            targetId = null;
+            return;
+        }
+        Vec3 targetCenter = target.position().add(0.0D, target.getBbHeight() * 0.58D, 0.0D);
+        Vec3 desired = targetCenter.subtract(position());
+        if (desired.lengthSqr() < 0.0001D) {
+            return;
+        }
+        Vec3 current = getDeltaMovement();
+        Vec3 blended = current.lengthSqr() < 0.0001D
+                ? desired.normalize()
+                : current.normalize().scale(0.58D).add(desired.normalize().scale(0.42D)).normalize();
+        setDeltaMovement(blended.scale(SPEED));
+    }
+
+    private void hitEntity(EntityHitResult hit) {
+        if (!(hit.getEntity() instanceof LivingEntity target) || !(level() instanceof ServerLevel serverLevel)) {
+            discard();
+            return;
+        }
+
+        LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        if (mode == StingerStimMode.HEAL) {
+            StingerStateManager.applyStimHeal(target);
+        } else {
+            target.invulnerableTime = 0;
+            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(serverLevel, this, owner), owner, 4.0f);
+            StingerStateManager.applyStimSuppression(target);
+        }
+        RangedSoundHelper.playThrottled(serverLevel, target.position(), ModSounds.STINGER_STIM_HIT.get(),
+                SoundSource.PLAYERS, 0.75f, mode == StingerStimMode.HEAL ? 1.18f : 0.82f, 14.0D, 4, 3.0D);
+        discard();
+    }
+
+    private void spawnClientTrail() {
+        if (!level().isClientSide || tickCount % 2 != 0) {
+            return;
+        }
+        if (mode == StingerStimMode.HEAL) {
+            level().addParticle(ParticleTypes.HAPPY_VILLAGER, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
+        } else {
+            level().addParticle(ParticleTypes.CRIT, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
+        }
+    }
+}

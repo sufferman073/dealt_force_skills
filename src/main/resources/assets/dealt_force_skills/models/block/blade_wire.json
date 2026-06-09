@@ -1,0 +1,21 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "dealt_force_skills:block/blade_wire",
+    "wire": "dealt_force_skills:block/blade_wire"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 0],
+      "to": [16, 2, 16],
+      "faces": {
+        "down": { "texture": "#wire" },
+        "up": { "texture": "#wire" },
+        "north": { "texture": "#wire" },
+        "south": { "texture": "#wire" },
+        "west": { "texture": "#wire" },
+        "east": { "texture": "#wire" }
+      }
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+package com.rzy.dealt_force_skills.entity;
+
+import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
+
+import java.util.UUID;
+
+public class VyronMagneticBombEntity extends Projectile implements ItemSupplier {
+    private static final double RADIUS = 7.0D;
+
+    private boolean stuck;
+    private int fuseRemaining = -1;
+    private UUID stuckEntityId;
+
+    public VyronMagneticBombEntity(EntityType<? extends VyronMagneticBombEntity> type, Level level) {
+        super(type, level);
+    }
+
+    public VyronMagneticBombEntity(EntityType<? extends VyronMagneticBombEntity> type, Level level, LivingEntity owner) {
+        super(type, level);
+        setOwner(owner);
+    }
+
+    @Override
+    public ItemStack getItem() {
+        return new ItemStack(Items.SLIME_BALL);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+
+        if (stuck) {
+            tickStuck();
+            spawnClientTrail();
+            return;
+        }
+
+        Vec3 motion = getDeltaMovement();
+        Vec3 start = position();
+        Vec3 next = start.add(motion);
+        HitResult blockHit = level().clip(new ClipContext(start, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            next = blockHit.getLocation();
+        }
+
+        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(level(), this, start, next,
+                getBoundingBox().expandTowards(motion).inflate(0.35D), this::canHitEntity);
+        if (entityHit != null) {
+            stickToEntity(entityHit);
+            spawnClientTrail();
+            return;
+        }
+
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            stickToBlock((BlockHitResult) blockHit);
+            spawnClientTrail();
+            return;
+        }
+
+        setPos(next.x, next.y, next.z);
+        setDeltaMovement(motion.add(0.0D, -0.04D, 0.0D).scale(0.99D));
+        if (tickCount > 160) {
+            discard();
+        }
+        spawnClientTrail();
+    }
+
+    @Override
+    protected boolean canHitEntity(Entity target) {
+        return super.canHitEntity(target) && target != getOwner();
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        stuck = tag.getBoolean("Stuck");
+        fuseRemaining = tag.getInt("FuseRemaining");
+        if (tag.hasUUID("StuckEntity")) {
+            stuckEntityId = tag.getUUID("StuckEntity");
+        }
+    }
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        tag.putBoolean("Stuck", stuck);
+        tag.putInt("FuseRemaining", fuseRemaining);
+        if (stuckEntityId != null) {
+            tag.putUUID("StuckEntity", stuckEntityId);
+        }
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    private void stickToEntity(EntityHitResult hit) {
+        Entity entity = hit.getEntity();
+        stuck = true;
+        fuseRemaining = VyronStateManager.MAGNETIC_BOMB_FUSE_TICKS;
+        stuckEntityId = entity.getUUID();
+        setPos(hit.getLocation().x, hit.getLocation().y, hit.getLocation().z);
+        setDeltaMovement(Vec3.ZERO);
+        playReadySound();
+    }
+
+    private void stickToBlock(BlockHitResult hit) {
+        stuck = true;
+        fuseRemaining = VyronStateManager.MAGNETIC_BOMB_FUSE_TICKS;
+        Direction direction = hit.getDirection();
+        Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
+        setPos(hit.getLocation().x + normal.x * 0.04D,
+                hit.getLocation().y + normal.y * 0.04D,
+                hit.getLocation().z + normal.z * 0.04D);
+        setDeltaMovement(Vec3.ZERO);
+        playReadySound();
+    }
+
+    private void tickStuck() {
+        if (stuckEntityId != null && level() instanceof ServerLevel serverLevel) {
+            Entity entity = serverLevel.getEntity(stuckEntityId);
+            if (entity != null && entity.isAlive()) {
+                setPos(entity.getX(), entity.getY() + entity.getBbHeight() * 0.55D, entity.getZ());
+            }
+        }
+
+        if (!level().isClientSide) {
+            if (--fuseRemaining <= 0) {
+                explode();
+            }
+        }
+    }
+
+    private void playReadySound() {
+        if (level() instanceof ServerLevel serverLevel) {
+            RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.VYRON_MAGNETIC_BOMB_COUNTDOWN.get(),
+                    SoundSource.PLAYERS, 1.05f, 1.0f, 20.0D, 5, 3.0D);
+        }
+    }
+
+    private void explode() {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            discard();
+            return;
+        }
+
+        LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        Vec3 center = position();
+        RangedSoundHelper.playThrottled(serverLevel, center, ModSounds.VYRON_MAGNETIC_BOMB_EXPLODE.get(),
+                SoundSource.PLAYERS, 1.25f, 1.0f, 26.0D, 3, 4.0D);
+        serverLevel.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.2D, center.z,
+                14, 0.8D, 0.35D, 0.8D, 0.02D);
+        serverLevel.sendParticles(ParticleTypes.CLOUD, center.x, center.y + 0.2D, center.z,
+                80, RADIUS * 0.65D, 0.45D, RADIUS * 0.65D, 0.05D);
+
+        AABB box = new AABB(center, center).inflate(RADIUS);
+        for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
+            Vec3 targetCenter = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+            double distance = targetCenter.distanceTo(center);
+            if (distance > RADIUS || !hasLineOfSight(center, targetCenter)) {
+                continue;
+            }
+            float damage = 100.0f * Math.max(0.0f, 1.0f - (float) distance * 0.14f);
+            if (damage <= 0.0f) {
+                continue;
+            }
+            Vec3 before = target.getDeltaMovement();
+            target.invulnerableTime = 0;
+            SkillDamageHelper.hurt(target, SkillDamageHelper.vyronMagneticBomb(serverLevel, this, owner), owner, damage);
+            target.setDeltaMovement(before);
+            target.hurtMarked = true;
+        }
+        discard();
+    }
+
+    private boolean hasLineOfSight(Vec3 center, Vec3 targetCenter) {
+        HitResult result = level().clip(new ClipContext(center, targetCenter, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        return result.getType() == HitResult.Type.MISS || result.getLocation().distanceToSqr(targetCenter) < 0.25D;
+    }
+
+    private void spawnClientTrail() {
+        if (level().isClientSide && tickCount % 3 == 0) {
+            level().addParticle(ParticleTypes.ENCHANT, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
+        }
+    }
+}

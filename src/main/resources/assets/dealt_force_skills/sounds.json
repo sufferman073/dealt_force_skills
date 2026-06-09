@@ -1,0 +1,2325 @@
+{
+  "shield_bash": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shield_bash",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_fire": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:grapple_shoot",
+        "stream": false
+      }
+    ]
+  },
+  "grapple_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:grapple_hit",
+        "stream": false
+      }
+    ]
+  },
+  "wire_place": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:wire_place",
+        "stream": false
+      }
+    ]
+  },
+  "wire_step": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:wire_step",
+        "stream": false
+      }
+    ]
+  },
+  "bomb_suit_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/bomb_suit_equip",
+        "stream": false
+      }
+    ]
+  },
+  "incendiary_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/incendiary_ready",
+        "stream": false
+      }
+    ]
+  },
+  "incendiary_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/incendiary_throw",
+        "stream": false
+      }
+    ]
+  },
+  "incendiary_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/incendiary_explode",
+        "stream": false
+      }
+    ]
+  },
+  "quick_cover_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/quick_cover_ready",
+        "stream": false
+      }
+    ]
+  },
+  "quick_cover_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/quick_cover_throw",
+        "stream": false
+      }
+    ]
+  },
+  "quick_cover_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/quick_cover_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "missile_fire": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/missile_fire",
+        "stream": false
+      }
+    ]
+  },
+  "missile_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/missile_fly",
+        "stream": false
+      }
+    ]
+  },
+  "missile_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/missile_explode",
+        "stream": false
+      }
+    ]
+  },
+  "bomblet_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:uluru/bomblet_explode",
+        "stream": false
+      }
+    ]
+  },
+  "sineva_walk": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/walk",
+        "stream": false
+      }
+    ]
+  },
+  "sineva_shield_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/shield_hit_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:sineva/shield_hit_2",
+        "stream": false
+      }
+    ]
+  },
+  "sineva_shield_block": {
+    "sounds": [
+      {
+        "name": "minecraft:item/shield/block1",
+        "volume": 0.85
+      },
+      {
+        "name": "minecraft:item/shield/block2",
+        "volume": 0.85
+      },
+      {
+        "name": "minecraft:item/shield/block3",
+        "volume": 0.85
+      },
+      {
+        "name": "minecraft:item/shield/block4",
+        "volume": 0.85
+      },
+      {
+        "name": "minecraft:item/shield/block5",
+        "volume": 0.85
+      }
+    ]
+  },
+  "d_wolf_hand_cannon_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_equip",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_hand_cannon_fire": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_hand_cannon_impact": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_impact",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_hand_cannon_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_explode",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_smoke_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/smoke_equip",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_smoke_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/smoke_throw",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_smoke_burst": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/smoke_burst",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_overload_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/overload_start",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_overload_kill_extension": {
+    "sounds": [
+      {
+        "name": "minecraft:item/totem/use_totem",
+        "volume": 0.7
+      }
+    ]
+  },
+  "d_wolf_overload_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/overload_end",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_smoke_trap_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/smoke_trap_equip",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_smoke_trap_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/smoke_trap_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_smoke_trap_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/smoke_trap_ready",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_smoke_trap_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/smoke_trap_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_nest_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_nest_equip",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_nest_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_nest_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_nest_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_nest_ready",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_nest_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_nest_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_hit_voice_1": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_hit_voice_1",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_hit_voice_2": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_hit_voice_2",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spider_hit_voice_3": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spider_hit_voice_3",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spiderling_crawl": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spiderling_crawl",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_spiderling_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/spiderling_explode",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_equip",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_hit_voice_1": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_hit_voice_1",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_hit_voice_2": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_hit_voice_2",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_hit_voice_3": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_hit_voice_3",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "gizmo_t_boy_crawl": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:gizmo/t_boy_crawl",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_trap_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_trap_equip",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_trap_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_trap_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_trap_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_trap_ready",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_trap_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_trap_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_trap_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_trap_explode",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_sonic_shock_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/sonic_shock_hit",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_equip",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_pin": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_pin",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_throw",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_explode",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_frag_grenade_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/frag_grenade_hit",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_armor_break": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/armor_break",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_drone_takeoff": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/drone_takeoff",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_drone_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/drone_fly",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_drone_countdown": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/drone_countdown",
+        "stream": false
+      }
+    ]
+  },
+  "shepherd_drone_stun": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:shepherd/drone_stun",
+        "stream": false
+      }
+    ]
+  },
+  "luna_bow_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/bow_equip",
+        "stream": false
+      }
+    ]
+  },
+  "luna_bow_charge": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/bow_charge",
+        "stream": false
+      }
+    ]
+  },
+  "luna_arrow_release": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/arrow_release",
+        "stream": false
+      }
+    ]
+  },
+  "luna_shock_arrow_pulse": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/shock_arrow_pulse",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_equip",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_pin": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_pin",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_throw",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_explode",
+        "stream": false
+      }
+    ]
+  },
+  "luna_grenade_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/grenade_hit",
+        "stream": false
+      }
+    ]
+  },
+  "luna_armor_break": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/armor_break",
+        "stream": false
+      }
+    ]
+  },
+  "luna_recon_arrow_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/recon_arrow_fly",
+        "stream": false
+      }
+    ]
+  },
+  "luna_position_reveal": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/position_reveal",
+        "stream": false
+      }
+    ]
+  },
+  "luna_reveal_voice": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/reveal_voice",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_knife_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/knife_equip",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_knife_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/knife_throw",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_interference_deploy": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/interference_deploy",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_hack_success": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/hack_success",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_electronic_device_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/electronic_device_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_throw",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_flash": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_flash",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_powered_land": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/powered_land",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_powered_activate": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/powered_activate",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_dash": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/dash",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_equip",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_throw",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_countdown": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_countdown",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_explode",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_equip",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_ready": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_ready",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_fire": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_explode",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_hit_feedback": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_hit_feedback",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_equip",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_lock": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_lock",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_throw",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_explode",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_equip",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_throw",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_explode",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_hit",
+        "stream": false
+      }
+    ]
+  },
+  "nox_stealth_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/stealth_start",
+        "stream": false
+      }
+    ]
+  },
+  "nox_stealth_warning": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/stealth_warning",
+        "stream": false
+      }
+    ]
+  },
+  "nox_decoy_break": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/decoy_break",
+        "stream": false
+      }
+    ]
+  },
+  "manba_elbow_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/elbow_start",
+        "stream": false
+      }
+    ]
+  },
+  "manba_elbow_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/elbow_hit",
+        "stream": false
+      }
+    ]
+  },
+  "manba_flashlight_blind": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/flashlight_blind",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_bgm": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_bgm",
+        "stream": true
+      }
+    ]
+  },
+  "manba_duel_control_1": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_control_1",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_control_2": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_control_2",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_control_3": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_control_3",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_control_4": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_control_4",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_revive": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_revive",
+        "stream": false
+      }
+    ]
+  },
+  "manba_duel_execute": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:manba/duel_execute",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_smoke_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/smoke_equip",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_smoke_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/smoke_throw",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_smoke_burst": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/smoke_burst",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_drone_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/drone_equip",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_drone_launch": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/drone_launch",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_drone_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/drone_fly",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_stim_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/stim_equip",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_stim_mode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/stim_mode",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_stim_fire": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/stim_fire",
+        "stream": false
+      }
+    ]
+  },
+  "stinger_stim_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:stinger/stim_hit",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_equip",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_charge": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_charge",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_path_lock": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_path_lock",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_flash_drone_warning": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/flash_drone_warning",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_advanced_hack_channel_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/advanced_hack_channel_start",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_advanced_hack_scan_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/advanced_hack_scan_start",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_advanced_hack_scan_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/advanced_hack_scan_end",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_advanced_hack_target_found": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/advanced_hack_target_found",
+        "stream": false
+      }
+    ]
+  },
+  "hackclaw_advanced_hack_equipment_report": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hackclaw/advanced_hack_equipment_report",
+        "stream": false
+      }
+    ]
+  },
+  "morse_alert_hearing_ping": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/alert_hearing_ping",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sound_enhance": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sound_enhance",
+        "stream": false
+      }
+    ]
+  },
+  "morse_shock_orb_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/shock_orb_equip",
+        "stream": false
+      }
+    ]
+  },
+  "morse_shock_orb_preview": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/shock_orb_preview",
+        "stream": false
+      }
+    ]
+  },
+  "morse_shock_orb_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/shock_orb_throw",
+        "stream": false
+      }
+    ]
+  },
+  "morse_shock_orb_burst": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/shock_orb_burst",
+        "stream": false
+      }
+    ]
+  },
+  "morse_strong_shock_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/strong_shock_hit",
+        "stream": false
+      }
+    ]
+  },
+  "morse_deafened": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/deafened",
+        "stream": false
+      }
+    ]
+  },
+  "morse_ai_disabled": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/ai_disabled",
+        "stream": false
+      }
+    ]
+  },
+  "morse_flash_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/flash_equip",
+        "stream": false
+      }
+    ]
+  },
+  "morse_flash_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/flash_throw",
+        "stream": false
+      }
+    ]
+  },
+  "morse_flash_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/flash_bounce",
+        "stream": false
+      }
+    ]
+  },
+  "morse_flash_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/flash_explode",
+        "stream": false
+      }
+    ]
+  },
+  "morse_flash_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/flash_hit",
+        "stream": false
+      }
+    ]
+  },
+  "morse_tinnitus": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/tinnitus",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_equip",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_deploying": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_deploying",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_deploy_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_deploy_complete",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_scan_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_scan_start",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_idle_tick": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_idle_tick",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_target_found_voice": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_target_found_voice",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "morse_sonar_action_reveal": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:morse/sonar_action_reveal",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_footprint_spawn": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/footprint_spawn",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_footprint_fade": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/footprint_fade",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_footprint_read_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/footprint_read_start",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_footprint_info": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/footprint_info",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_equip",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_stow",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_launch": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_launch",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_fly",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_target_found": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_target_found",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_position_reveal": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_position_reveal",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_pulse_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_pulse_throw",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_self_destruct_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_start",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_falcon_self_destruct_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_explode",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_equip",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_throw",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_countdown": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_countdown",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_explode": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_stagger_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_stagger_hit",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_target_available": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_target_available",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_attach": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_attach",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_reveal": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_reveal",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_view_enter": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_view_enter",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_view_exit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_view_exit",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_lost": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_lost",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_explosive_spine_activate": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/explosive_spine_activate",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_danger_near_miss": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/danger_near_miss",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_explosion_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/explosion_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_speed_refresh": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/speed_refresh",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_tactical_roll_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/tactical_roll_start",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_tactical_roll_kill_reset": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/tactical_roll_kill_reset",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_equip",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_throw",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_attach": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_attach",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_charge_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_charge_start",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_charge_tick": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_charge_tick",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_release": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_release",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_disarm_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_disarm_hit",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_wall_drill_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/wall_drill_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_anchor_place": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_anchor_place",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_rope_warning": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_rope_warning",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_active": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_active",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_lethal_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_lethal_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_pull_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_pull_loop",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_downed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_downed",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_self_rescue_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_self_rescue_start",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_self_rescue_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_self_rescue_complete",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_rope_suspend": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_rope_suspend",
+        "stream": false
+      }
+    ]
+  },
+  "tempest_recall_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:tempest/recall_end",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_adrenaline_release": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/adrenaline_release",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_adrenaline_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/adrenaline_end",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_tear_gas_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/tear_gas_equip",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_tear_gas_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/tear_gas_throw",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_tear_gas_burst": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/tear_gas_burst",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_equip",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_stow",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_mode_switch": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_mode_switch",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_release": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_release",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_hit",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_pullout_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_pullout_start",
+        "stream": false
+      }
+    ]
+  },
+  "toxik_firefly_pullout_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:toxik/firefly_pullout_complete",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_downed_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/downed_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_downed_marker": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/downed_marker",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_rescue_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/rescue_start",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_rescue_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/rescue_complete",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_self_rescue_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/self_rescue_start",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_self_rescue_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/self_rescue_complete",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_equip": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_equip",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_stow",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_lock": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_lock",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_mode_switch": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_mode_switch",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_launch": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_launch",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_hit",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_healing_dust_apply": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/healing_dust_apply",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_waste_apply": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_waste_apply",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_medical_drone_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/medical_drone_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_remote_smoke_throw": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/remote_smoke_throw",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_remote_smoke_burst": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/remote_smoke_burst",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_active_defense_summon": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/active_defense_summon",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_absorption_refresh": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/absorption_refresh",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_downed_player_found": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/downed_player_found",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_plasma_injection_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/plasma_injection_start",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_plasma_injection_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/plasma_injection_complete",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_quick_rescue": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/quick_rescue",
+        "stream": false
+      }
+    ]
+  },
+  "vlinder_active_defense_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vlinder/active_defense_destroyed",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_rift_refresh": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/rift_refresh",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_correction_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/correction_start",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_correction_refresh": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/correction_refresh",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_hot_iron_toggle": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/hot_iron_toggle",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_weapon_swing": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/weapon_swing",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_hot_iron_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/hot_iron_hit",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_core_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/core_start",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_ritual_sword_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/ritual_sword_hit",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_doom_trigger": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/doom_trigger",
+        "stream": false
+      }
+    ]
+  },
+  "nikaidou_doom_death": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nikaidou_hiro/doom_death",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_reflect": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/reflect",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_hiss": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/hiss",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_power_strike": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/power_strike",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_block_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/block_start",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_block_success": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/block_success",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_road_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/road_start",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_road_warning": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/road_warning",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_truck_hit": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/truck_hit",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_truck_self_downed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/truck_self_downed",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_self_rescue_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/self_rescue_start",
+        "stream": false
+      }
+    ]
+  },
+  "catdad_self_rescue_complete": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:catdad/self_rescue_complete",
+        "stream": false
+      }
+    ]
+  },
+  "department_laser_shoot": {"sounds": [{"name": "minecraft:block.beacon.power_select", "type": "event"}]},
+  "department_laser_fly": {"sounds": [{"name": "minecraft:block.beacon.ambient", "type": "event"}]},
+  "department_laser_hit": {"sounds": [{"name": "minecraft:entity.firework_rocket.blast", "type": "event"}]},
+  "department_trap_equip": {"sounds": [{"name": "minecraft:item.armor.equip_iron", "type": "event"}]},
+  "department_trap_deploy": {"sounds": [{"name": "minecraft:block.anvil.place", "type": "event"}]},
+  "department_trap_ready": {"sounds": [{"name": "minecraft:block.note_block.hat", "type": "event"}]},
+  "department_trap_trigger": {"sounds": [{"name": "minecraft:entity.creeper.primed", "type": "event"}]},
+  "department_trap_explode": {"sounds": [{"name": "minecraft:entity.generic.explode", "type": "event"}]},
+  "department_charged_creeper_eject": {"sounds": [{"name": "dealt_force_skills:department/charged_creeper_eject", "stream": false}]},
+  "department_baby_zombie_eject": {"sounds": [{"name": "dealt_force_skills:department/baby_zombie_eject", "stream": false}]},
+  "department_core_cast": {"sounds": [{"name": "dealt_force_skills:department/core_cast", "stream": false}]},
+  "department_core_countdown": {"sounds": [{"name": "dealt_force_skills:department/core_countdown", "stream": false}]},
+  "department_core_release": {"sounds": [{"name": "dealt_force_skills:department/core_release", "stream": false}]},
+  "department_passive_first_fatal": {"sounds": [{"name": "dealt_force_skills:department/passive_first_fatal", "stream": false}]},
+  "department_passive_second_fatal": {"sounds": [{"name": "dealt_force_skills:department/passive_second_fatal", "stream": false}]},
+  "item_armor_repair_start": {
+    "sounds": [{"name": "dealt_force_skills:item/armor_repair_start", "stream": false}]
+  },
+  "item_armor_repair_work": {
+    "sounds": [{"name": "dealt_force_skills:item/armor_repair_work", "stream": false}]
+  },
+  "item_armor_repair_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/armor_repair_finish", "stream": false}]
+  },
+  "item_helmet_repair_start": {
+    "sounds": [{"name": "dealt_force_skills:item/helmet_repair_start", "stream": false}]
+  },
+  "item_helmet_repair_work": {
+    "sounds": [{"name": "dealt_force_skills:item/helmet_repair_work", "stream": false}]
+  },
+  "item_helmet_repair_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/helmet_repair_finish", "stream": false}]
+  },
+  "item_hemostatic_start": {
+    "sounds": [{"name": "dealt_force_skills:item/hemostatic_start", "stream": false}]
+  },
+  "item_hemostatic_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/hemostatic_finish", "stream": false}]
+  },
+  "item_painkiller_start": {
+    "sounds": [{"name": "dealt_force_skills:item/painkiller_start", "stream": false}]
+  },
+  "item_painkiller_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/painkiller_finish", "stream": false}]
+  },
+  "item_sustained_release_painkiller_start": {
+    "sounds": [{"name": "dealt_force_skills:item/sustained_release_painkiller_start", "stream": false}]
+  },
+  "item_sustained_release_painkiller_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/sustained_release_painkiller_finish", "stream": false}]
+  },
+  "item_surgical_start": {
+    "sounds": [{"name": "dealt_force_skills:item/surgical_start", "stream": false}]
+  },
+  "item_surgical_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/surgical_finish", "stream": false}]
+  },
+  "item_injection_start": {
+    "sounds": [{"name": "dealt_force_skills:item/injection_start", "stream": false}]
+  },
+  "item_injection_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/injection_finish", "stream": false}]
+  },
+  "item_beverage_start": {
+    "sounds": [{"name": "dealt_force_skills:item/beverage_start", "stream": false}]
+  },
+  "item_beverage_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/beverage_finish", "stream": false}]
+  },
+  "item_medicine_start": {
+    "sounds": [{"name": "dealt_force_skills:item/medicine_start", "stream": false}]
+  },
+  "item_medicine_work": {
+    "sounds": [{"name": "dealt_force_skills:item/medicine_work", "stream": false}]
+  },
+  "item_medicine_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/medicine_finish", "stream": false}]
+  },
+  "item_special_supply_start": {
+    "sounds": [{"name": "dealt_force_skills:item/special_supply_start", "stream": false}]
+  },
+  "item_special_supply_finish": {
+    "sounds": [{"name": "dealt_force_skills:item/special_supply_finish", "stream": false}]
+  },
+  "lex_ninjia_one_word_cut": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/one_word_cut", "stream": false}]},
+  "lex_ninjia_handshake": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/handshake", "stream": false}]},
+  "lex_ninjia_flash_cut_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/flash_cut_hand", "stream": false}]},
+  "lex_ninjia_one_blade_taunt": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/one_blade_taunt", "stream": false}]},
+  "lex_ninjia_burning_blade": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/burning_blade", "stream": false}]},
+  "lex_ninjia_arashi_cut": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/arashi_cut", "stream": false}]},
+  "lex_ninjia_death_flame_smoke": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/death_flame_smoke", "stream": false}]},
+  "lex_ninjia_shadow_blade": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/shadow_blade", "stream": false}]},
+  "lex_ninjia_shadow_smoke": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/shadow_smoke", "stream": false}]},
+  "lex_ninjia_cliff_fall_blade": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/cliff_fall_blade", "stream": false}]},
+  "lex_ninjia_no_name_blade": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/no_name_blade", "stream": false}]},
+  "lex_ninjia_sharpen": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/sharpen", "stream": false}]},
+  "lex_ninjia_shadow_clone_cross": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/shadow_clone_cross", "stream": false}]},
+  "lex_ninjia_ten_meter_sword": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ten_meter_sword", "stream": false}]},
+  "lex_ninjia_iron_sword_rain": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/iron_sword_rain", "stream": false}]},
+  "lex_ninjia_fd_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/fd_hand", "stream": false}]},
+  "lex_ninjia_fire_fist": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/fire_fist", "stream": false}]},
+  "lex_ninjia_luohan_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/luohan_hand", "stream": false}]},
+  "lex_ninjia_reflect_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/reflect_hand", "stream": false}]},
+  "lex_ninjia_stop_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/stop_hand", "stream": false}]},
+  "lex_ninjia_pea_shooter": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/pea_shooter", "stream": false}]},
+  "lex_ninjia_big_portion": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/big_portion", "stream": false}]},
+  "lex_ninjia_good_sleep": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/good_sleep", "stream": false}]},
+  "lex_ninjia_return_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/return_hand", "stream": false}]},
+  "lex_ninjia_double_luohan": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/double_luohan", "stream": false}]},
+  "lex_ninjia_ion_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ion_hand", "stream": false}]},
+  "lex_ninjia_spin_ion_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/spin_ion_hand", "stream": false}]},
+  "lex_ninjia_white_crane": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/white_crane", "stream": false}]},
+  "lex_ninjia_shield_guard": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/shield_guard", "stream": false}]},
+  "lex_ninjia_sand_wall": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/sand_wall", "stream": false}]},
+  "lex_ninjia_no_one_retaliates": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/no_one_retaliates", "stream": false}]},
+  "lex_ninjia_one_death_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/one_death_hand", "stream": false}]},
+  "lex_ninjia_snake_poison_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/snake_poison_hand", "stream": false}]},
+  "lex_ninjia_death_god_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/death_god_hand", "stream": false}]},
+  "lex_ninjia_all_hands": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/all_hands", "stream": false}]},
+  "lex_ninjia_nano_snickers": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/nano_snickers", "stream": false}]},
+  "lex_ninjia_hamburger": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/hamburger", "stream": false}]},
+  "lex_ninjia_milk_fruit_shake": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/milk_fruit_shake", "stream": false}]},
+  "lex_ninjia_shrimp_hand": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/shrimp_hand", "stream": false}]},
+  "lex_ninjia_roast_meat_rice": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/roast_meat_rice", "stream": false}]},
+  "lex_ninjia_mc_nuggets": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/mc_nuggets", "stream": false}]},
+  "lex_ninjia_lotus_box_food": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/lotus_box_food", "stream": false}]},
+  "lex_ninjia_milk_beer": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/milk_beer", "stream": false}]},
+  "lex_ninjia_cold_copper": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/cold_copper", "stream": false}]},
+  "lex_ninjia_hot_drink": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/hot_drink", "stream": false}]},
+  "lex_ninjia_ham_friend": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_friend", "stream": false}]},
+  "lex_ninjia_ham_berserk": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_berserk", "stream": false}]},
+  "lex_ninjia_ham_kill_all": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_kill_all", "stream": false}]},
+  "lex_ninjia_ham_beast": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_beast", "stream": false}]},
+  "lex_ninjia_ham_shadow_kick": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_shadow_kick", "stream": false}]},
+  "lex_ninjia_ham_echo": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_echo", "stream": false}]}
+}

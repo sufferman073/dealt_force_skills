@@ -1,0 +1,587 @@
+package com.rzy.dealt_force_skills.character.nox;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.effect.NoxCrippledEffect;
+import com.rzy.dealt_force_skills.effect.NoxDelayedWoundEffect;
+import com.rzy.dealt_force_skills.entity.NoxDecoyEntity;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_NoxRevealPosition;
+import com.rzy.dealt_force_skills.network.S2C_SyncNoxState;
+import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModEntities;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+public final class NoxStateManager {
+    public static final int ROTOR_COOLDOWN_TICKS = 55 * 20;
+    public static final int FLASH_MAX_CHARGES = 2;
+    public static final int FLASH_RECHARGE_TICKS = 45 * 20;
+    public static final int CORE_PREP_TICKS = 12;
+    public static final int CORE_DURATION_TICKS = 35 * 20;
+    public static final int CORE_COOLDOWN_TICKS = 75 * 20;
+    public static final int DELAYED_WOUND_TICKS = 10 * 20;
+    public static final int CRIPPLED_TICKS = 8 * 20;
+    public static final int DECOY_INTERVAL_TICKS = 5 * 20;
+    public static final int MAX_ACTIVE_DECOYS = 2;
+    public static final int STEALTH_PARTICLE_INTERVAL_TICKS = 10;
+    public static final double STEALTH_WARNING_RANGE = 15.0D;
+    private static final float DECOY_DAMAGE_MULTIPLIER = 0.5f;
+    public static final UUID STEALTH_SPEED_UUID = UUID.fromString("2b5d4b8a-5e6b-4b2e-8fe5-6e94337104ea");
+    public static final String DECOY_TAG = DealtForceSkillsMod.MODID + ".nox_decoy";
+    public static final String DECOY_OWNER = "NoxOwner";
+    public static final String DECOY_HEALTH = "NoxDecoyHealth";
+    public static final String DECOY_ARMOR = "NoxDecoyArmor";
+
+    private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".nox";
+    private static final String INITIALIZED = "Initialized";
+    private static final String ROTOR_COOLDOWN_UNTIL = "RotorCooldownUntil";
+    private static final String FLASH_CHARGES = "FlashCharges";
+    private static final String FLASH_NEXT_RECHARGE = "FlashNextRecharge";
+    private static final String CORE_PREP_UNTIL = "CorePrepUntil";
+    private static final String CORE_ACTIVE_UNTIL = "CoreActiveUntil";
+    private static final String CORE_COOLDOWN_UNTIL = "CoreCooldownUntil";
+    private static final String NEXT_DECOY_TICK = "NextDecoyTick";
+    private static final String EQUIPPED_TOOL = "EquippedTool";
+    private static final String DECOYS = "Decoys";
+    private static final HashMap<UUID, Set<UUID>> STEALTH_WARNED_PLAYERS = new HashMap<>();
+    private static final List<UUID> ACTIVE_DECOYS = new ArrayList<>();
+
+    private NoxStateManager() {
+    }
+
+    public static boolean isNox(Player player) {
+        Optional<String> selected = CharacterSelectionManager.getSelectedCharacterId(player);
+        return selected.isPresent() && ModCharacters.NOX_ID.equals(selected.get());
+    }
+
+    public static void initializeIfNeeded(ServerPlayer player) {
+        if (!isNox(player)) {
+            return;
+        }
+
+        CompoundTag tag = data(player);
+        if (tag.getBoolean(INITIALIZED)) {
+            return;
+        }
+
+        tag.putBoolean(INITIALIZED, true);
+        tag.putLong(ROTOR_COOLDOWN_UNTIL, 0L);
+        tag.putInt(FLASH_CHARGES, FLASH_MAX_CHARGES);
+        tag.putLong(FLASH_NEXT_RECHARGE, 0L);
+        tag.putLong(CORE_PREP_UNTIL, 0L);
+        tag.putLong(CORE_ACTIVE_UNTIL, 0L);
+        tag.putLong(CORE_COOLDOWN_UNTIL, 0L);
+        tag.putLong(NEXT_DECOY_TICK, 0L);
+        tag.putInt(EQUIPPED_TOOL, NoxTool.NONE.ordinal());
+    }
+
+    public static void copyState(Player original, Player target) {
+        CompoundTag originalData = original.getPersistentData();
+        if (originalData.contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            target.getPersistentData().put(ROOT_TAG, originalData.getCompound(ROOT_TAG).copy());
+        }
+    }
+
+    public static void clearState(Player player) {
+        player.getPersistentData().remove(ROOT_TAG);
+    }
+
+    public static void tick(ServerPlayer player) {
+        if (!isNox(player)) {
+            removeStealthRuntime(player);
+            return;
+        }
+
+        initializeIfNeeded(player);
+        long now = player.level().getGameTime();
+        rechargeFlash(player, now);
+        tickCorePreparation(player, now);
+        tickStealth(player, now);
+    }
+
+    public static boolean rotorReady(Player player) {
+        return player.level().getGameTime() >= data(player).getLong(ROTOR_COOLDOWN_UNTIL);
+    }
+
+    public static int rotorCooldownRemainingTicks(Player player) {
+        return remainingTicks(player, ROTOR_COOLDOWN_UNTIL);
+    }
+
+    public static boolean consumeRotor(ServerPlayer player) {
+        if (!rotorReady(player)) {
+            return false;
+        }
+        data(player).putLong(ROTOR_COOLDOWN_UNTIL,
+                SkillCooldownHelper.until(player, player.level().getGameTime(), ROTOR_COOLDOWN_TICKS));
+        return true;
+    }
+
+    public static int flashCharges(Player player) {
+        return Math.min(FLASH_MAX_CHARGES, data(player).getInt(FLASH_CHARGES));
+    }
+
+    public static int flashRechargeRemainingTicks(Player player) {
+        if (flashCharges(player) >= FLASH_MAX_CHARGES) {
+            return 0;
+        }
+        return remainingTicks(player, FLASH_NEXT_RECHARGE);
+    }
+
+    public static boolean consumeFlash(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        int charges = flashCharges(player);
+        if (charges <= 0) {
+            return false;
+        }
+        tag.putInt(FLASH_CHARGES, charges - 1);
+        if (charges == FLASH_MAX_CHARGES) {
+            tag.putLong(FLASH_NEXT_RECHARGE,
+                    SkillCooldownHelper.until(player, player.level().getGameTime(), FLASH_RECHARGE_TICKS));
+        }
+        return true;
+    }
+
+    public static boolean coreReady(Player player) {
+        return player.level().getGameTime() >= data(player).getLong(CORE_COOLDOWN_UNTIL)
+                && corePrepRemainingTicks(player) <= 0
+                && stealthRemainingTicks(player) <= 0;
+    }
+
+    public static int coreCooldownRemainingTicks(Player player) {
+        return remainingTicks(player, CORE_COOLDOWN_UNTIL);
+    }
+
+    public static int corePrepRemainingTicks(Player player) {
+        return remainingTicks(player, CORE_PREP_UNTIL);
+    }
+
+    public static int stealthRemainingTicks(Player player) {
+        return remainingTicks(player, CORE_ACTIVE_UNTIL);
+    }
+
+    public static boolean isStealthed(Player player) {
+        return data(player).getLong(CORE_ACTIVE_UNTIL) > player.level().getGameTime();
+    }
+
+    public static boolean startStealthPreparation(ServerPlayer player) {
+        if (!coreReady(player)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.stealth_cooldown"), true);
+            return true;
+        }
+
+        long now = player.level().getGameTime();
+        data(player).putLong(CORE_PREP_UNTIL, now + CORE_PREP_TICKS);
+        setEquippedTool(player, NoxTool.NONE);
+        player.level().playSound(null, player.blockPosition(), ModSounds.NOX_STEALTH_START.get(),
+                SoundSource.PLAYERS, 0.8f, 1.0f);
+        player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.stealth_preparing"), true);
+        return true;
+    }
+
+    public static NoxTool equippedTool(Player player) {
+        int ordinal = data(player).getInt(EQUIPPED_TOOL);
+        NoxTool[] tools = NoxTool.values();
+        return ordinal >= 0 && ordinal < tools.length ? tools[ordinal] : NoxTool.NONE;
+    }
+
+    public static void setEquippedTool(Player player, NoxTool tool) {
+        data(player).putInt(EQUIPPED_TOOL, tool.ordinal());
+    }
+
+    public static void applyDelayedWound(ServerPlayer owner, LivingEntity target, float healthCap) {
+        if (owner == target || !TargetingUtil.isTargetableLiving(target)) {
+            return;
+        }
+        boolean applied = target.addEffect(new MobEffectInstance(ModEffects.NOX_DELAYED_WOUND.get(),
+                DELAYED_WOUND_TICKS, 0, false, true, true), owner);
+        if (applied || target.hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
+            NoxDelayedWoundEffect.resetCaps(target, healthCap);
+        } else {
+            NoxDelayedWoundEffect.clearCaps(target);
+        }
+    }
+
+    public static void applyCrippled(LivingEntity target, LivingEntity owner) {
+        NoxCrippledEffect.setOwner(target, owner);
+        target.addEffect(new MobEffectInstance(ModEffects.NOX_CRIPPLED.get(),
+                CRIPPLED_TICKS, 0, false, true, true), owner);
+    }
+
+    public static void tryApplyDelayedWound(DamageSource source, LivingEntity target, float amount) {
+        if (amount <= 0.0f || !TargetingUtil.isTargetableLiving(target)) {
+            return;
+        }
+        playerFromSource(source)
+                .filter(owner -> owner != target && isNox(owner))
+                .ifPresent(owner -> applyDelayedWound(owner, target, target.getHealth() - amount));
+    }
+
+    public static boolean handleDecoyHurt(LivingEntity entity, DamageSource source, float amount) {
+        CompoundTag tag = entity.getPersistentData();
+        if (!tag.getBoolean(DECOY_TAG)) {
+            return false;
+        }
+
+        float hiddenHealth = tag.getFloat(DECOY_HEALTH);
+        float reduced = Math.max(0.0f, amount * DECOY_DAMAGE_MULTIPLIER);
+        hiddenHealth -= reduced;
+        tag.putFloat(DECOY_HEALTH, hiddenHealth);
+
+        if (hiddenHealth <= 0.0f) {
+            ACTIVE_DECOYS.remove(entity.getUUID());
+            revealOwnerToBreaker(entity, source);
+            entity.discard();
+        }
+        return true;
+    }
+
+    public static void clearRuntimeOnDeath(ServerPlayer player) {
+        endStealth(player, false);
+        player.removeEffect(ModEffects.NOX_DELAYED_WOUND.get());
+        NoxDelayedWoundEffect.clearCaps(player);
+        player.removeEffect(ModEffects.NOX_CRIPPLED.get());
+        player.removeEffect(ModEffects.NOX_FLASHED.get());
+    }
+
+    public static void onKill(ServerPlayer player) {
+        if (!isNox(player)) {
+            return;
+        }
+        initializeIfNeeded(player);
+        if (corePrepRemainingTicks(player) <= 0 && stealthRemainingTicks(player) <= 0) {
+            return;
+        }
+        if (stealthRemainingTicks(player) > 0) {
+            applyStealthRuntime(player);
+            spawnStealthParticles(player);
+        }
+        syncToClient(player);
+    }
+
+    public static void syncToClient(ServerPlayer player) {
+        if (!isNox(player)) {
+            return;
+        }
+        initializeIfNeeded(player);
+        NetworkHandler.sendToPlayer(new S2C_SyncNoxState(
+                rotorCooldownRemainingTicks(player),
+                flashCharges(player),
+                FLASH_MAX_CHARGES,
+                flashRechargeRemainingTicks(player),
+                coreCooldownRemainingTicks(player),
+                corePrepRemainingTicks(player),
+                stealthRemainingTicks(player),
+                equippedTool(player).ordinal()
+        ), player);
+    }
+
+    private static void tickCorePreparation(ServerPlayer player, long now) {
+        long prepUntil = data(player).getLong(CORE_PREP_UNTIL);
+        if (prepUntil <= 0L || now < prepUntil) {
+            return;
+        }
+        activateStealth(player, now);
+    }
+
+    private static void activateStealth(ServerPlayer player, long now) {
+        CompoundTag tag = data(player);
+        long activeUntil = now + CORE_DURATION_TICKS;
+        tag.putLong(CORE_PREP_UNTIL, 0L);
+        tag.putLong(CORE_ACTIVE_UNTIL, activeUntil);
+        tag.putLong(CORE_COOLDOWN_UNTIL, activeUntil + SkillCooldownHelper.ticks(player, CORE_COOLDOWN_TICKS));
+        tag.putLong(NEXT_DECOY_TICK, now + 1L);
+        STEALTH_WARNED_PLAYERS.put(player.getUUID(), new HashSet<>());
+        applyStealthRuntime(player);
+        player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.stealth_active"), true);
+        syncToClient(player);
+    }
+
+    private static void tickStealth(ServerPlayer player, long now) {
+        long activeUntil = data(player).getLong(CORE_ACTIVE_UNTIL);
+        if (activeUntil <= 0L) {
+            removeStealthRuntime(player);
+            return;
+        }
+        if (now >= activeUntil) {
+            endStealth(player, true);
+            return;
+        }
+
+        applyStealthRuntime(player);
+        clearMobTargets(player);
+        warnNearbyPlayers(player, now);
+        if (now % STEALTH_PARTICLE_INTERVAL_TICKS == 0L) {
+            spawnStealthParticles(player);
+        }
+        if (now >= data(player).getLong(NEXT_DECOY_TICK)) {
+            spawnDecoy(player);
+            data(player).putLong(NEXT_DECOY_TICK, now + DECOY_INTERVAL_TICKS);
+        }
+    }
+
+    private static void endStealth(ServerPlayer player, boolean notify) {
+        CompoundTag tag = data(player);
+        tag.putLong(CORE_PREP_UNTIL, 0L);
+        tag.putLong(CORE_ACTIVE_UNTIL, 0L);
+        tag.putLong(NEXT_DECOY_TICK, 0L);
+        removeStealthRuntime(player);
+        removeStealthDecoys(player);
+        STEALTH_WARNED_PLAYERS.remove(player.getUUID());
+        if (notify) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.stealth_ended"), true);
+            syncToClient(player);
+        }
+    }
+
+    private static void applyStealthRuntime(ServerPlayer player) {
+        var attr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr != null && attr.getModifier(STEALTH_SPEED_UUID) == null) {
+            attr.addTransientModifier(new AttributeModifier(
+                    STEALTH_SPEED_UUID, "nox_stealth_speed", 0.25D, AttributeModifier.Operation.MULTIPLY_TOTAL
+            ));
+        }
+        player.setInvisible(true);
+        player.setSilent(true);
+        player.addEffect(new MobEffectInstance(ModEffects.NOX_STEALTH.get(), 40, 0, false, false, false));
+    }
+
+    private static void spawnStealthParticles(ServerPlayer player) {
+        player.serverLevel().sendParticles(ParticleTypes.SMOKE,
+                player.getX(), player.getY() + player.getBbHeight() * 0.55D, player.getZ(),
+                8, 0.32D, 0.55D, 0.32D, 0.01D);
+    }
+
+    private static void removeStealthRuntime(ServerPlayer player) {
+        var attr = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attr != null && attr.getModifier(STEALTH_SPEED_UUID) != null) {
+            attr.removeModifier(STEALTH_SPEED_UUID);
+        }
+        if (!isStealthed(player)) {
+            player.setInvisible(false);
+            player.setSilent(false);
+            player.removeEffect(ModEffects.NOX_STEALTH.get());
+        }
+    }
+
+    private static void clearMobTargets(ServerPlayer player) {
+        AABB box = player.getBoundingBox().inflate(32.0D);
+        for (Mob mob : player.serverLevel().getEntitiesOfClass(Mob.class, box, Mob::isAlive)) {
+            if (mob.getTarget() == player) {
+                mob.setTarget(null);
+            }
+        }
+    }
+
+    private static void warnNearbyPlayers(ServerPlayer nox, long now) {
+        Set<UUID> warned = STEALTH_WARNED_PLAYERS.computeIfAbsent(nox.getUUID(), id -> new HashSet<>());
+        double rangeSqr = STEALTH_WARNING_RANGE * STEALTH_WARNING_RANGE;
+        Set<UUID> currentlyNear = new HashSet<>();
+        for (ServerPlayer target : nox.server.getPlayerList().getPlayers()) {
+            if (target == nox || target.level() != nox.level() || !TargetingUtil.isTargetablePlayer(target)) {
+                continue;
+            }
+            if (target.distanceToSqr(nox) > rangeSqr) {
+                continue;
+            }
+
+            currentlyNear.add(target.getUUID());
+            if (warned.add(target.getUUID())) {
+                target.level().playSound(null, target.blockPosition(), ModSounds.NOX_STEALTH_WARNING.get(),
+                        SoundSource.PLAYERS, 0.7f, 1.0f);
+            }
+            if (now % 40L == 0L) {
+                target.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.stealth_nearby"), true);
+            }
+        }
+        warned.retainAll(currentlyNear);
+    }
+
+    private static void spawnDecoy(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Vec3 look = player.getLookAngle();
+        Vec3 horizontal = new Vec3(look.x, 0.0D, look.z);
+        Vec3 behind = horizontal.lengthSqr() > 0.001D ? horizontal.normalize().scale(-1.35D) : Vec3.ZERO;
+        Vec3 pos = player.position().add(behind);
+
+        NoxDecoyEntity decoy = new NoxDecoyEntity(ModEntities.NOX_DECOY.get(), level, player);
+        decoy.setPos(pos.x, pos.y, pos.z);
+        decoy.setYRot(player.getYRot());
+        decoy.setYHeadRot(player.getYHeadRot());
+        decoy.setYBodyRot(player.getYRot());
+        decoy.setCustomName(Component.translatable("entity.dealt_force_skills.nox_decoy"));
+        decoy.setCustomNameVisible(false);
+        level.addFreshEntity(decoy);
+        rememberDecoy(player, decoy.getUUID());
+    }
+
+    private static void rememberDecoy(ServerPlayer player, UUID decoyId) {
+        CompoundTag tag = data(player);
+        ListTag list = tag.getList(DECOYS, Tag.TAG_STRING);
+        List<UUID> active = new ArrayList<>();
+        for (Tag value : list) {
+            try {
+                UUID uuid = UUID.fromString(value.getAsString());
+                Entity entity = player.serverLevel().getEntity(uuid);
+                if (entity != null && entity.isAlive() && entity.getPersistentData().getBoolean(DECOY_TAG)) {
+                    active.add(uuid);
+                }
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed legacy entries.
+            }
+        }
+        active.add(decoyId);
+        while (active.size() > MAX_ACTIVE_DECOYS) {
+            UUID old = active.remove(0);
+            Entity entity = player.serverLevel().getEntity(old);
+            if (entity != null && entity.getPersistentData().getBoolean(DECOY_TAG)) {
+                entity.discard();
+            }
+            ACTIVE_DECOYS.remove(old);
+        }
+
+        ListTag updated = new ListTag();
+        for (UUID uuid : active) {
+            updated.add(StringTag.valueOf(uuid.toString()));
+        }
+        tag.put(DECOYS, updated);
+        rememberGlobalDecoy(player, decoyId);
+    }
+
+    private static void removeStealthDecoys(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        ListTag list = tag.getList(DECOYS, Tag.TAG_STRING);
+        for (Tag value : list) {
+            try {
+                UUID uuid = UUID.fromString(value.getAsString());
+                Entity entity = player.serverLevel().getEntity(uuid);
+                if (entity != null && entity.getPersistentData().getBoolean(DECOY_TAG)) {
+                    entity.discard();
+                }
+                ACTIVE_DECOYS.remove(uuid);
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed legacy entries.
+            }
+        }
+        tag.remove(DECOYS);
+    }
+
+    private static void rememberGlobalDecoy(ServerPlayer player, UUID decoyId) {
+        ACTIVE_DECOYS.removeIf(uuid -> !isActiveTrackedDecoy(player, uuid));
+        ACTIVE_DECOYS.add(decoyId);
+        while (ACTIVE_DECOYS.size() > MAX_ACTIVE_DECOYS) {
+            UUID old = ACTIVE_DECOYS.remove(0);
+            Entity entity = trackedDecoy(player, old);
+            if (entity != null) {
+                entity.discard();
+            }
+        }
+    }
+
+    private static boolean isActiveTrackedDecoy(ServerPlayer player, UUID uuid) {
+        Entity entity = trackedDecoy(player, uuid);
+        return entity != null && entity.isAlive();
+    }
+
+    private static Entity trackedDecoy(ServerPlayer player, UUID uuid) {
+        for (ServerLevel level : player.server.getAllLevels()) {
+            Entity entity = level.getEntity(uuid);
+            if (entity != null && entity.getPersistentData().getBoolean(DECOY_TAG)) {
+                return entity;
+            }
+        }
+        return null;
+    }
+
+    private static void revealOwnerToBreaker(LivingEntity decoy, DamageSource source) {
+        CompoundTag tag = decoy.getPersistentData();
+        if (!tag.hasUUID(DECOY_OWNER) || !(decoy.level() instanceof ServerLevel level)) {
+            return;
+        }
+        Entity ownerEntity = level.getEntity(tag.getUUID(DECOY_OWNER));
+        Entity attacker = source.getEntity();
+        if (!(ownerEntity instanceof ServerPlayer owner) || !(attacker instanceof ServerPlayer breaker)) {
+            return;
+        }
+        NetworkHandler.sendToPlayer(new S2C_NoxRevealPosition(owner.getId(), owner.position(), 2 * 20), breaker);
+        breaker.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.decoy_revealed"), true);
+        level.playSound(null, decoy.blockPosition(), ModSounds.NOX_DECOY_BREAK.get(), SoundSource.PLAYERS, 0.9f, 1.0f);
+    }
+
+    private static void rechargeFlash(ServerPlayer player, long now) {
+        CompoundTag tag = data(player);
+        int charges = flashCharges(player);
+        if (charges >= FLASH_MAX_CHARGES) {
+            tag.putLong(FLASH_NEXT_RECHARGE, 0L);
+            return;
+        }
+
+        long next = tag.getLong(FLASH_NEXT_RECHARGE);
+        if (next <= 0L) {
+            tag.putLong(FLASH_NEXT_RECHARGE, SkillCooldownHelper.until(player, now, FLASH_RECHARGE_TICKS));
+            return;
+        }
+        while (charges < FLASH_MAX_CHARGES && now >= next) {
+            charges++;
+            next += SkillCooldownHelper.ticks(player, FLASH_RECHARGE_TICKS);
+        }
+        tag.putInt(FLASH_CHARGES, charges);
+        tag.putLong(FLASH_NEXT_RECHARGE, charges >= FLASH_MAX_CHARGES ? 0L : next);
+    }
+
+    private static Optional<ServerPlayer> playerFromSource(DamageSource source) {
+        if (source.getEntity() instanceof ServerPlayer player) {
+            return Optional.of(player);
+        }
+        if (source.getDirectEntity() instanceof ServerPlayer player) {
+            return Optional.of(player);
+        }
+        if (source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof ServerPlayer player) {
+            return Optional.of(player);
+        }
+        return Optional.empty();
+    }
+
+    private static int remainingTicks(Player player, String key) {
+        long remaining = data(player).getLong(key) - player.level().getGameTime();
+        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+    }
+
+    private static CompoundTag data(Player player) {
+        CompoundTag persistent = player.getPersistentData();
+        if (!persistent.contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            persistent.put(ROOT_TAG, new CompoundTag());
+        }
+        return persistent.getCompound(ROOT_TAG);
+    }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dealt_force_skills:item/hvk_quick_release_body_armor"
+  }
+}

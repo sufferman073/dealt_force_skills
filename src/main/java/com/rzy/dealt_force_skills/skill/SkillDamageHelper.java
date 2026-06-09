@@ -1,0 +1,211 @@
+package com.rzy.dealt_force_skills.skill;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+
+public final class SkillDamageHelper {
+    private static final float BONUS_PER_EXPERIENCE_LEVEL = 0.005f;
+    private static final float NON_PLAYER_TARGET_MULTIPLIER = 5.0f;
+
+    public static final ResourceKey<DamageType> TRUE_SKILL_DAMAGE = key("true_skill");
+    public static final ResourceKey<DamageType> SINEVA_BLADE_WIRE = key("sineva_blade_wire");
+    public static final ResourceKey<DamageType> SINEVA_GRAPPLE = key("sineva_grapple");
+    public static final ResourceKey<DamageType> SINEVA_SHIELD_BASH = key("sineva_shield_bash");
+    public static final ResourceKey<DamageType> SHEPHERD_SONIC = key("shepherd_sonic");
+    public static final ResourceKey<DamageType> SHEPHERD_FRAG_GRENADE = key("shepherd_frag_grenade");
+    public static final ResourceKey<DamageType> D_WOLF_HAND_CANNON = key("d_wolf_hand_cannon");
+    public static final ResourceKey<DamageType> D_WOLF_SELF_REWARD = key("d_wolf_self_reward");
+    public static final ResourceKey<DamageType> ULURU_MISSILE = key("uluru_missile");
+    public static final ResourceKey<DamageType> ULURU_INCENDIARY = key("uluru_incendiary");
+    public static final ResourceKey<DamageType> ULURU_FIRE_FIELD = key("uluru_fire_field");
+    public static final ResourceKey<DamageType> GIZMO_SPIDERLING = key("gizmo_spiderling");
+    public static final ResourceKey<DamageType> LUNA_SHOCK_ARROW = key("luna_shock_arrow");
+    public static final ResourceKey<DamageType> VYRON_MAGNETIC_BOMB = key("vyron_magnetic_bomb");
+    public static final ResourceKey<DamageType> MANBA_DUEL_EXECUTE = key("manba_duel_execute");
+    public static final ResourceKey<DamageType> MANBA_ELBOW = key("manba_elbow");
+    public static final ResourceKey<DamageType> NOX_ROTOR = key("nox_rotor");
+    public static final ResourceKey<DamageType> NOX_FLASH = key("nox_flash");
+    public static final ResourceKey<DamageType> TOXIK_FIREFLY = key("toxik_firefly");
+    public static final ResourceKey<DamageType> RAPTOR_PULSE = key("raptor_pulse");
+    public static final ResourceKey<DamageType> RAPTOR_FALCON = key("raptor_falcon");
+    public static final ResourceKey<DamageType> NIKAIDOU_WEAPON = key("nikaidou_weapon");
+    public static final ResourceKey<DamageType> NIKAIDOU_DECAY = key("nikaidou_decay");
+    public static final ResourceKey<DamageType> CATDAD_REFLECT = key("catdad_reflect");
+    public static final ResourceKey<DamageType> CATDAD_STRIKE = key("catdad_strike");
+    public static final ResourceKey<DamageType> CATDAD_TRUCK = key("catdad_truck");
+    public static final ResourceKey<DamageType> DEPARTMENT_LASER = key("department_laser");
+    public static final ResourceKey<DamageType> DEPARTMENT_TRAP = key("department_trap");
+    public static final ResourceKey<DamageType> DEPARTMENT_TRAP_MANUAL = key("department_trap_manual");
+    public static final ResourceKey<DamageType> DEPARTMENT_CORE = key("department_core");
+    public static final ResourceKey<DamageType> DEPARTMENT_PASSIVE_BLAST = key("department_passive_blast");
+
+    private SkillDamageHelper() {
+    }
+
+    private static ResourceKey<DamageType> key(String id) {
+        return ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(DealtForceSkillsMod.MODID, id));
+    }
+
+    public static float scale(LivingEntity source, float amount) {
+        if (!(source instanceof Player player) || amount <= 0.0f) {
+            return amount;
+        }
+        return amount * (1.0f + Math.max(0, player.experienceLevel) * BONUS_PER_EXPERIENCE_LEVEL);
+    }
+
+    public static boolean hurt(LivingEntity target, DamageSource source, LivingEntity sourceEntity, float amount) {
+        return target.hurt(source, scaleForTarget(target, sourceEntity, amount));
+    }
+
+    public static boolean hurtUnscaled(LivingEntity target, DamageSource source, float amount) {
+        return target.hurt(source, amount);
+    }
+
+    public static float scaleForTarget(LivingEntity target, LivingEntity sourceEntity, float amount) {
+        float scaled = scale(sourceEntity, amount);
+        if (!(target instanceof Player)) {
+            scaled *= NON_PLAYER_TARGET_MULTIPLIER;
+        }
+        return scaled;
+    }
+
+    public static DamageSource trueDamage(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, TRUE_SKILL_DAMAGE, directEntity, causingEntity);
+    }
+
+    public static DamageSource sinevaBladeWire(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SINEVA_BLADE_WIRE, directEntity, causingEntity);
+    }
+
+    public static DamageSource sinevaGrapple(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SINEVA_GRAPPLE, directEntity, causingEntity);
+    }
+
+    public static DamageSource sinevaShieldBash(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SINEVA_SHIELD_BASH, directEntity, causingEntity);
+    }
+
+    public static DamageSource shepherdSonic(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SHEPHERD_SONIC, directEntity, causingEntity);
+    }
+
+    public static DamageSource shepherdFragGrenade(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SHEPHERD_FRAG_GRENADE, directEntity, causingEntity);
+    }
+
+    public static DamageSource dWolfHandCannon(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, D_WOLF_HAND_CANNON, directEntity, causingEntity);
+    }
+
+    public static DamageSource dWolfSelfReward(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, D_WOLF_SELF_REWARD, directEntity, causingEntity);
+    }
+
+    public static DamageSource uluruMissile(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, ULURU_MISSILE, directEntity, causingEntity);
+    }
+
+    public static DamageSource uluruIncendiary(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, ULURU_INCENDIARY, directEntity, causingEntity);
+    }
+
+    public static DamageSource uluruFireField(ServerLevel level, Entity directEntity) {
+        return source(level, ULURU_FIRE_FIELD, directEntity, null);
+    }
+
+    public static DamageSource gizmoSpiderling(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, GIZMO_SPIDERLING, directEntity, causingEntity);
+    }
+
+    public static DamageSource lunaShockArrow(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, LUNA_SHOCK_ARROW, directEntity, causingEntity);
+    }
+
+    public static DamageSource vyronMagneticBomb(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, VYRON_MAGNETIC_BOMB, directEntity, causingEntity);
+    }
+
+    public static DamageSource manbaDuelExecute(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, MANBA_DUEL_EXECUTE, directEntity, causingEntity);
+    }
+
+    public static DamageSource manbaElbow(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, MANBA_ELBOW, directEntity, causingEntity);
+    }
+
+    public static DamageSource noxRotor(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, NOX_ROTOR, directEntity, causingEntity);
+    }
+
+    public static DamageSource noxFlash(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, NOX_FLASH, directEntity, causingEntity);
+    }
+
+    public static DamageSource toxikFirefly(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, TOXIK_FIREFLY, directEntity, causingEntity);
+    }
+
+    public static DamageSource raptorPulse(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, RAPTOR_PULSE, directEntity, causingEntity);
+    }
+
+    public static DamageSource raptorFalcon(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, RAPTOR_FALCON, directEntity, causingEntity);
+    }
+
+    public static DamageSource nikaidouWeapon(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, NIKAIDOU_WEAPON, directEntity, causingEntity);
+    }
+
+    public static DamageSource nikaidouDecay(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, NIKAIDOU_DECAY, directEntity, causingEntity);
+    }
+
+    public static DamageSource catDadReflect(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, CATDAD_REFLECT, directEntity, causingEntity);
+    }
+
+    public static DamageSource catDadStrike(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, CATDAD_STRIKE, directEntity, causingEntity);
+    }
+
+    public static DamageSource catDadTruck(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, CATDAD_TRUCK, directEntity, causingEntity);
+    }
+
+    public static DamageSource departmentLaser(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, DEPARTMENT_LASER, directEntity, causingEntity);
+    }
+
+    public static DamageSource departmentTrap(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, DEPARTMENT_TRAP, directEntity, causingEntity);
+    }
+
+    public static DamageSource departmentTrapManual(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, DEPARTMENT_TRAP_MANUAL, directEntity, causingEntity);
+    }
+
+    public static DamageSource departmentCore(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, DEPARTMENT_CORE, directEntity, causingEntity);
+    }
+
+    public static DamageSource departmentPassiveBlast(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, DEPARTMENT_PASSIVE_BLAST, directEntity, causingEntity);
+    }
+
+    public static DamageSource source(ServerLevel level, ResourceKey<DamageType> type, Entity directEntity, Entity causingEntity) {
+        return new DamageSource(
+                level.registryAccess().registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(type),
+                directEntity,
+                causingEntity
+        );
+    }
+}

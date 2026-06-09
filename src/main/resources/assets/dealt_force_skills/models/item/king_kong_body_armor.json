@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dealt_force_skills:item/king_kong_body_armor"
+  }
+}

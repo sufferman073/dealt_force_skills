@@ -1,0 +1,54 @@
+package com.rzy.dealt_force_skills.network;
+
+import com.rzy.dealt_force_skills.character.vyron.VyronSkills;
+import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
+import com.rzy.dealt_force_skills.character.vyron.VyronToolAction;
+import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
+import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
+import com.rzy.dealt_force_skills.registry.ModEffects;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkEvent;
+
+import java.util.function.Supplier;
+
+public class C2S_VyronToolAction {
+    private final VyronToolAction action;
+    private final boolean highThrow;
+
+    public C2S_VyronToolAction(VyronToolAction action) {
+        this(action, false);
+    }
+
+    public C2S_VyronToolAction(VyronToolAction action, boolean highThrow) {
+        this.action = action;
+        this.highThrow = highThrow;
+    }
+
+    public static void encode(C2S_VyronToolAction msg, FriendlyByteBuf buf) {
+        buf.writeVarInt(msg.action.ordinal());
+        buf.writeBoolean(msg.highThrow);
+    }
+
+    public static C2S_VyronToolAction decode(FriendlyByteBuf buf) {
+        int ordinal = buf.readVarInt();
+        VyronToolAction[] values = VyronToolAction.values();
+        VyronToolAction action = ordinal >= 0 && ordinal < values.length ? values[ordinal] : VyronToolAction.STOW_TOOL;
+        return new C2S_VyronToolAction(action, buf.readBoolean());
+    }
+
+    public static void handle(C2S_VyronToolAction msg, Supplier<NetworkEvent.Context> ctx) {
+        ctx.get().enqueueWork(() -> {
+            ServerPlayer player = ctx.get().getSender();
+            if (player == null || UluruLoiteringMissileEntity.isPlayerControlling(player)) {
+                return;
+            }
+            if (player.hasEffect(ModEffects.STUN.get()) || player.hasEffect(ModEffects.WEBBED.get()) || StingerStateManager.isDowned(player)) {
+                return;
+            }
+            VyronSkills.handleToolAction(player, msg.action, msg.highThrow);
+            VyronStateManager.syncToClient(player);
+        });
+        ctx.get().setPacketHandled(true);
+    }
+}

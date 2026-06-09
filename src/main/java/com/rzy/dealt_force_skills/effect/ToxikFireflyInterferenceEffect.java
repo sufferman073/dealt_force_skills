@@ -1,0 +1,132 @@
+package com.rzy.dealt_force_skills.effect;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_SuppressLocalHurtAnimation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public class ToxikFireflyInterferenceEffect extends MobEffect {
+    private static final String OWNER_TAG = DealtForceSkillsMod.MODID + ".toxik_firefly_owner";
+    private static final String BASE_MAX_HEALTH_TAG = DealtForceSkillsMod.MODID + ".toxik_firefly_base_max_health";
+    private static final String REDUCED_HEALTH_TAG = DealtForceSkillsMod.MODID + ".toxik_firefly_reduced_health";
+    private static final String SLOW_UUID = "ac9182cc-1ec1-4d09-b286-28fe2424c0c6";
+    private static final UUID MAX_HEALTH_MODIFIER_UUID = UUID.fromString("d2b91f85-b6f8-4c63-82b8-ef8b9c89beea");
+    private static final String MAX_HEALTH_MODIFIER_NAME = "Toxik firefly temporary max health reduction";
+    private static final double MAX_REDUCTION_RATIO = 0.9999D;
+    private static final double PER_LEVEL_REDUCTION_PER_SECOND = 0.01D;
+    private static final int REDUCTION_INTERVAL_TICKS = 5;
+
+    public ToxikFireflyInterferenceEffect() {
+        super(MobEffectCategory.NEUTRAL, 0xA6FF3D);
+        addAttributeModifier(Attributes.MOVEMENT_SPEED,
+                SLOW_UUID,
+                -0.5D,
+                AttributeModifier.Operation.MULTIPLY_TOTAL);
+    }
+
+    public static void setOwner(LivingEntity target, LivingEntity owner) {
+        if (owner != null) {
+            target.getPersistentData().putUUID(OWNER_TAG, owner.getUUID());
+        }
+    }
+
+    @Override
+    public void applyEffectTick(LivingEntity entity, int amplifier) {
+        if (!(entity.level() instanceof ServerLevel) || !entity.isAlive()) {
+            return;
+        }
+        applyStackingHealthReduction(entity, amplifier);
+    }
+
+    @Override
+    public boolean isDurationEffectTick(int duration, int amplifier) {
+        return duration % REDUCTION_INTERVAL_TICKS == 0;
+    }
+
+    @Override
+    public double getAttributeModifierValue(int amplifier, AttributeModifier modifier) {
+        if (SLOW_UUID.equals(modifier.getId().toString())) {
+            return -0.5D;
+        }
+        return super.getAttributeModifierValue(amplifier, modifier);
+    }
+
+    public static void clearCaps(LivingEntity entity) {
+        CompoundTag tag = entity.getPersistentData();
+        double reduced = tag.getDouble(REDUCED_HEALTH_TAG);
+        AttributeInstance maxHealth = entity.getAttribute(Attributes.MAX_HEALTH);
+        if (maxHealth != null) {
+            maxHealth.removeModifier(MAX_HEALTH_MODIFIER_UUID);
+        }
+        if (reduced > 0.0D && entity.isAlive()) {
+            float restored = (float) Math.min(entity.getMaxHealth(), entity.getHealth() + reduced);
+            entity.setHealth(Math.max(0.01F, restored));
+        }
+        tag.remove(BASE_MAX_HEALTH_TAG);
+        tag.remove(REDUCED_HEALTH_TAG);
+        tag.remove(OWNER_TAG);
+    }
+
+    private static void applyStackingHealthReduction(LivingEntity entity, int amplifier) {
+        AttributeInstance maxHealth = entity.getAttribute(Attributes.MAX_HEALTH);
+        if (maxHealth == null) {
+            return;
+        }
+        CompoundTag tag = entity.getPersistentData();
+        double alreadyReduced = Math.max(0.0D, tag.getDouble(REDUCED_HEALTH_TAG));
+        double baseMaxHealth;
+        if (tag.contains(BASE_MAX_HEALTH_TAG)) {
+            baseMaxHealth = Math.max(1.0D, tag.getDouble(BASE_MAX_HEALTH_TAG));
+        } else {
+            baseMaxHealth = Math.max(1.0D, entity.getMaxHealth() + alreadyReduced);
+            tag.putDouble(BASE_MAX_HEALTH_TAG, baseMaxHealth);
+        }
+
+        double maxReduction = Math.max(0.0D, baseMaxHealth * MAX_REDUCTION_RATIO);
+        double reductionThisInterval = baseMaxHealth
+                * PER_LEVEL_REDUCTION_PER_SECOND
+                * (amplifier + 1)
+                * (REDUCTION_INTERVAL_TICKS / 20.0D);
+        double newReduced = Math.min(maxReduction, alreadyReduced + reductionThisInterval);
+        double delta = Math.max(0.0D, newReduced - alreadyReduced);
+        if (delta <= 0.0D) {
+            return;
+        }
+
+        maxHealth.removeModifier(MAX_HEALTH_MODIFIER_UUID);
+        maxHealth.addTransientModifier(new AttributeModifier(
+                MAX_HEALTH_MODIFIER_UUID,
+                MAX_HEALTH_MODIFIER_NAME,
+                -newReduced,
+                AttributeModifier.Operation.ADDITION));
+        tag.putDouble(REDUCED_HEALTH_TAG, newReduced);
+
+        float newHealth = (float) Math.max(0.01D, entity.getHealth() - delta);
+        float cappedHealth = Math.min(newHealth, entity.getMaxHealth());
+        entity.setHealth(cappedHealth);
+        if (entity instanceof ServerPlayer player) {
+            NetworkHandler.sendToPlayer(new S2C_SuppressLocalHurtAnimation(3), player);
+        }
+    }
+
+    private static Optional<LivingEntity> owner(ServerLevel level, LivingEntity entity) {
+        CompoundTag tag = entity.getPersistentData();
+        if (!tag.hasUUID(OWNER_TAG)) {
+            return Optional.empty();
+        }
+        UUID ownerId = tag.getUUID(OWNER_TAG);
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(ownerId);
+        return Optional.ofNullable(player);
+    }
+}

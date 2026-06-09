@@ -1,0 +1,30 @@
+{
+  "replace": false,
+  "values": [
+    "dealt_force_skills:true_skill",
+    "dealt_force_skills:sineva_blade_wire",
+    "dealt_force_skills:shepherd_sonic",
+    "dealt_force_skills:shepherd_frag_grenade",
+    "dealt_force_skills:d_wolf_hand_cannon",
+    "dealt_force_skills:uluru_fire_field",
+    "dealt_force_skills:gizmo_spiderling",
+    "dealt_force_skills:luna_shock_arrow",
+    "dealt_force_skills:manba_duel_execute",
+    "dealt_force_skills:manba_elbow",
+    "dealt_force_skills:nox_rotor",
+    "dealt_force_skills:nox_flash",
+    "dealt_force_skills:toxik_firefly",
+    "dealt_force_skills:raptor_pulse",
+    "dealt_force_skills:raptor_falcon",
+    "dealt_force_skills:nikaidou_weapon",
+    "dealt_force_skills:nikaidou_decay",
+    "dealt_force_skills:catdad_reflect",
+    "dealt_force_skills:catdad_strike",
+    "dealt_force_skills:catdad_truck",
+    "dealt_force_skills:department_laser",
+    "dealt_force_skills:department_trap",
+    "dealt_force_skills:department_trap_manual",
+    "dealt_force_skills:department_core",
+    "dealt_force_skills:department_passive_blast"
+  ]
+}

@@ -1,0 +1,179 @@
+package com.rzy.dealt_force_skills.entity;
+
+import com.rzy.dealt_force_skills.registry.ModEntities;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
+import org.joml.Vector3f;
+
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.UUID;
+
+public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier {
+    private static final int READY_SOUND_INTERVAL_TICKS = 8;
+    private static final double TRIGGER_RADIUS = 3.0D;
+    private static final double MAX_OWNER_DISTANCE = 50.0D;
+    private static final DustParticleOptions YELLOW_BURST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.08f), 1.8f);
+
+    private UUID ownerId;
+    private Direction attachedFace = Direction.UP;
+
+    public GizmoSmokeTrapEntity(EntityType<? extends GizmoSmokeTrapEntity> type, Level level) {
+        super(type, level);
+        noPhysics = true;
+    }
+
+    public GizmoSmokeTrapEntity(EntityType<? extends GizmoSmokeTrapEntity> type, Level level, ServerPlayer owner, Direction attachedFace) {
+        this(type, level);
+        ownerId = owner.getUUID();
+        this.attachedFace = attachedFace;
+    }
+
+    @Override
+    public ItemStack getItem() {
+        return new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide) {
+            spawnClientIdleParticles();
+            return;
+        }
+
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        if (tickCount % READY_SOUND_INTERVAL_TICKS == 1) {
+            RangedSoundHelper.playTrapSound(serverLevel, position(), ModSounds.GIZMO_SMOKE_TRAP_READY.get(), 0.6f, 1.0f);
+        }
+
+        Entity owner = owner(serverLevel);
+        if (owner == null || !owner.isAlive() || owner.distanceToSqr(this) > MAX_OWNER_DISTANCE * MAX_OWNER_DISTANCE) {
+            discard();
+            return;
+        }
+
+        if (tickCount % 5 == 0) {
+            findTriggerTarget(serverLevel).ifPresent(target -> trigger(target.position().subtract(position())));
+        }
+    }
+
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (!level().isClientSide && amount > 0.0f) {
+            discard();
+        }
+        return true;
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        attachedFace = Direction.from3DDataValue(tag.getInt("AttachedFace"));
+    }
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        if (ownerId != null) {
+            tag.putUUID("Owner", ownerId);
+        }
+        tag.putInt("AttachedFace", attachedFace.get3DDataValue());
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    public boolean isOwnedBy(UUID owner) {
+        return ownerId != null && ownerId.equals(owner);
+    }
+
+    public void trigger(Vec3 direction) {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            discard();
+            return;
+        }
+
+        Vec3 horizontal = new Vec3(direction.x, 0.0D, direction.z);
+        if (horizontal.lengthSqr() < 0.0001D) {
+            horizontal = Vec3.atLowerCornerOf(attachedFace.getNormal());
+        }
+        Vec3 burstCenter = position().add(horizontal.normalize().scale(1.6D));
+        GizmoSmokeCloudEntity cloud = new GizmoSmokeCloudEntity(ModEntities.GIZMO_SMOKE_CLOUD.get(), serverLevel, ownerId);
+        cloud.setPos(burstCenter.x, burstCenter.y, burstCenter.z);
+        serverLevel.addFreshEntity(cloud);
+        RangedSoundHelper.playTrapSound(serverLevel, burstCenter, ModSounds.GIZMO_SMOKE_TRAP_TRIGGER.get(), 1.0f, 1.0f);
+        serverLevel.sendParticles(YELLOW_BURST, burstCenter.x, burstCenter.y + 0.35D, burstCenter.z,
+                96, 1.35D, 0.45D, 1.35D, 0.0D);
+        serverLevel.sendParticles(ParticleTypes.CLOUD, burstCenter.x, burstCenter.y + 0.35D, burstCenter.z,
+                36, 1.35D, 0.4D, 1.35D, 0.02D);
+        discard();
+    }
+
+    private Optional<LivingEntity> findTriggerTarget(ServerLevel level) {
+        AABB box = new AABB(position(), position()).inflate(TRIGGER_RADIUS);
+        return level.getEntitiesOfClass(LivingEntity.class, box, this::canTrigger)
+                .stream()
+                .filter(this::hasLineOfSightTo)
+                .min(Comparator.comparingDouble(target -> target.distanceToSqr(this)));
+    }
+
+    private boolean canTrigger(LivingEntity entity) {
+        if (!entity.isAlive() || isOwnedBy(entity.getUUID())) {
+            return false;
+        }
+        return entity instanceof ServerPlayer || entity instanceof Enemy;
+    }
+
+    private boolean hasLineOfSightTo(LivingEntity target) {
+        Vec3 start = position().add(0.0D, getBbHeight() * 0.5D, 0.0D);
+        Vec3 end = target.getEyePosition();
+        return level().clip(new ClipContext(start, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this)).getType()
+                == HitResult.Type.MISS;
+    }
+
+    private Entity owner(ServerLevel level) {
+        return ownerId == null ? null : level.getEntity(ownerId);
+    }
+
+    private void spawnClientIdleParticles() {
+        if (tickCount % 8 == 0) {
+            level().addParticle(ParticleTypes.SMOKE, getX(), getY() + 0.08D, getZ(), 0.0D, 0.01D, 0.0D);
+        }
+    }
+}

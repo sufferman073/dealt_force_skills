@@ -1,0 +1,1878 @@
+package com.rzy.dealt_force_skills.character.lexninjia;
+
+import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_SyncLexNinjiaState;
+import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BonemealableBlock;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.level.BlockEvent;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+public final class LexNinjiaStateManager {
+    public static final int BASE_MIND_CAPACITY = 25;
+    public static final int MAX_FORCED_MIND_EXPANSIONS = 10;
+    public static final int MAX_OVERLOAD_MIND = 10;
+    private static final int INPUT_EXPIRY_TICKS = 30 * 20;
+    private static final int MAX_STORED_COMBO_INPUTS = 12;
+    private static final int STACK_DURATION_TICKS = 10 * 20;
+    private static final int DEEP_FOCUS_TICKS = 20;
+    private static final int MAX_FOUNDATION_STACKS = 10;
+    private static final float BASE_LEICRA_REGEN_PER_SECOND = 1.0F;
+    private static final String ROOT = DealtForceSkillsMod.MODID + ".lex_ninjia";
+    private static final String LEICRA = ROOT + ".leicra";
+    private static final String KNOWN = ROOT + ".known";
+    private static final String EQUIPPED = ROOT + ".equipped";
+    private static final String MIND_EXPANSIONS = ROOT + ".mind_expansions";
+    private static final String FOOD_ART = ROOT + ".food_art";
+    private static final String FOOD_LEICRA_REGEN_UNTIL = ROOT + ".food_leicra_regen_until";
+    private static final String REVIVE_DISABLED_UNTIL = ROOT + ".revive_disabled_until";
+    private static final String TACZ_GUN_ID_TAG = "GunId";
+    private static final UUID HAND_SPEED_UUID = UUID.fromString("719f1779-e5f5-4116-9204-58e5d0a62d41");
+    private static final UUID SPIN_SLOW_UUID = UUID.fromString("1e52a8ac-79d4-4e9d-8ebc-af6bda24a6f1");
+    private static final Set<LexNinjiaArt> HAND_DAMAGE_ARTS = EnumSet.of(
+            LexNinjiaArt.FIRE_FIST,
+            LexNinjiaArt.LUOHAN_HAND,
+            LexNinjiaArt.STOP_HAND,
+            LexNinjiaArt.ONE_DEATH_HAND
+    );
+    private static final Map<UUID, RuntimeState> RUNTIME = new HashMap<>();
+
+    private LexNinjiaStateManager() {
+    }
+
+    public static boolean isLexNinjia(Player player) {
+        return CharacterSelectionManager.getSelectedCharacterId(player)
+                .map(ModCharacters.LEX_NINJIA_ID::equals)
+                .orElse(false);
+    }
+
+    public static void initializeIfNeeded(ServerPlayer player) {
+        CompoundTag tag = player.getPersistentData();
+        CompoundTag known = tag.getCompound(KNOWN);
+        boolean changed = false;
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (art.defaultKnown() && !known.getBoolean(art.id())) {
+                known.putBoolean(art.id(), true);
+                changed = true;
+            }
+        }
+        if (changed || !tag.contains(KNOWN)) {
+            tag.put(KNOWN, known);
+        }
+        CompoundTag equipped = tag.getCompound(EQUIPPED);
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (art.defaultKnown() && !equipped.getBoolean(art.id())) {
+                equipped.putBoolean(art.id(), true);
+            }
+        }
+        tag.put(EQUIPPED, equipped);
+        if (!tag.contains(LEICRA)) {
+            tag.putFloat(LEICRA, maxLeicra(player));
+        }
+    }
+
+    public static void copyState(Player original, Player replacement) {
+        CompoundTag from = original.getPersistentData();
+        CompoundTag to = replacement.getPersistentData();
+        if (from.contains(KNOWN, Tag.TAG_COMPOUND)) {
+            to.put(KNOWN, from.getCompound(KNOWN).copy());
+        }
+        if (from.contains(EQUIPPED, Tag.TAG_COMPOUND)) {
+            to.put(EQUIPPED, from.getCompound(EQUIPPED).copy());
+        }
+        to.putInt(MIND_EXPANSIONS, Math.max(0, from.getInt(MIND_EXPANSIONS)));
+        to.putFloat(LEICRA, Math.max(0.0F, from.getFloat(LEICRA)));
+        RUNTIME.remove(original.getUUID());
+    }
+
+    public static void onDeselected(ServerPlayer player) {
+        RuntimeState state = state(player);
+        restoreShield(player, state);
+        state.clearCombatRuntime(player.level().getGameTime());
+        player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(HAND_SPEED_UUID);
+        player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SPIN_SLOW_UUID);
+        syncToClient(player);
+    }
+
+    public static void clearRuntimeOnDeath(ServerPlayer player) {
+        RuntimeState state = state(player);
+        restoreShield(player, state);
+        state.clearAll();
+        syncToClient(player);
+    }
+
+    public static void tick(ServerPlayer player) {
+        initializeIfNeeded(player);
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        state.pruneInputs(now);
+        regenerateLeicra(player, state, now);
+        tickFoundationStacks(player, state, now);
+        tickPersistentEffects(player, state, now);
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        syncToClient(player);
+    }
+
+    public static boolean useFoundationSkill(ServerPlayer player, LexNinjiaComboInput input, int cost) {
+        initializeIfNeeded(player);
+        if (isSleeping(player)) {
+            return true;
+        }
+        if (!spendLeicra(player, cost)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.not_enough_leicra"), true);
+            syncToClient(player);
+            return true;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        if (input == LexNinjiaComboInput.HAND) {
+            state.handStacks = Math.min(MAX_FOUNDATION_STACKS, state.handStacks + 1);
+            state.handLastTick = now;
+            applyHandSpeed(player, state.handStacks);
+        } else if (input == LexNinjiaComboInput.BLADE) {
+            state.bladeStacks = Math.min(MAX_FOUNDATION_STACKS, state.bladeStacks + 1);
+            state.bladeLastTick = now;
+        } else if (input == LexNinjiaComboInput.HARMONY) {
+            state.harmonyStacks = Math.min(MAX_FOUNDATION_STACKS, state.harmonyStacks + 1);
+            state.harmonyLastTick = now;
+        }
+        addInput(player, state, input, now);
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        syncToClient(player);
+        return true;
+    }
+
+    public static void handleInput(ServerPlayer player, LexNinjiaInputAction action) {
+        if (!isLexNinjia(player)) {
+            return;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        if (state.sleepUntil > now) {
+            syncToClient(player);
+            return;
+        }
+        switch (action) {
+            case SNEAK_PRESS -> {
+                state.sneakPressTick = now;
+                state.longSneakRecorded = false;
+            }
+            case SNEAK_RELEASE -> handleSneakRelease(player, state, now);
+            case JUMP -> {
+                addInput(player, state, LexNinjiaComboInput.JUMP, now);
+                state.prepared = matchPrepared(player, state, now).orElse(null);
+            }
+            case RIGHT_PRESS -> {
+                state.rightPressTick = now;
+                state.rightChargeSpent = 0.0F;
+            }
+            case RIGHT_RELEASE -> handleRightRelease(player, state, now);
+            case COOK -> craftCookArt(player, state);
+        }
+        syncToClient(player);
+    }
+
+    public static void handleAttackEntity(ServerPlayer player, LivingEntity target) {
+        if (!isLexNinjia(player) || target == player || !target.isAlive()) {
+            return;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        if (state.prepared != null && state.prepared.releaseTrigger() == LexNinjiaReleaseTrigger.LEFT_CLICK) {
+            releasePrepared(player, state, state.prepared, target, now);
+        } else {
+            state.lastMeleeTarget = target.getUUID();
+        }
+        syncToClient(player);
+    }
+
+    public static void handleLivingHurt(LivingHurtEvent event) {
+        if (event.getAmount() <= 0.0F || event.getSource().is(SkillDamageHelper.TRUE_SKILL_DAMAGE)) {
+            return;
+        }
+        LivingEntity target = event.getEntity();
+        Entity attackerEntity = event.getSource().getEntity();
+        if (target instanceof ServerPlayer targetPlayer && isLexNinjia(targetPlayer)) {
+            handleIncomingDamage(targetPlayer, event);
+        }
+        if (attackerEntity instanceof ServerPlayer attacker && isLexNinjia(attacker)) {
+            handleOutgoingDamage(attacker, target, event);
+        }
+        if (attackerEntity instanceof LivingEntity attacker) {
+            handleNoRetaliation(attacker, target, event);
+        }
+    }
+
+    public static void handleFoodFinished(LivingEntity entity, ItemStack stack) {
+        if (!(entity instanceof ServerPlayer player) || stack.isEmpty() || !stack.hasTag()) {
+            return;
+        }
+        String artId = stack.getOrCreateTag().getString(FOOD_ART);
+        if (artId.isBlank()) {
+            return;
+        }
+        LexNinjiaArt art = LexNinjiaArt.byId(artId).orElse(null);
+        if (art == null) {
+            return;
+        }
+        applyCookFoodEffect(player, art);
+        syncToClient(player);
+    }
+
+    public static void handleBlockPlaced(BlockEvent.EntityPlaceEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
+                || !isLexNinjia(player)
+                || !(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        RuntimeState state = state(player);
+        if (state.fertilizerUntil <= level.getGameTime()) {
+            return;
+        }
+        growPlacedCrop(level, event.getPos());
+    }
+
+    public static void onPlayerAction(LivingEntity entity) {
+        if (!entity.level().isClientSide) {
+            triggerSnakePoison(entity);
+        }
+    }
+
+    public static boolean isKnown(Player player, LexNinjiaArt art) {
+        return art.defaultKnown() || player.getPersistentData().getCompound(KNOWN).getBoolean(art.id());
+    }
+
+    public static boolean isEquipped(Player player, LexNinjiaArt art) {
+        return art.defaultKnown()
+                || art.cookRecipe()
+                || player.getPersistentData().getCompound(EQUIPPED).getBoolean(art.id());
+    }
+
+    public static boolean canDisplayInShop(Player player, LexNinjiaArt art) {
+        if (art.defaultKnown()) {
+            return true;
+        }
+        return !art.hamForbidden() || allNonHamArtsKnown(player);
+    }
+
+    public static void learnArt(ServerPlayer player, LexNinjiaArt art) {
+        CompoundTag known = player.getPersistentData().getCompound(KNOWN);
+        known.putBoolean(art.id(), true);
+        player.getPersistentData().put(KNOWN, known);
+        if (art == LexNinjiaArt.HAM_FRIEND) {
+            setEquipped(player, art, true);
+        }
+        syncToClient(player);
+    }
+
+    public static boolean setEquipped(ServerPlayer player, LexNinjiaArt art, boolean equip) {
+        if (art.defaultKnown() || art.cookRecipe()) {
+            return true;
+        }
+        if (art == LexNinjiaArt.HAM_FRIEND && !equip) {
+            return false;
+        }
+        CompoundTag equipped = player.getPersistentData().getCompound(EQUIPPED);
+        if (!equip) {
+            equipped.remove(art.id());
+            player.getPersistentData().put(EQUIPPED, equipped);
+            syncToClient(player);
+            return true;
+        }
+        int used = mindUsed(player);
+        if (!equipped.getBoolean(art.id())) {
+            used += art.mindCost();
+        }
+        if (used > maxMindLoad(player)) {
+            return false;
+        }
+        equipped.putBoolean(art.id(), true);
+        player.getPersistentData().put(EQUIPPED, equipped);
+        syncToClient(player);
+        return true;
+    }
+
+    public static int forcedMindExpansions(Player player) {
+        return 0;
+    }
+
+    public static void expandMind(ServerPlayer player) {
+        player.getPersistentData().putInt(MIND_EXPANSIONS, 0);
+        syncToClient(player);
+    }
+
+    public static int mindCapacity(Player player) {
+        return BASE_MIND_CAPACITY;
+    }
+
+    public static int maxMindLoad(Player player) {
+        return BASE_MIND_CAPACITY + MAX_OVERLOAD_MIND;
+    }
+
+    public static int mindOverload(Player player) {
+        return Math.max(0, mindUsed(player) - mindCapacity(player));
+    }
+
+    public static int mindUsed(Player player) {
+        CompoundTag equipped = player.getPersistentData().getCompound(EQUIPPED);
+        int used = 0;
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (!art.defaultKnown() && !art.cookRecipe() && equipped.getBoolean(art.id())) {
+                used += art.mindCost();
+            }
+        }
+        return used;
+    }
+
+    public static CompoundTag shopData(ServerPlayer player) {
+        initializeIfNeeded(player);
+        CompoundTag data = new CompoundTag();
+        data.put(KNOWN, player.getPersistentData().getCompound(KNOWN).copy());
+        data.put(EQUIPPED, player.getPersistentData().getCompound(EQUIPPED).copy());
+        data.put("Known", player.getPersistentData().getCompound(KNOWN).copy());
+        data.put("Equipped", player.getPersistentData().getCompound(EQUIPPED).copy());
+        data.putInt("MindExpansions", forcedMindExpansions(player));
+        data.putInt("MindCapacity", mindCapacity(player));
+        data.putInt("MindUsed", mindUsed(player));
+        data.putBoolean("HamVisible", allNonHamArtsKnown(player));
+        return data;
+    }
+
+    public static void syncToClient(ServerPlayer player) {
+        if (!isLexNinjia(player)) {
+            return;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        NetworkHandler.sendToPlayer(new S2C_SyncLexNinjiaState(
+                leicra(player),
+                maxLeicra(player),
+                state.handStacks,
+                state.bladeStacks,
+                state.harmonyStacks,
+                state.prepared == null ? "" : state.prepared.id(),
+                state.prepared != null && canAffordRelease(player, state.prepared),
+                comboText(state, now),
+                mindUsed(player),
+                mindCapacity(player),
+                Math.max(0, (int) (state.deathFlameUntil - now)),
+                state.deathFlameOverflow,
+                Math.max(0, (int) (state.hamPowerUntil - now)),
+                Math.max(0, (int) (state.hamBerserkUntil - now))
+        ), player);
+    }
+
+    public static float leicra(ServerPlayer player) {
+        return Mth.clamp(player.getPersistentData().getFloat(LEICRA), 0.0F, maxLeicra(player));
+    }
+
+    public static float maxLeicra(ServerPlayer player) {
+        return 200.0F + Math.max(0, player.experienceLevel) * 10.0F;
+    }
+
+    public static boolean isTaczGunStack(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        CompoundTag tag = stack.getTag();
+        if (tag != null && tag.contains(TACZ_GUN_ID_TAG)) {
+            return true;
+        }
+        return stack.getItem().getClass().getName().startsWith("com.tacz.guns.");
+    }
+
+    private static RuntimeState state(Player player) {
+        return RUNTIME.computeIfAbsent(player.getUUID(), ignored -> new RuntimeState());
+    }
+
+    private static void regenerateLeicra(ServerPlayer player, RuntimeState state, long now) {
+        float max = maxLeicra(player);
+        float perTick = BASE_LEICRA_REGEN_PER_SECOND / 20.0F;
+        if (isMovingForward(player, state)) {
+            perTick += max * 0.02F / 20.0F;
+        }
+        if (player.isShiftKeyDown()) {
+            if (state.sneakHeldSince <= 0L) {
+                state.sneakHeldSince = now;
+            }
+            if (now - state.sneakHeldSince >= DEEP_FOCUS_TICKS) {
+                perTick += max * 0.04F / 20.0F;
+                if (!state.longSneakRecorded) {
+                    addInput(player, state, LexNinjiaComboInput.SNEAK, now);
+                    state.longSneakRecorded = true;
+                }
+            }
+        } else {
+            state.sneakHeldSince = 0L;
+            state.longSneakRecorded = false;
+        }
+        if (now <= player.getPersistentData().getLong(FOOD_LEICRA_REGEN_UNTIL)) {
+            perTick *= 3.0F;
+        }
+        setLeicra(player, Math.min(max, leicra(player) + perTick));
+    }
+
+    private static boolean isMovingForward(ServerPlayer player, RuntimeState state) {
+        Vec3 look = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z);
+        Vec3 movement = player.position().subtract(state.lastPosition);
+        state.lastPosition = player.position();
+        if (look.lengthSqr() < 0.0001D || movement.horizontalDistanceSqr() < 0.00004D) {
+            return false;
+        }
+        return movement.normalize().dot(look.normalize()) > 0.45D;
+    }
+
+    private static void tickFoundationStacks(ServerPlayer player, RuntimeState state, long now) {
+        if (state.handStacks > 0 && now - state.handLastTick > STACK_DURATION_TICKS) {
+            state.handStacks--;
+            state.handLastTick = now;
+            applyHandSpeed(player, state.handStacks);
+        }
+        if (state.bladeStacks > 0 && now - state.bladeLastTick > STACK_DURATION_TICKS) {
+            state.bladeStacks--;
+            state.bladeLastTick = now;
+        }
+        if (state.harmonyStacks > 0 && now - state.harmonyLastTick > STACK_DURATION_TICKS) {
+            state.harmonyStacks--;
+            state.harmonyLastTick = now;
+        }
+    }
+
+    private static void tickPersistentEffects(ServerPlayer player, RuntimeState state, long now) {
+        if (state.sleepUntil > now) {
+            player.stopUsingItem();
+            player.setSprinting(false);
+            Vec3 movement = player.getDeltaMovement();
+            player.setDeltaMovement(0.0D, Math.min(0.0D, movement.y), 0.0D);
+            player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5, 0, true, false));
+        } else if (state.sleepRewardPending) {
+            state.sleepRewardPending = false;
+            state.sleepUntil = 0L;
+            player.heal(player.getMaxHealth());
+            setLeicra(player, Math.min(maxLeicra(player), leicra(player) + maxLeicra(player) * 0.50F));
+        }
+        if (state.deathFlameUntil > now) {
+            removeHarmfulEffects(player);
+            player.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, 30, 0, true, false));
+            player.serverLevel().sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                    player.getX(), player.getY() + 1.0D, player.getZ(), 4, 0.7D, 0.7D, 0.7D, 0.02D);
+        } else if (state.deathFlameOverflow > 0.0F) {
+            float damage = state.deathFlameOverflow + 1.0F;
+            state.deathFlameOverflow = 0.0F;
+            player.hurt(SkillDamageHelper.trueDamage(player.serverLevel(), player, player), damage);
+        }
+        if (state.returnHandUntil > now) {
+            removeHarmfulEffects(player);
+            if (now % 20L == 0L) {
+                player.heal(Math.max(1.0F, player.getMaxHealth() * 0.04F));
+            }
+        }
+        if (state.ironRainUntil > now && now % 6L == 0L) {
+            rainIronSwords(player);
+        }
+        if (state.noRetaliationUntil > 0L && state.noRetaliationUntil <= now) {
+            state.noRetaliationUntil = 0L;
+        }
+        if (state.shieldUntil > 0L && state.shieldUntil <= now) {
+            restoreShield(player, state);
+        }
+        tickWallBlocks(player.serverLevel(), state, now);
+        if (state.tenMeterReleaseTick > 0L) {
+            tickTenMeterSword(player, state, now);
+        }
+        if (state.hamKillReleaseTick > 0L) {
+            tickHamKillAll(player, state, now);
+        }
+        if (state.hamShadowKickUntil > now) {
+            tickHamShadowKick(player, state, now);
+        }
+        if (state.hamBerserkUntil > now) {
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 30, 1, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 30, 2, true, false));
+        }
+        if (state.shadowCloneUntil > now && now % 10L == 0L) {
+            spawnShadowCloneVisuals(player, false);
+        }
+        tickSlashQueue(player, state, now);
+    }
+
+    private static void handleSneakRelease(ServerPlayer player, RuntimeState state, long now) {
+        long held = state.sneakPressTick <= 0L ? 0L : now - state.sneakPressTick;
+        state.sneakPressTick = 0L;
+        if (held >= DEEP_FOCUS_TICKS) {
+            state.longSneakRecorded = false;
+            state.prepared = matchPrepared(player, state, now).orElse(null);
+            return;
+        }
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        if (state.prepared != null && state.prepared.releaseTrigger() == LexNinjiaReleaseTrigger.MANUAL) {
+            releasePrepared(player, state, state.prepared, null, now);
+            return;
+        }
+        addInput(player, state, LexNinjiaComboInput.SNEAK, now);
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+    }
+
+    private static void handleRightRelease(ServerPlayer player, RuntimeState state, long now) {
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        if (state.prepared != null && state.prepared.releaseTrigger() == LexNinjiaReleaseTrigger.RIGHT_RELEASE) {
+            releasePrepared(player, state, state.prepared, null, now);
+        }
+        player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SPIN_SLOW_UUID);
+    }
+
+    private static void addInput(ServerPlayer player, RuntimeState state, LexNinjiaComboInput input, long now) {
+        state.inputs.add(new InputEntry(input, now));
+        state.pruneInputs(now);
+        state.trimInputs();
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+    }
+
+    private static Optional<LexNinjiaArt> matchPrepared(ServerPlayer player, RuntimeState state, long now) {
+        state.pruneInputs(now);
+        List<LexNinjiaComboInput> inputs = state.inputs.stream().map(InputEntry::input).toList();
+        LexNinjiaArt best = null;
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            List<LexNinjiaComboInput> releaseCombo = comboBeforeReleaseTrigger(art);
+            if (releaseCombo.isEmpty() || !isKnown(player, art) || !isEquipped(player, art)) {
+                continue;
+            }
+            if (art.hamForbidden() && !allNonHamArtsKnown(player)) {
+                continue;
+            }
+            if (!endsWith(inputs, releaseCombo)) {
+                continue;
+            }
+            if (best == null
+                    || releaseCombo.size() > comboBeforeReleaseTrigger(best).size()
+                    || (releaseCombo.size() == comboBeforeReleaseTrigger(best).size() && art.hamForbidden() && !best.hamForbidden())) {
+                best = art;
+            }
+        }
+        return Optional.ofNullable(best);
+    }
+
+    private static List<LexNinjiaComboInput> comboBeforeReleaseTrigger(LexNinjiaArt art) {
+        List<LexNinjiaComboInput> combo = art.combo();
+        if (combo.isEmpty()) {
+            return combo;
+        }
+        LexNinjiaComboInput last = combo.get(combo.size() - 1);
+        if ((art.releaseTrigger() == LexNinjiaReleaseTrigger.LEFT_CLICK && last == LexNinjiaComboInput.LEFT_CLICK)
+                || (art.releaseTrigger() == LexNinjiaReleaseTrigger.RIGHT_RELEASE && last == LexNinjiaComboInput.RIGHT_RELEASE)) {
+            return combo.subList(0, combo.size() - 1);
+        }
+        return combo;
+    }
+
+    private static boolean endsWith(List<LexNinjiaComboInput> inputs, List<LexNinjiaComboInput> combo) {
+        if (combo.size() > inputs.size()) {
+            return false;
+        }
+        int offset = inputs.size() - combo.size();
+        for (int i = 0; i < combo.size(); i++) {
+            if (inputs.get(offset + i) != combo.get(i)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void releasePrepared(ServerPlayer player, RuntimeState state, LexNinjiaArt art, LivingEntity target, long now) {
+        if (!canRelease(player, state, art, target)) {
+            state.prepared = art;
+            return;
+        }
+        if (art.leicraCost() > 0 && !spendLeicra(player, art.leicraCost())) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.not_enough_leicra"), true);
+            state.prepared = art;
+            return;
+        }
+        if (!payHamCost(player, state, art, now)) {
+            state.prepared = art;
+            return;
+        }
+        playArtSound(player, art);
+        playArtVisuals(player, art, target);
+        applyArt(player, state, art, target, now);
+        if (art.hamForbidden()) {
+            playHamEcho(player);
+        }
+        state.inputs.clear();
+        state.prepared = null;
+    }
+
+    private static boolean canRelease(ServerPlayer player, RuntimeState state, LexNinjiaArt art, LivingEntity target) {
+        if (art.requiredMaxLeicra() > 0 && maxLeicra(player) < art.requiredMaxLeicra()) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.max_leicra_required",
+                    art.requiredMaxLeicra()), true);
+            return false;
+        }
+        if (art.hamForbidden() && art != LexNinjiaArt.HAM_FRIEND && state.hamPowerUntil <= player.level().getGameTime()) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.ham_power_required"), true);
+            return false;
+        }
+        if (art.school() == LexNinjiaSchool.BLADE && !hasMeleeWeapon(player)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.requires_melee_weapon"), true);
+            return false;
+        }
+        if (art.school() == LexNinjiaSchool.HAND && !player.getMainHandItem().isEmpty()) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.requires_empty_hand"), true);
+            return false;
+        }
+        if (art.releaseTrigger() == LexNinjiaReleaseTrigger.LEFT_CLICK && target == null) {
+            return false;
+        }
+        if (art == LexNinjiaArt.SHADOW_SMOKE && state.shadowBladeUntil <= player.level().getGameTime()) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.shadow_blade_required"), true);
+            return false;
+        }
+        if (art == LexNinjiaArt.NO_NAME_BLADE && (target == null || !target.getUUID().equals(state.lastDamager))) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.last_damager_required"), true);
+            return false;
+        }
+        if (art == LexNinjiaArt.ONE_DEATH_HAND && (target == null || !target.getUUID().equals(state.handshakeTarget))) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.handshake_target_required"), true);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean canAffordRelease(ServerPlayer player, LexNinjiaArt art) {
+        return leicra(player) >= art.leicraCost()
+                && (art.requiredMaxLeicra() <= 0 || maxLeicra(player) >= art.requiredMaxLeicra());
+    }
+
+    private static boolean payHamCost(ServerPlayer player, RuntimeState state, LexNinjiaArt art, long now) {
+        if (!art.hamForbidden()) {
+            return true;
+        }
+        if (art != LexNinjiaArt.HAM_FRIEND) {
+            state.hamPowerUntil = 0L;
+        }
+        if (art == LexNinjiaArt.HAM_BERSERK) {
+            hurtSelfPercent(player, 0.20F);
+        } else if (art == LexNinjiaArt.HAM_BEAST) {
+            hurtSelfPercent(player, 0.50F);
+        } else if (art == LexNinjiaArt.HAM_SHADOW_KICK) {
+            hurtSelfPercent(player, 0.05F);
+        }
+        return player.isAlive() || art == LexNinjiaArt.HAM_KILL_ALL;
+    }
+
+    private static void applyArt(ServerPlayer player, RuntimeState state, LexNinjiaArt art, LivingEntity target, long now) {
+        switch (art) {
+            case ONE_WORD_CUT -> strikeFrontArea(player, 3.0D, 1.0D, 1.0D, meleeDamage(player));
+            case HANDSHAKE -> applyHandshake(player, state);
+            case FLASH_CUT_HAND -> target.addEffect(new MobEffectInstance(ModEffects.TEMPEST_DISARMED.get(), 70, 0));
+            case ONE_BLADE_TAUNT -> tauntNearby(player);
+            case BURNING_BLADE -> {
+                state.burningBladeUntil = now + 5L * 20L;
+                queueSlashes(state, target, now, 4, Math.max(1.0F, meleeDamage(player)), 6L, 6L, SlashVisual.BURNING, 0.0D);
+            }
+            case ARASHI_CUT -> state.arashiUntil = now + 15L * 20L;
+            case DEATH_FLAME_SMOKE -> {
+                state.deathFlameUntil = now + 10L * 20L;
+                state.deathFlameOverflow = 0.0F;
+            }
+            case SHADOW_BLADE -> state.shadowBladeUntil = now + 12L * 20L;
+            case SHADOW_SMOKE -> shadowSmoke(player);
+            case CLIFF_FALL_BLADE -> target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 6 * 20, 10));
+            case NO_NAME_BLADE -> executeTarget(player, target);
+            case SHARPEN -> state.sharpenStacks = 20 + Math.max(0, player.experienceLevel);
+            case SHADOW_CLONE_CROSS -> {
+                state.shadowCloneUntil = now + 120L * 20L;
+                spawnShadowCloneVisuals(player, true);
+            }
+            case TEN_METER_SWORD -> startTenMeterSword(player, state, now);
+            case IRON_SWORD_RAIN -> state.ironRainUntil = now + 6L * 20L;
+            case FD_HAND -> state.fdHandUntil = now + 2L * 20L;
+            case FIRE_FIST -> {
+                hurtTrue(player, target, 10.0F + target.getMaxHealth() * 0.01F);
+                target.setSecondsOnFire(3);
+            }
+            case LUOHAN_HAND -> hurtTrue(player, target, handDamage(player, 12.0F, state));
+            case REFLECT_HAND -> {
+                state.reflectStacks = 4;
+                state.reflectUntil = now + 60L * 20L;
+            }
+            case STOP_HAND -> {
+                target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ACTION_PAUSE.get(), 4 * 20, 0));
+                target.addEffect(new MobEffectInstance(ModEffects.NOX_DELAYED_WOUND.get(), 10 * 20, 0));
+            }
+            case PEA_SHOOTER -> {
+                state.peaStacks = Math.min(5, state.peaStacks + 1);
+                state.peaUntil = now + 15L * 20L;
+            }
+            case BIG_PORTION -> {
+                hurtSelfPercent(player, 0.10F);
+                if (player.isAlive()) {
+                    setLeicra(player, Math.min(maxLeicra(player), leicra(player) + maxLeicra(player) * 0.50F));
+                    state.fertilizerUntil = now + 30L * 20L;
+                }
+            }
+            case GOOD_SLEEP -> {
+                state.sleepUntil = now + 10L * 20L;
+                state.sleepRewardPending = true;
+                player.stopUsingItem();
+                player.setSprinting(false);
+                player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5, 0, true, false));
+            }
+            case RETURN_HAND -> state.returnHandUntil = now + 14L * 20L;
+            case DOUBLE_LUOHAN -> state.doubleLuohanReady = true;
+            case ION_HAND -> pullLookTarget(player);
+            case SPIN_ION_HAND -> releaseSpinIon(player, state);
+            case WHITE_CRANE -> state.whiteCraneReady = true;
+            case SHIELD_GUARD -> equipTemporaryShield(player, state, now);
+            case SAND_WALL -> createSandWall(player, state, now);
+            case NO_ONE_RETALIATES -> state.noRetaliationUntil = now + 60L * 20L;
+            case ONE_DEATH_HAND -> executeTarget(player, target);
+            case SNAKE_POISON_HAND -> state.snakePoisonUntil = now + 20L * 20L;
+            case DEATH_GOD_HAND -> summonDeathGod(player);
+            case ALL_HANDS -> releaseAllHands(player, state, now);
+            case HAM_FRIEND -> {
+                state.hamPowerUntil = now + 600L * 20L;
+                state.hamFriendPact = true;
+            }
+            case HAM_BERSERK -> state.hamBerserkUntil = now + 30L * 20L;
+            case HAM_KILL_ALL -> {
+                state.hamKillReleaseTick = now + 5L * 20L;
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 10 * 20, 4, true, false));
+            }
+            case HAM_BEAST -> summonHamBeast(player);
+            case HAM_SHADOW_KICK -> state.hamShadowKickUntil = now + 15L * 20L;
+            default -> {
+            }
+        }
+    }
+
+    private static void craftCookArt(ServerPlayer player, RuntimeState state) {
+        if (!isLexNinjia(player) || player.isCreative()) {
+            return;
+        }
+        List<LexNinjiaArt> candidates = new ArrayList<>();
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (art.cookRecipe() && isKnown(player, art)) {
+                candidates.add(art);
+            }
+        }
+        candidates.sort(LexNinjiaStateManager::compareCookRecipePriority);
+        for (LexNinjiaArt art : candidates) {
+            int cost = cookLeicraCost(art);
+            if (leicra(player) < cost) {
+                continue;
+            }
+            if (tryConsumeCookIngredients(player, art)) {
+                spendLeicra(player, cost);
+                if (art != LexNinjiaArt.SOLDIER_PILL) {
+                    playArtSound(player, art);
+                }
+                playArtVisuals(player, art, null);
+                giveOrDrop(player, cookFoodStack(art));
+                state.inputs.clear();
+                return;
+            }
+        }
+        player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.no_cook_recipe"), true);
+    }
+
+    private static int compareCookRecipePriority(LexNinjiaArt left, LexNinjiaArt right) {
+        int byPrice = Long.compare(right.price(), left.price());
+        if (byPrice != 0) {
+            return byPrice;
+        }
+        int byComplexity = Integer.compare(cookRecipeComplexity(right), cookRecipeComplexity(left));
+        if (byComplexity != 0) {
+            return byComplexity;
+        }
+        int byCost = Integer.compare(cookLeicraCost(right), cookLeicraCost(left));
+        if (byCost != 0) {
+            return byCost;
+        }
+        return Integer.compare(left.ordinal(), right.ordinal());
+    }
+
+    private static int cookRecipeComplexity(LexNinjiaArt art) {
+        return switch (art) {
+            case HOT_DRINK -> 6;
+            case MC_NUGGETS, LOTUS_BOX_FOOD, MILK_BEER -> 5;
+            case HAMBURGER, MILK_FRUIT_SHAKE, ROAST_MEAT_RICE -> 3;
+            case SOLDIER_PILL, NANO_SNICKERS, SHRIMP_HAND -> 2;
+            case COLD_COPPER -> 1;
+            default -> 0;
+        };
+    }
+
+    private static int cookLeicraCost(LexNinjiaArt art) {
+        return switch (art) {
+            case HAMBURGER, MILK_FRUIT_SHAKE, SHRIMP_HAND, ROAST_MEAT_RICE, MC_NUGGETS, LOTUS_BOX_FOOD, MILK_BEER, HOT_DRINK -> 30;
+            case SOLDIER_PILL, NANO_SNICKERS -> 20;
+            default -> 10;
+        };
+    }
+
+    private static boolean tryConsumeCookIngredients(ServerPlayer player, LexNinjiaArt art) {
+        ItemStack hand = player.getMainHandItem();
+        return switch (art) {
+            case SOLDIER_PILL -> hand.isEdible()
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, stack -> stack.isEdible(), 1, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, stack -> stack.isEdible(), 1);
+            case NANO_SNICKERS -> isSugarLike(hand)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isSugarLike, 1, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isSugarLike, 1);
+            case HAMBURGER -> hand.is(Items.BREAD)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isMeatLike, 1, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isPlantFoodLike, 1, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isMeatLike, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isPlantFoodLike, 1);
+            case MILK_FRUIT_SHAKE -> hand.is(Items.MILK_BUCKET)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isFruitLike, 2, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isFruitLike, 2);
+            case SHRIMP_HAND -> isFishLike(hand)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isFishLike, 1, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isFishLike, 1);
+            case ROAST_MEAT_RICE -> isCookedMeatLike(hand) && !hand.is(Items.COOKED_CHICKEN)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isPlantFoodLike, 2, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isPlantFoodLike, 2);
+            case MC_NUGGETS -> hand.is(Items.COOKED_CHICKEN)
+                    && canConsumeMainHand(hand, 3)
+                    && canConsumeInventoryAfterMain(player, stack -> stack.is(Items.WHEAT), 2, 3)
+                    && consumeMainHand(player, 3)
+                    && consumeInventory(player, stack -> stack.is(Items.WHEAT), 2);
+            case LOTUS_BOX_FOOD -> isPlantFoodLike(hand)
+                    && canConsumeMainHand(hand, 5)
+                    && consumeMainHand(player, 5);
+            case MILK_BEER -> isPotion(hand, net.minecraft.world.item.alchemy.Potions.AWKWARD)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, stack -> stack.is(Items.WHEAT), 3, 1)
+                    && canConsumeInventoryAfterMain(player, stack -> stack.is(Items.MILK_BUCKET), 1, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, stack -> stack.is(Items.WHEAT), 3)
+                    && consumeInventory(player, stack -> stack.is(Items.MILK_BUCKET), 1);
+            case COLD_COPPER -> hand.is(Items.COPPER_BLOCK)
+                    && canConsumeMainHand(hand, 1)
+                    && consumeMainHand(player, 1);
+            case HOT_DRINK -> isPotion(hand, net.minecraft.world.item.alchemy.Potions.WATER)
+                    && canConsumeMainHand(hand, 1)
+                    && canConsumeInventoryAfterMain(player, LexNinjiaStateManager::isSugarLike, 5, 1)
+                    && consumeMainHand(player, 1)
+                    && consumeInventory(player, LexNinjiaStateManager::isSugarLike, 5);
+            default -> false;
+        };
+    }
+
+    private static ItemStack cookFoodStack(LexNinjiaArt art) {
+        ItemStack stack = new ItemStack((art == LexNinjiaArt.MILK_BEER || art == LexNinjiaArt.HOT_DRINK)
+                ? Items.HONEY_BOTTLE : Items.COOKIE, art == LexNinjiaArt.MC_NUGGETS ? 6 : art == LexNinjiaArt.SHRIMP_HAND ? 2 : art == LexNinjiaArt.MILK_BEER ? 3 : 1);
+        stack.setHoverName(Component.translatable(art.nameKey()));
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putString(FOOD_ART, art.id());
+        return stack;
+    }
+
+    private static void applyCookFoodEffect(ServerPlayer player, LexNinjiaArt art) {
+        switch (art) {
+            case SOLDIER_PILL -> player.getFoodData().eat(16, 1.0F);
+            case NANO_SNICKERS -> {
+                player.getFoodData().eat(20, 1.0F);
+                setLeicra(player, Math.min(maxLeicra(player), leicra(player) + maxLeicra(player) * 0.10F));
+                player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 25 * 20, 0));
+            }
+            case HAMBURGER -> {
+                player.getFoodData().eat(20, 1.0F);
+                player.heal(player.getMaxHealth());
+                player.addEffect(new MobEffectInstance(MobEffects.SATURATION, 10 * 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 10 * 20, 3));
+            }
+            case MILK_FRUIT_SHAKE -> {
+                player.getFoodData().eat(16, 1.5F);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 60 * 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60 * 20, 0));
+            }
+            case SHRIMP_HAND -> {
+                player.getFoodData().eat(10, 0.9F);
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 10 * 20, 2));
+                player.getPersistentData().putLong(FOOD_LEICRA_REGEN_UNTIL, player.level().getGameTime() + 10L * 20L);
+            }
+            case ROAST_MEAT_RICE -> {
+                player.getFoodData().eat(100, 10.0F);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20 * 20, 2));
+            }
+            case MC_NUGGETS -> {
+                player.getFoodData().eat(9, 0.8F);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20 * 20, 0));
+                player.addEffect(new MobEffectInstance(MobEffects.HEALTH_BOOST, 20 * 20, 4));
+            }
+            case LOTUS_BOX_FOOD -> {
+                player.getFoodData().eat(20, 1.5F);
+                setLeicra(player, Math.min(maxLeicra(player), leicra(player) + maxLeicra(player) * 0.25F));
+                player.heal(10.0F);
+            }
+            case MILK_BEER -> {
+                removeHarmfulEffects(player);
+                player.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 3 * 20, 2));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 20 * 20, 1));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 20 * 20, 1));
+            }
+            case COLD_COPPER -> {
+                player.getFoodData().eat(1000, 100.0F);
+                player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 60 * 20, 3));
+                player.addEffect(new MobEffectInstance(MobEffects.POISON, 60 * 20, 4));
+                player.addEffect(new MobEffectInstance(MobEffects.WITHER, 60 * 20, 4));
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 60 * 20, 2));
+                player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 60 * 20, 9));
+            }
+            case HOT_DRINK -> {
+                setLeicra(player, maxLeicra(player));
+                player.getPersistentData().putLong(FOOD_LEICRA_REGEN_UNTIL, player.level().getGameTime() + 120L * 20L);
+                player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 120 * 20, 0));
+            }
+            default -> {
+            }
+        }
+    }
+
+    private static void handleIncomingDamage(ServerPlayer player, LivingHurtEvent event) {
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        Entity attacker = event.getSource().getEntity();
+        if (attacker instanceof LivingEntity living) {
+            state.lastDamager = living.getUUID();
+        }
+        if (state.fdHandUntil > now) {
+            event.setAmount(0.0F);
+            state.fdHandUntil = 0L;
+            return;
+        }
+        if (state.sleepUntil > now) {
+            event.setAmount(event.getAmount() * 0.20F);
+        }
+        if (state.reflectStacks > 0 && state.reflectUntil > now && event.getSource().getDirectEntity() instanceof Projectile projectile) {
+            float reflectedDamage = Math.max(1.0F, event.getAmount());
+            event.setAmount(0.0F);
+            state.reflectStacks--;
+            Entity owner = projectile.getOwner();
+            if (owner instanceof LivingEntity living) {
+                hurtTrue(player, living, reflectedDamage);
+            }
+            return;
+        }
+        float multiplier = Math.max(0.0F, 1.0F - state.harmonyStacks * 0.02F);
+        if (state.hamFriendPact) {
+            multiplier *= 0.75F;
+        }
+        if (state.hamBerserkUntil > now || state.hamShadowKickUntil > now) {
+            multiplier *= 0.55F;
+        }
+        if (attacker != null && attacker.getUUID().equals(state.handshakeTarget)) {
+            multiplier *= 0.70F;
+        }
+        int overload = mindOverload(player);
+        if (overload > 0) {
+            multiplier *= 1.0F + overload * 0.10F;
+        }
+        if (state.deathFlameUntil > now && event.getAmount() * multiplier >= player.getHealth()) {
+            float overflow = event.getAmount() * multiplier - Math.max(0.0F, player.getHealth() - 1.0F);
+            state.deathFlameOverflow += Math.max(0.0F, overflow);
+            event.setAmount(Math.max(0.0F, player.getHealth() - 1.0F));
+            return;
+        }
+        event.setAmount(event.getAmount() * multiplier);
+    }
+
+    private static void handleOutgoingDamage(ServerPlayer attacker, LivingEntity target, LivingHurtEvent event) {
+        RuntimeState state = state(attacker);
+        long now = attacker.level().getGameTime();
+        float multiplier = 1.0F + state.bladeStacks * 0.03F + state.sharpenStacks * 0.01F;
+        if (state.hamFriendPact) {
+            multiplier *= 1.50F;
+        }
+        if (state.hamBerserkUntil > now) {
+            multiplier *= 3.0F;
+            attacker.heal(Math.max(0.0F, event.getAmount()) * 0.50F);
+        }
+        if (target.getUUID().equals(state.handshakeTarget)) {
+            multiplier *= 0.10F;
+        }
+        event.setAmount(event.getAmount() * multiplier);
+        if (state.sharpenStacks > 0) {
+            state.sharpenStacks--;
+        }
+        if (state.burningBladeUntil > now) {
+            hurtTrue(attacker, target, target.getMaxHealth() * 0.025F);
+            target.setSecondsOnFire(3);
+        }
+        if (state.arashiUntil > now) {
+            queueSlashes(state, target, now, 2, Math.max(1.0F, event.getAmount() * 0.60F), 4L, 4L, SlashVisual.ARASHI, 0.0D);
+        }
+        if (state.shadowBladeUntil > now) {
+            hurtTrue(attacker, target, target.getMaxHealth() * 0.005F);
+        }
+        if (state.shadowCloneUntil > now) {
+            float splitDamage = Math.max(1.0F, event.getAmount()) / 3.0F;
+            event.setAmount(splitDamage);
+            playMainShadowCloneSlash(attacker, target);
+            queueShadowCloneFollowUps(state, target, now, splitDamage);
+        }
+        if (state.peaStacks > 0 && state.peaUntil > now) {
+            float peaDamage = state.peaStacks;
+            if (state.fertilizerUntil > now) {
+                peaDamage *= 2.5F;
+            }
+            hurtTrue(attacker, target, peaDamage);
+        }
+        if (state.snakePoisonUntil > now) {
+            addSnakePoison(target, attacker);
+        }
+    }
+
+    private static void handleNoRetaliation(LivingEntity attacker, LivingEntity target, LivingHurtEvent event) {
+        if (!(target.level() instanceof ServerLevel level)) {
+            return;
+        }
+        for (Map.Entry<UUID, RuntimeState> entry : RUNTIME.entrySet()) {
+            RuntimeState state = entry.getValue();
+            if (state.noRetaliationUntil <= level.getGameTime()) {
+                continue;
+            }
+            Entity caster = level.getEntity(entry.getKey());
+            if (!(caster instanceof ServerPlayer player) || attacker.distanceToSqr(player) > 45.0D * 45.0D) {
+                continue;
+            }
+            if (attacker == player) {
+                state.noRetaliationUntil = Math.max(level.getGameTime(), state.noRetaliationUntil - 10L * 20L);
+                continue;
+            }
+            float reflectedDamage = Math.max(1.0F, event.getAmount()) * 2.0F;
+            event.setAmount(0.0F);
+            hurtTrue(player, attacker, reflectedDamage);
+            break;
+        }
+    }
+
+    private static void applyHandshake(ServerPlayer player, RuntimeState state) {
+        nearestLookTarget(player, 8.0D, 0.92D).ifPresent(target -> {
+            state.handshakeTarget = target.getUUID();
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 15 * 20, 0));
+            player.addEffect(new MobEffectInstance(MobEffects.GLOWING, 15 * 20, 0));
+        });
+    }
+
+    private static void tauntNearby(ServerPlayer player) {
+        for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(5.0D), entity -> entity != player && entity.isAlive())) {
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 30, 0));
+            if (target instanceof Mob mob) {
+                mob.setTarget(player);
+            }
+        }
+    }
+
+    private static void shadowSmoke(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        for (int i = 0; i < 60; i++) {
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE,
+                    player.getX(), player.getY() + 1.0D, player.getZ(), 1, 4.0D, 1.5D, 4.0D, 0.03D);
+        }
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(6.0D), entity -> entity != player && entity.isAlive())) {
+            target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 10 * 20, 0));
+            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 10 * 20, 0));
+        }
+    }
+
+    private static void startTenMeterSword(ServerPlayer player, RuntimeState state, long now) {
+        state.tenMeterReleaseTick = now + 3L * 20L;
+        state.tenMeterOrigin = player.position();
+        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 3 * 20, 10, true, false));
+        player.getAttribute(Attributes.MOVEMENT_SPEED).addTransientModifier(new AttributeModifier(
+                SPIN_SLOW_UUID, "lex_ninjia_ten_meter_charge", -1.0D, AttributeModifier.Operation.MULTIPLY_TOTAL
+        ));
+    }
+
+    private static void tickTenMeterSword(ServerPlayer player, RuntimeState state, long now) {
+        if (player.hasEffect(ModEffects.STUN.get()) || player.hasEffect(ModEffects.TEMPEST_DISARMED.get())
+                || state.tenMeterOrigin.distanceToSqr(player.position()) > 0.25D) {
+            state.tenMeterReleaseTick = 0L;
+            player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SPIN_SLOW_UUID);
+            return;
+        }
+        if (now < state.tenMeterReleaseTick) {
+            return;
+        }
+        player.getAttribute(Attributes.MOVEMENT_SPEED).removeModifier(SPIN_SLOW_UUID);
+        state.tenMeterReleaseTick = 0L;
+        strikeFrontArea(player, 66.0D, 6.0D, 6.0D, meleeDamage(player) * 5.0F);
+        player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.6F);
+    }
+
+    private static void releaseSpinIon(ServerPlayer player, RuntimeState state) {
+        long held = Math.max(0L, player.level().getGameTime() - state.rightPressTick);
+        float spent = Math.max(0.0F, state.rightChargeSpent + held * maxLeicra(player) * 0.05F / 20.0F);
+        float distance = 4.0F + spent / 10.0F * 0.5F;
+        float width = 2.0F + spent / 100.0F;
+        strikeFrontArea(player, distance, width, 2.0D, 6.0F + spent * 0.4F);
+        Vec3 dash = player.getLookAngle().normalize().scale(Math.min(2.5D, distance * 0.1D));
+        player.push(dash.x, 0.1D, dash.z);
+    }
+
+    private static void pullLookTarget(ServerPlayer player) {
+        nearestLookTarget(player, 24.0D, 0.94D).ifPresent(target -> {
+            Vec3 destination = player.position().add(player.getLookAngle().normalize().scale(1.5D));
+            target.teleportTo(destination.x, player.getY(), destination.z);
+            target.setDeltaMovement(player.position().subtract(target.position()).normalize().scale(1.2D));
+        });
+    }
+
+    private static void createSandWall(ServerPlayer player, RuntimeState state, long now) {
+        ServerLevel level = player.serverLevel();
+        Vec3 look = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z).normalize();
+        Vec3 right = new Vec3(-look.z, 0.0D, look.x);
+        BlockPos center = BlockPos.containing(player.position().add(look.scale(4.0D)));
+        for (int x = -2; x <= 2; x++) {
+            for (int y = 0; y < 5; y++) {
+                BlockPos pos = BlockPos.containing(center.getX() + right.x * x, center.getY() + y, center.getZ() + right.z * x);
+                if (level.isEmptyBlock(pos)) {
+                    level.setBlockAndUpdate(pos, Blocks.SANDSTONE.defaultBlockState());
+                    state.wallBlocks.add(new TimedBlock(pos.immutable(), now + 30L * 20L));
+                }
+            }
+        }
+    }
+
+    private static void tickWallBlocks(ServerLevel level, RuntimeState state, long now) {
+        Iterator<TimedBlock> iterator = state.wallBlocks.iterator();
+        while (iterator.hasNext()) {
+            TimedBlock block = iterator.next();
+            if (now < block.expireTick()) {
+                continue;
+            }
+            if (level.getBlockState(block.pos()).is(Blocks.SANDSTONE)) {
+                level.removeBlock(block.pos(), false);
+            }
+            iterator.remove();
+        }
+    }
+
+    private static void equipTemporaryShield(ServerPlayer player, RuntimeState state, long now) {
+        if (state.shieldUntil > now) {
+            state.shieldUntil = now + 30L * 20L;
+            return;
+        }
+        state.savedOffhand = player.getOffhandItem().copy();
+        ItemStack shield = new ItemStack(Items.SHIELD);
+        shield.setHoverName(Component.translatable("item.dealt_force_skills.lex_ninjia_guard_shield"));
+        shield.getOrCreateTag().putBoolean("Unbreakable", true);
+        player.setItemInHand(InteractionHand.OFF_HAND, shield);
+        state.shieldUntil = now + 30L * 20L;
+    }
+
+    private static void restoreShield(ServerPlayer player, RuntimeState state) {
+        if (state.shieldUntil <= 0L) {
+            return;
+        }
+        ItemStack current = player.getOffhandItem();
+        ItemStack saved = state.savedOffhand == null ? ItemStack.EMPTY : state.savedOffhand.copy();
+        if (current.is(Items.SHIELD) && current.hasCustomHoverName()) {
+            player.setItemInHand(InteractionHand.OFF_HAND, saved);
+        } else if (!saved.isEmpty()) {
+            giveOrDrop(player, saved);
+        }
+        state.savedOffhand = ItemStack.EMPTY;
+        state.shieldUntil = 0L;
+    }
+
+    private static void playArtVisuals(ServerPlayer player, LexNinjiaArt art, LivingEntity target) {
+        ServerLevel level = player.serverLevel();
+        Vec3 center = player.position().add(0.0D, 1.0D, 0.0D);
+        switch (art) {
+            case DEATH_FLAME_SMOKE -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, center.x, center.y, center.z, 24, 0.9D, 0.7D, 0.9D, 0.04D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, center.x, center.y, center.z, 18, 1.2D, 0.8D, 1.2D, 0.03D);
+            }
+            case SHADOW_BLADE, SHADOW_SMOKE, SHADOW_CLONE_CROSS, HAM_SHADOW_KICK -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, center.x, center.y, center.z, 28, 0.9D, 0.8D, 0.9D, 0.08D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, center.x, center.y + 0.2D, center.z, 18, 0.8D, 0.8D, 0.8D, 0.1D);
+            }
+            case GOOD_SLEEP -> level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD, center.x, center.y, center.z, 20, 0.7D, 0.5D, 0.7D, 0.03D);
+            case BIG_PORTION, PEA_SHOOTER, SNAKE_POISON_HAND -> level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, center.x, center.y, center.z, 18, 0.8D, 0.6D, 0.8D, 0.04D);
+            case SOLDIER_PILL, NANO_SNICKERS, HAMBURGER, MILK_FRUIT_SHAKE, SHRIMP_HAND, ROAST_MEAT_RICE, MC_NUGGETS, LOTUS_BOX_FOOD, MILK_BEER, COLD_COPPER, HOT_DRINK -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, center.x, center.y, center.z, 16, 0.6D, 0.5D, 0.6D, 0.03D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT, center.x, center.y + 0.2D, center.z, 10, 0.5D, 0.4D, 0.5D, 0.05D);
+            }
+            case HAM_FRIEND, HAM_BERSERK, HAM_KILL_ALL, HAM_BEAST -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.WITCH, center.x, center.y, center.z, 30, 1.0D, 0.8D, 1.0D, 0.05D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL, center.x, center.y + 0.2D, center.z, 24, 1.0D, 0.9D, 1.0D, 0.12D);
+            }
+            default -> {
+                if (art.school() == LexNinjiaSchool.BLADE) {
+                    Vec3 hit = target == null ? center.add(player.getLookAngle().normalize().scale(1.4D)) : target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK, hit.x, hit.y, hit.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, hit.x, hit.y, hit.z, 12, 0.5D, 0.4D, 0.5D, 0.08D);
+                } else if (art.school() == LexNinjiaSchool.HAND) {
+                    Vec3 hit = target == null ? center.add(player.getLookAngle().normalize().scale(1.0D)) : target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, hit.x, hit.y, hit.z, 14, 0.4D, 0.4D, 0.4D, 0.08D);
+                    level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, center.x, center.y, center.z, 8, 0.4D, 0.4D, 0.4D, 0.04D);
+                }
+            }
+        }
+    }
+
+    private static void spawnShadowCloneVisuals(ServerPlayer player, boolean burst) {
+        ServerLevel level = player.serverLevel();
+        Vec3 look = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z);
+        if (look.lengthSqr() < 0.0001D) {
+            look = new Vec3(0.0D, 0.0D, 1.0D);
+        }
+        look = look.normalize();
+        Vec3 right = new Vec3(-look.z, 0.0D, look.x);
+        int count = burst ? 28 : 4;
+        for (double side : new double[]{-1.15D, 1.15D}) {
+            Vec3 clone = player.position().add(right.scale(side)).add(0.0D, player.getBbHeight() * 0.5D, 0.0D);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, clone.x, clone.y, clone.z, count, 0.22D, 0.65D, 0.22D, burst ? 0.08D : 0.01D);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT, clone.x, clone.y + 0.2D, clone.z, Math.max(2, count / 3), 0.25D, 0.55D, 0.25D, 0.03D);
+        }
+    }
+
+    private static void releaseAllHands(ServerPlayer player, RuntimeState state, long now) {
+        LivingEntity target = nearestLookTarget(player, 16.0D, 0.85D).orElse(null);
+        if (target != null) {
+            hurtTrue(player, target, 22.0F);
+            target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ACTION_PAUSE.get(), 4 * 20, 0));
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 6 * 20, 10));
+            addSnakePoison(target, player);
+        }
+        state.fdHandUntil = now + 2L * 20L;
+        state.peaStacks = 5;
+        state.peaUntil = now + 15L * 20L;
+        state.returnHandUntil = now + 14L * 20L;
+        createSandWall(player, state, now);
+    }
+
+    private static void summonDeathGod(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Skeleton skeleton = EntityType.SKELETON.create(level);
+        if (skeleton == null) {
+            return;
+        }
+        skeleton.moveTo(player.getX() + 1.0D, player.getY(), player.getZ() + 1.0D, player.getYRot(), 0.0F);
+        skeleton.setCustomName(Component.translatable("entity.dealt_force_skills.lex_ninjia.death_god"));
+        skeleton.setCustomNameVisible(true);
+        skeleton.getAttribute(Attributes.MAX_HEALTH).setBaseValue(100.0D);
+        skeleton.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(1000.0D);
+        skeleton.setHealth(100.0F);
+        skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_HOE));
+        skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.LEATHER_HELMET));
+        skeleton.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.LEATHER_CHESTPLATE));
+        skeleton.setItemSlot(EquipmentSlot.LEGS, new ItemStack(Items.LEATHER_LEGGINGS));
+        skeleton.setItemSlot(EquipmentSlot.FEET, new ItemStack(Items.LEATHER_BOOTS));
+        nearestLookTarget(player, 32.0D, 0.7D).ifPresent(skeleton::setTarget);
+        level.addFreshEntity(skeleton);
+    }
+
+    private static void summonHamBeast(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        Wolf wolf = EntityType.WOLF.create(level);
+        if (wolf == null) {
+            return;
+        }
+        wolf.moveTo(player.getX() + 1.0D, player.getY(), player.getZ() + 1.0D, player.getYRot(), 0.0F);
+        wolf.tame(player);
+        wolf.getAttribute(Attributes.MAX_HEALTH).setBaseValue(150.0D);
+        wolf.setHealth(150.0F);
+        wolf.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 75 * 20, 99));
+        wolf.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 75 * 20, 2));
+        level.addFreshEntity(wolf);
+    }
+
+    private static void tickHamKillAll(ServerPlayer player, RuntimeState state, long now) {
+        if (now < state.hamKillReleaseTick) {
+            player.setDeltaMovement(player.getDeltaMovement().x, 0.08D, player.getDeltaMovement().z);
+            return;
+        }
+        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(100.0D), entity -> entity != player && entity.isAlive())) {
+            executeTarget(player, target);
+        }
+        state.hamKillReleaseTick = 0L;
+        player.hurt(SkillDamageHelper.trueDamage(player.serverLevel(), player, player), player.getMaxHealth() * 4.0F);
+    }
+
+    private static void tickHamShadowKick(ServerPlayer player, RuntimeState state, long now) {
+        if (player.getDeltaMovement().horizontalDistanceSqr() <= 0.005D || now % 10L != 0L) {
+            return;
+        }
+        hurtSelfPercent(player, 0.025F);
+        for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(7.0D), entity -> entity != player && entity.isAlive())) {
+            hurtTrue(player, target, meleeDamage(player) * 0.7F);
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 20, 0));
+        }
+        breakSoftBlocksAround(player);
+    }
+
+    private static void breakSoftBlocksAround(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        BlockPos center = player.blockPosition();
+        for (BlockPos pos : BlockPos.betweenClosed(center.offset(-2, -1, -2), center.offset(2, 1, 2))) {
+            if (pos.equals(center.below())) {
+                continue;
+            }
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir() && state.getDestroySpeed(level, pos) >= 0.0F && state.getDestroySpeed(level, pos) <= 1.0F) {
+                level.destroyBlock(pos, true, player);
+            }
+        }
+    }
+
+    private static void rainIronSwords(ServerPlayer player) {
+        ServerLevel level = player.serverLevel();
+        net.minecraft.core.particles.ItemParticleOption swordParticle =
+                new net.minecraft.core.particles.ItemParticleOption(net.minecraft.core.particles.ParticleTypes.ITEM, new ItemStack(Items.IRON_SWORD));
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(40.0D), entity -> entity != player && entity.isAlive()
+                        && level.canSeeSky(entity.blockPosition().above()))) {
+            double hitX = target.getX();
+            double hitY = target.getY() + target.getBbHeight() * 0.5D;
+            double hitZ = target.getZ();
+            level.sendParticles(swordParticle, hitX, target.getY() + target.getBbHeight() + 2.5D, hitZ, 8, 0.35D, 1.2D, 0.35D, 0.02D);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+                    hitX, hitY, hitZ, 16, 0.45D, 0.35D, 0.45D, 0.12D);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
+                    hitX, hitY, hitZ, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+            level.playSound(null, target.blockPosition(), SoundEvents.TRIDENT_HIT, SoundSource.PLAYERS, 0.8F, 1.15F);
+            hurtTrue(player, target, meleeDamage(player) * 0.9F);
+        }
+    }
+
+    private static void queueSlashes(RuntimeState state, LivingEntity target, long now, int count, float damage, long firstDelay, long interval, SlashVisual visual, double sideOffset) {
+        if (target == null || count <= 0 || damage <= 0.0F) {
+            return;
+        }
+        for (int i = 0; i < count; i++) {
+            state.slashQueue.add(new PendingSlash(target.getUUID(), now + firstDelay + i * interval, damage, visual, sideOffset));
+        }
+    }
+
+    private static void queueShadowCloneFollowUps(RuntimeState state, LivingEntity target, long now, float damage) {
+        if (target == null || damage <= 0.0F) {
+            return;
+        }
+        state.slashQueue.add(new PendingSlash(target.getUUID(), now + 3L, damage, SlashVisual.CLONE, -1.15D));
+        state.slashQueue.add(new PendingSlash(target.getUUID(), now + 6L, damage, SlashVisual.CLONE, 1.15D));
+    }
+
+    private static void playMainShadowCloneSlash(ServerPlayer player, LivingEntity target) {
+        if (target == null) {
+            return;
+        }
+        ServerLevel level = player.serverLevel();
+        Vec3 hit = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK, hit.x, hit.y, hit.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, hit.x, hit.y, hit.z, 12, 0.35D, 0.35D, 0.35D, 0.06D);
+    }
+
+    private static void tickSlashQueue(ServerPlayer player, RuntimeState state, long now) {
+        Iterator<PendingSlash> iterator = state.slashQueue.iterator();
+        while (iterator.hasNext()) {
+            PendingSlash slash = iterator.next();
+            if (slash.tick() > now) {
+                continue;
+            }
+            Entity entity = player.serverLevel().getEntity(slash.target());
+            if (entity instanceof LivingEntity target && target.isAlive()) {
+                playQueuedSlashVisual(player, target, slash);
+                hurtTrue(player, target, slash.damage());
+            }
+            iterator.remove();
+        }
+    }
+
+    private static void playQueuedSlashVisual(ServerPlayer player, LivingEntity target, PendingSlash slash) {
+        ServerLevel level = player.serverLevel();
+        Vec3 hit = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
+        switch (slash.visual()) {
+            case CLONE -> {
+                Vec3 look = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z);
+                if (look.lengthSqr() < 0.0001D) {
+                    look = new Vec3(0.0D, 0.0D, 1.0D);
+                }
+                look = look.normalize();
+                Vec3 right = new Vec3(-look.z, 0.0D, look.x);
+                Vec3 clone = player.position().add(right.scale(slash.sideOffset())).add(0.0D, player.getBbHeight() * 0.5D, 0.0D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.POOF, clone.x, clone.y, clone.z, 10, 0.20D, 0.45D, 0.20D, 0.04D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK, hit.x, hit.y, hit.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.65F, slash.sideOffset() < 0.0D ? 1.25F : 0.85F);
+            }
+            case ARASHI -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK, hit.x, hit.y, hit.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, hit.x, hit.y, hit.z, 14, 0.45D, 0.35D, 0.45D, 0.10D);
+                level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.75F, 1.35F);
+            }
+            case BURNING -> {
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME, hit.x, hit.y, hit.z, 12, 0.30D, 0.25D, 0.30D, 0.02D);
+                level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT, hit.x, hit.y, hit.z, 10, 0.35D, 0.35D, 0.35D, 0.08D);
+                level.playSound(null, target.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.55F, 1.5F);
+            }
+        }
+    }
+
+    private static void strikeFrontArea(ServerPlayer player, double range, double halfWidth, double height, float damage) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z);
+        if (look.lengthSqr() < 0.0001D) {
+            look = player.getLookAngle();
+        }
+        look = look.normalize();
+        Vec3 right = new Vec3(-look.z, 0.0D, look.x);
+        AABB box = player.getBoundingBox().inflate(range, height, range);
+        for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
+                entity -> entity != player && entity.isAlive())) {
+            Vec3 delta = target.getBoundingBox().getCenter().subtract(eye);
+            double forward = delta.dot(look);
+            double side = Math.abs(delta.dot(right));
+            if (forward > 0.0D && forward <= range && side <= halfWidth && Math.abs(delta.y) <= height) {
+                hurtTrue(player, target, damage);
+            }
+        }
+    }
+
+    private static Optional<LivingEntity> nearestLookTarget(ServerPlayer player, double range, double minimumDot) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        return player.level().getEntitiesOfClass(LivingEntity.class, player.getBoundingBox().inflate(range),
+                        entity -> entity != player && entity.isAlive() && entity.isAttackable())
+                .stream()
+                .filter(target -> {
+                    Vec3 direction = target.getBoundingBox().getCenter().subtract(eye);
+                    return direction.lengthSqr() <= range * range && direction.normalize().dot(look) >= minimumDot;
+                })
+                .min(Comparator.comparingDouble(target -> target.distanceToSqr(player)));
+    }
+
+    private static void executeTarget(ServerPlayer player, LivingEntity target) {
+        if (target == null) {
+            return;
+        }
+        if (target instanceof ServerPlayer victim) {
+            victim.getPersistentData().putLong(REVIVE_DISABLED_UNTIL, victim.level().getGameTime() + 7L * 20L);
+        }
+        hurtTrue(player, target, Math.max(target.getMaxHealth() * 20.0F, 1000.0F));
+        if (target.isAlive() && !(target instanceof Player)) {
+            target.kill();
+        }
+    }
+
+    private static void triggerSnakePoison(LivingEntity entity) {
+        CompoundTag tag = entity.getPersistentData();
+        int stacks = tag.getInt(ROOT + ".snake_poison_stacks");
+        if (stacks <= 0) {
+            return;
+        }
+        float damage = entity.getMaxHealth() * 0.02F * stacks;
+        tag.putInt(ROOT + ".snake_poison_stacks", Math.max(0, stacks - 1));
+        if (entity.level() instanceof ServerLevel level) {
+            entity.hurt(SkillDamageHelper.trueDamage(level, entity, null), damage);
+        }
+    }
+
+    private static void addSnakePoison(LivingEntity target, ServerPlayer attacker) {
+        CompoundTag tag = target.getPersistentData();
+        tag.putInt(ROOT + ".snake_poison_stacks", Math.min(9, tag.getInt(ROOT + ".snake_poison_stacks") + 3));
+    }
+
+    private static void growPlacedCrop(ServerLevel level, BlockPos pos) {
+        for (int i = 0; i < 4; i++) {
+            BlockState state = level.getBlockState(pos);
+            if (!(state.getBlock() instanceof BonemealableBlock bonemealable)
+                    || !bonemealable.isValidBonemealTarget(level, pos, state, false)
+                    || !bonemealable.isBonemealSuccess(level, level.random, pos, state)) {
+                return;
+            }
+            bonemealable.performBonemeal(level, level.random, pos, state);
+        }
+    }
+
+    private static boolean isSleeping(ServerPlayer player) {
+        return state(player).sleepUntil > player.level().getGameTime();
+    }
+
+    private static void hurtTrue(ServerPlayer source, LivingEntity target, float amount) {
+        if (target == null || amount <= 0.0F || !(source.level() instanceof ServerLevel level)) {
+            return;
+        }
+        SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, source, source), SkillDamageHelper.scale(source, amount));
+    }
+
+    private static void hurtSelfPercent(ServerPlayer player, float percent) {
+        player.hurt(SkillDamageHelper.trueDamage(player.serverLevel(), player, player), player.getMaxHealth() * percent);
+    }
+
+    private static float meleeDamage(ServerPlayer player) {
+        return (float) Math.max(2.0D, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
+    }
+
+    private static float handDamage(ServerPlayer player, float base, RuntimeState state) {
+        if (!state.doubleLuohanReady) {
+            return base;
+        }
+        state.doubleLuohanReady = false;
+        return base * 2.0F;
+    }
+
+    private static boolean hasMeleeWeapon(ServerPlayer player) {
+        ItemStack stack = player.getMainHandItem();
+        return stack.getItem() instanceof SwordItem
+                || stack.getItem() instanceof AxeItem
+                || stack.getItem() instanceof TridentItem
+                || stack.getItem() instanceof TieredItem;
+    }
+
+    private static void setLeicra(ServerPlayer player, float amount) {
+        player.getPersistentData().putFloat(LEICRA, Mth.clamp(amount, 0.0F, maxLeicra(player)));
+    }
+
+    private static boolean spendLeicra(ServerPlayer player, float amount) {
+        if (amount <= 0.0F) {
+            return true;
+        }
+        float current = leicra(player);
+        if (current + 0.001F < amount) {
+            return false;
+        }
+        setLeicra(player, current - amount);
+        return true;
+    }
+
+    private static void applyHandSpeed(ServerPlayer player, int stacks) {
+        var attribute = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (attribute == null) {
+            return;
+        }
+        attribute.removeModifier(HAND_SPEED_UUID);
+        if (stacks > 0) {
+            attribute.addTransientModifier(new AttributeModifier(
+                    HAND_SPEED_UUID, "lex_ninjia_hand_speed", stacks * 0.02D, AttributeModifier.Operation.MULTIPLY_TOTAL
+            ));
+        }
+    }
+
+    private static void removeHarmfulEffects(LivingEntity entity) {
+        for (MobEffectInstance effect : new ArrayList<>(entity.getActiveEffects())) {
+            if (effect.getEffect().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+                entity.removeEffect(effect.getEffect());
+            }
+        }
+    }
+
+    private static void playArtSound(ServerPlayer player, LexNinjiaArt art) {
+        SoundEvent sound = ModSounds.lexNinjiaSound(art.soundId());
+        if (sound != null) {
+            player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1.0F, 1.0F);
+        }
+    }
+
+    private static void playHamEcho(ServerPlayer player) {
+        SoundEvent sound = ModSounds.lexNinjiaSound("lex_ninjia_ham_echo");
+        if (sound != null) {
+            player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 0.85F, 1.0F);
+        }
+    }
+
+    private static String comboText(RuntimeState state, long now) {
+        state.pruneInputs(now);
+        StringBuilder builder = new StringBuilder();
+        for (InputEntry entry : state.inputs) {
+            if (!builder.isEmpty()) {
+                builder.append(" + ");
+            }
+            builder.append(entry.input().name().toLowerCase(java.util.Locale.ROOT));
+        }
+        return builder.toString();
+    }
+
+    private static boolean allNonHamArtsKnown(Player player) {
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (!art.hamForbidden() && !art.defaultKnown() && !isKnown(player, art)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void giveOrDrop(ServerPlayer player, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        if (!player.getInventory().add(stack.copy())) {
+            player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack.copy()));
+        }
+    }
+
+    private static boolean canConsumeMainHand(ItemStack hand, int count) {
+        return !hand.isEmpty() && hand.getCount() >= count;
+    }
+
+    private static boolean canConsumeInventoryAfterMain(ServerPlayer player, java.util.function.Predicate<ItemStack> predicate, int count, int reservedMainHandCount) {
+        int available = 0;
+        ItemStack hand = player.getMainHandItem();
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (!stack.isEmpty() && predicate.test(stack) && !stack.getOrCreateTag().contains(FOOD_ART)) {
+                available += stack.getCount();
+            }
+        }
+        if (!hand.isEmpty() && predicate.test(hand) && !hand.getOrCreateTag().contains(FOOD_ART)) {
+            available -= Math.min(reservedMainHandCount, hand.getCount());
+        }
+        return available >= count;
+    }
+
+    private static boolean consumeMainHand(ServerPlayer player, int count) {
+        ItemStack hand = player.getMainHandItem();
+        if (!canConsumeMainHand(hand, count)) {
+            return false;
+        }
+        hand.shrink(count);
+        return true;
+    }
+
+    private static boolean consumeInventory(ServerPlayer player, java.util.function.Predicate<ItemStack> predicate, int count) {
+        int remaining = count;
+        for (int i = 0; i < player.getInventory().getContainerSize() && remaining > 0; i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+            if (!stack.isEmpty() && predicate.test(stack) && !stack.getOrCreateTag().contains(FOOD_ART)) {
+                int take = Math.min(remaining, stack.getCount());
+                stack.shrink(take);
+                remaining -= take;
+            }
+        }
+        return remaining <= 0;
+    }
+
+    private static boolean isSugarLike(ItemStack stack) {
+        return stack.is(Items.SUGAR) || stack.is(Items.COOKIE) || stack.is(Items.HONEY_BOTTLE);
+    }
+
+    private static boolean isPlantFoodLike(ItemStack stack) {
+        return stack.is(Items.WHEAT) || stack.is(Items.CARROT) || stack.is(Items.POTATO) || stack.is(Items.BEETROOT)
+                || stack.is(Items.APPLE) || stack.is(Items.MELON_SLICE) || stack.is(Items.SWEET_BERRIES)
+                || stack.is(Items.GLOW_BERRIES) || stack.is(Items.BREAD);
+    }
+
+    private static boolean isFruitLike(ItemStack stack) {
+        return stack.is(Items.APPLE) || stack.is(Items.MELON_SLICE) || stack.is(Items.SWEET_BERRIES)
+                || stack.is(Items.GLOW_BERRIES) || stack.is(Items.CHORUS_FRUIT);
+    }
+
+    private static boolean isMeatLike(ItemStack stack) {
+        return stack.is(Items.BEEF) || stack.is(Items.COOKED_BEEF) || stack.is(Items.PORKCHOP)
+                || stack.is(Items.COOKED_PORKCHOP) || stack.is(Items.MUTTON) || stack.is(Items.COOKED_MUTTON)
+                || stack.is(Items.CHICKEN) || stack.is(Items.COOKED_CHICKEN) || stack.is(Items.RABBIT)
+                || stack.is(Items.COOKED_RABBIT);
+    }
+
+    private static boolean isCookedMeatLike(ItemStack stack) {
+        return stack.is(Items.COOKED_BEEF) || stack.is(Items.COOKED_PORKCHOP) || stack.is(Items.COOKED_MUTTON)
+                || stack.is(Items.COOKED_CHICKEN) || stack.is(Items.COOKED_RABBIT);
+    }
+
+    private static boolean isFishLike(ItemStack stack) {
+        return stack.is(Items.COD) || stack.is(Items.COOKED_COD) || stack.is(Items.SALMON)
+                || stack.is(Items.COOKED_SALMON) || stack.is(Items.TROPICAL_FISH) || stack.is(Items.PUFFERFISH);
+    }
+
+    private static boolean isPotion(ItemStack stack, net.minecraft.world.item.alchemy.Potion potion) {
+        return stack.is(Items.POTION) && net.minecraft.world.item.alchemy.PotionUtils.getPotion(stack) == potion;
+    }
+
+    private record InputEntry(LexNinjiaComboInput input, long tick) {
+    }
+
+    private record TimedBlock(BlockPos pos, long expireTick) {
+    }
+
+    private record PendingSlash(UUID target, long tick, float damage, SlashVisual visual, double sideOffset) {
+    }
+
+    private enum SlashVisual {
+        BURNING,
+        ARASHI,
+        CLONE
+    }
+
+    private static final class RuntimeState {
+        private final List<InputEntry> inputs = new ArrayList<>();
+        private final List<TimedBlock> wallBlocks = new ArrayList<>();
+        private final List<PendingSlash> slashQueue = new ArrayList<>();
+        private LexNinjiaArt prepared;
+        private int handStacks;
+        private int bladeStacks;
+        private int harmonyStacks;
+        private long handLastTick;
+        private long bladeLastTick;
+        private long harmonyLastTick;
+        private long sneakPressTick;
+        private long sneakHeldSince;
+        private boolean longSneakRecorded;
+        private long rightPressTick;
+        private float rightChargeSpent;
+        private Vec3 lastPosition = Vec3.ZERO;
+        private UUID lastMeleeTarget;
+        private UUID lastDamager;
+        private UUID handshakeTarget;
+        private long burningBladeUntil;
+        private long arashiUntil;
+        private long deathFlameUntil;
+        private float deathFlameOverflow;
+        private long shadowBladeUntil;
+        private long shadowCloneUntil;
+        private long ironRainUntil;
+        private long fdHandUntil;
+        private long reflectUntil;
+        private int reflectStacks;
+        private int sharpenStacks;
+        private int peaStacks;
+        private long peaUntil;
+        private long fertilizerUntil;
+        private long sleepUntil;
+        private boolean sleepRewardPending;
+        private long returnHandUntil;
+        private boolean doubleLuohanReady;
+        private boolean whiteCraneReady;
+        private long noRetaliationUntil;
+        private long snakePoisonUntil;
+        private long shieldUntil;
+        private ItemStack savedOffhand = ItemStack.EMPTY;
+        private long tenMeterReleaseTick;
+        private Vec3 tenMeterOrigin = Vec3.ZERO;
+        private boolean hamFriendPact;
+        private long hamPowerUntil;
+        private long hamBerserkUntil;
+        private long hamKillReleaseTick;
+        private long hamShadowKickUntil;
+
+        private void pruneInputs(long now) {
+            inputs.removeIf(entry -> now - entry.tick() > INPUT_EXPIRY_TICKS);
+            trimInputs();
+        }
+
+        private void trimInputs() {
+            while (inputs.size() > MAX_STORED_COMBO_INPUTS) {
+                inputs.remove(0);
+            }
+        }
+
+        private void clearCombatRuntime(long now) {
+            inputs.clear();
+            prepared = null;
+            burningBladeUntil = now;
+            arashiUntil = now;
+            deathFlameUntil = now;
+            deathFlameOverflow = 0.0F;
+            shadowBladeUntil = now;
+            shadowCloneUntil = now;
+            ironRainUntil = now;
+            fdHandUntil = now;
+            reflectUntil = now;
+            reflectStacks = 0;
+            peaUntil = now;
+            peaStacks = 0;
+            fertilizerUntil = now;
+            sleepUntil = now;
+            sleepRewardPending = false;
+            returnHandUntil = now;
+            noRetaliationUntil = now;
+            snakePoisonUntil = now;
+            tenMeterReleaseTick = 0L;
+            hamBerserkUntil = now;
+            hamKillReleaseTick = 0L;
+            hamShadowKickUntil = now;
+            slashQueue.clear();
+        }
+
+        private void clearAll() {
+            inputs.clear();
+            wallBlocks.clear();
+            slashQueue.clear();
+            prepared = null;
+            handStacks = 0;
+            bladeStacks = 0;
+            harmonyStacks = 0;
+            deathFlameOverflow = 0.0F;
+            fertilizerUntil = 0L;
+            sleepUntil = 0L;
+            sleepRewardPending = false;
+            shieldUntil = 0L;
+            savedOffhand = ItemStack.EMPTY;
+        }
+    }
+}

@@ -1,0 +1,21 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "cover": "minecraft:block/light_gray_concrete",
+    "particle": "minecraft:block/light_gray_concrete"
+  },
+  "elements": [
+    {
+      "from": [0, 0, 6],
+      "to": [16, 16, 10],
+      "faces": {
+        "north": { "texture": "#cover" },
+        "south": { "texture": "#cover" },
+        "east": { "texture": "#cover" },
+        "west": { "texture": "#cover" },
+        "up": { "texture": "#cover" },
+        "down": { "texture": "#cover" }
+      }
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+package com.rzy.dealt_force_skills.entity;
+
+import com.rzy.dealt_force_skills.registry.ModEntities;
+import com.rzy.dealt_force_skills.registry.ModSounds;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.entity.projectile.ItemSupplier;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.NetworkHooks;
+import org.joml.Vector3f;
+
+import java.util.UUID;
+
+public class VlinderRemoteSmokeRoundEntity extends Entity implements ItemSupplier {
+    public static final double SPEED = 0.30D;
+    private static final int LIFE_TICKS = 9 * 20;
+    private static final double GUIDE_DISTANCE = 42.0D;
+    private static final DustParticleOptions TRAIL_DUST = new DustParticleOptions(new Vector3f(0.55f, 0.95f, 1.0f), 0.9f);
+
+    private UUID ownerId;
+    private double directionX;
+    private double directionY;
+    private double directionZ = 1.0D;
+
+    public VlinderRemoteSmokeRoundEntity(EntityType<? extends VlinderRemoteSmokeRoundEntity> type, Level level) {
+        super(type, level);
+        setNoGravity(true);
+    }
+
+    public VlinderRemoteSmokeRoundEntity(EntityType<? extends VlinderRemoteSmokeRoundEntity> type, Level level, ServerPlayer owner) {
+        this(type, level);
+        ownerId = owner.getUUID();
+        rememberDirection(owner.getLookAngle());
+    }
+
+    @Override
+    public ItemStack getItem() {
+        return new ItemStack(Items.LIGHT_BLUE_DYE);
+    }
+
+    @Override
+    protected void defineSynchedData() {
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (level().isClientSide) {
+            spawnClientTrail();
+            return;
+        }
+        if (!(level() instanceof ServerLevel level)) {
+            discard();
+            return;
+        }
+        if (tickCount >= LIFE_TICKS) {
+            burst(level);
+            return;
+        }
+
+        Vec3 direction = guidedDirection(level);
+        rememberDirection(direction);
+        Vec3 motion = direction.scale(SPEED);
+        Vec3 start = position();
+        Vec3 next = start.add(motion);
+        HitResult blockHit = level.clip(new ClipContext(start, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
+        if (blockHit.getType() == HitResult.Type.BLOCK) {
+            setPos(blockHit.getLocation().x, blockHit.getLocation().y, blockHit.getLocation().z);
+            burst(level);
+            return;
+        }
+        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(level, this, start, next,
+                getBoundingBox().expandTowards(motion).inflate(0.36D), this::canHitEntity);
+        if (entityHit != null) {
+            setPos(entityHit.getLocation().x, entityHit.getLocation().y, entityHit.getLocation().z);
+            burst(level);
+            return;
+        }
+
+        setDeltaMovement(motion);
+        move(MoverType.SELF, motion);
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        directionX = tag.getDouble("DirectionX");
+        directionY = tag.getDouble("DirectionY");
+        directionZ = tag.getDouble("DirectionZ");
+    }
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        if (ownerId != null) {
+            tag.putUUID("Owner", ownerId);
+        }
+        tag.putDouble("DirectionX", directionX);
+        tag.putDouble("DirectionY", directionY);
+        tag.putDouble("DirectionZ", directionZ);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getAddEntityPacket() {
+        return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    private boolean canHitEntity(Entity entity) {
+        if (entity == this || entity.isSpectator()) {
+            return false;
+        }
+        if (tickCount < 5 && ownerId != null && ownerId.equals(entity.getUUID())) {
+            return false;
+        }
+        return entity.isPickable();
+    }
+
+    private Vec3 guidedDirection(ServerLevel level) {
+        Vec3 current = storedDirection();
+        Entity owner = ownerId == null ? null : level.getEntity(ownerId);
+        if (!(owner instanceof ServerPlayer player) || !player.isAlive()) {
+            return current;
+        }
+        Vec3 desired = player.getEyePosition().add(player.getLookAngle().normalize().scale(GUIDE_DISTANCE)).subtract(position());
+        if (desired.lengthSqr() < 0.0001D) {
+            return current;
+        }
+        return current.scale(0.84D).add(desired.normalize().scale(0.16D)).normalize();
+    }
+
+    private Vec3 storedDirection() {
+        Vec3 direction = new Vec3(directionX, directionY, directionZ);
+        return direction.lengthSqr() < 0.0001D ? new Vec3(0.0D, 0.0D, 1.0D) : direction.normalize();
+    }
+
+    private void rememberDirection(Vec3 direction) {
+        if (direction.lengthSqr() < 0.0001D) {
+            return;
+        }
+        Vec3 normalized = direction.normalize();
+        directionX = normalized.x;
+        directionY = normalized.y;
+        directionZ = normalized.z;
+    }
+
+    private void burst(ServerLevel level) {
+        StingerSmokeCloudEntity cloud = new StingerSmokeCloudEntity(
+                ModEntities.STINGER_SMOKE_CLOUD.get(),
+                level,
+                ownerId,
+                StingerSmokeCloudEntity.GRENADE_LIFE_TICKS,
+                false
+        );
+        cloud.setPos(getX(), getY(), getZ());
+        level.addFreshEntity(cloud);
+        level.playSound(null, blockPosition(), ModSounds.VLINDER_REMOTE_SMOKE_BURST.get(),
+                SoundSource.PLAYERS, 0.85F, 1.0F);
+        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(),
+                80, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.55D, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.02D);
+        discard();
+    }
+
+    private void spawnClientTrail() {
+        if (tickCount % 2 == 0) {
+            level().addParticle(TRAIL_DUST, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
+        }
+    }
+}
