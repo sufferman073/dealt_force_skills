@@ -1,22 +1,7 @@
-MIT License
+# License
 
-Copyright (c) 2026 sufferman073
+This project is licensed under the GNU General Public License v3.0 or later.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of the code files in this repository, to deal in the code without restriction,
-including without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the code, subject to the following
-conditions:
+You may use, modify, and distribute this mod under the terms of the GPLv3 or any later version published by the Free Software Foundation.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the code.
-
-This license applies only to source code files unless explicitly stated
-otherwise.
-
-THE CODE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE CODE OR THE USE OR OTHER DEALINGS IN THE CODE.
+Unless otherwise stated, source code, models, textures, sounds, and other project assets are covered by the same license.
