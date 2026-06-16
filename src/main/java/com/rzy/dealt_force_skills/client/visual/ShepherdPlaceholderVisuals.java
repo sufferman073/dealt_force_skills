@@ -5,12 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdTool;
 import com.rzy.dealt_force_skills.client.character.ClientShepherdHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -20,12 +18,17 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ShepherdPlaceholderVisuals {
+    private static final ResourceLocation SONIC_TRAP_MODEL = model("shepherd_sonic_trap");
+    private static final ResourceLocation GRENADE_MODEL = model("shared_hand_grenade");
+
     private ShepherdPlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientShepherdHudState.hasEquippedTool()) {
+        boolean grenadeAction = ClientToolReleaseAction.isActive(
+                ClientToolReleaseAction.Action.SHEPHERD_GRENADE);
+        if (!ClientShepherdHudState.hasEquippedTool() && !grenadeAction) {
             return;
         }
         event.setCanceled(true);
@@ -35,46 +38,46 @@ public final class ShepherdPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        if (ClientShepherdHudState.equippedTool() == ShepherdTool.SONIC_TRAP) {
+        ShepherdTool tool = grenadeAction ? ShepherdTool.FRAG_GRENADE : ClientShepherdHudState.equippedTool();
+        if (tool == ShepherdTool.SONIC_TRAP) {
             poseStack.translate(0.38D, -0.18D, -0.58D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-18.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F));
-            poseStack.scale(0.78F, 0.78F, 0.78F);
+            poseStack.scale(0.34F, 0.34F, 0.34F);
         } else {
             poseStack.translate(0.36D, -0.20D, -0.54D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-16.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(-20.0F));
-            poseStack.scale(1.45F, 1.45F, 1.45F);
+            poseStack.scale(0.82F, 0.82F, 0.82F);
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = grenadeAction
+                ? ClientToolReleaseAction.frame(
+                        ClientToolReleaseAction.Action.SHEPHERD_GRENADE, "idle", seconds)
+                : new ClientToolModelAnimationState.AnimationFrame("idle", seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientShepherdHudState.hasEquippedTool()) {
+        if (ClientShepherdHudState.hasEquippedTool()
+                || ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.SHEPHERD_GRENADE)) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack() {
-        return switch (ClientShepherdHudState.equippedTool()) {
-            case SONIC_TRAP -> new ItemStack(Items.NOTE_BLOCK);
-            case FRAG_GRENADE -> new ItemStack(Items.IRON_NUGGET);
-            case NONE -> ItemStack.EMPTY;
+    private static ResourceLocation modelFor(ShepherdTool tool) {
+        return switch (tool) {
+            case SONIC_TRAP, NONE -> SONIC_TRAP_MODEL;
+            case FRAG_GRENADE -> GRENADE_MODEL;
         };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

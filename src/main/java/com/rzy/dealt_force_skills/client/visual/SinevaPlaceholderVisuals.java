@@ -7,21 +7,26 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.sineva.SinevaShieldGeometry;
 import com.rzy.dealt_force_skills.client.SinevaInputHandler;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaRenderState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
+import com.rzy.dealt_force_skills.client.renderer.DfsRenderTypes;
+import com.rzy.dealt_force_skills.entity.GrappleHookEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RenderPlayerEvent;
@@ -37,11 +42,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Locale;
+import java.util.Set;
 import org.joml.Matrix4f;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaPlaceholderVisuals {
     private static final ItemStack BLADE_WIRE_PLACEHOLDER = new ItemStack(Items.COBWEB);
+    private static final ResourceLocation BLADE_WIRE_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_blade_wire_core");
+    private static final ResourceLocation GRAPPLE_GUN_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_grapple_gun");
+    private static final ResourceLocation RIOT_SHIELD_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_riot_shield");
+    private static final String GRAPPLE_GUN_KEY = "sineva_grapple_gun";
     private static final int OUTER_R = 10;
     private static final int OUTER_G = 12;
     private static final int OUTER_B = 31;
@@ -57,8 +70,8 @@ public final class SinevaPlaceholderVisuals {
     // Vanilla player layers use humanoid model space, where positive Y points down.
     // The YSM fallback uses world space, where positive Y points up.
     private static final float FIRST_PERSON_VIEWPORT_Y = 0.04f;
-    private static final float THIRD_PERSON_WORLD_VIEWPORT_Y = 0.24f;
-    private static final float THIRD_PERSON_MODEL_VIEWPORT_Y = -0.39f;
+    private static final float THIRD_PERSON_WORLD_VIEWPORT_Y = 0.14f;
+    private static final float THIRD_PERSON_MODEL_VIEWPORT_Y = -0.16f;
     private static final Map<UUID, ItemStack> SAVED_MAIN_HAND = new HashMap<>();
     private static final Map<UUID, YsmSavedMainHand> YSM_WORLD_SAVED_MAIN_HAND = new HashMap<>();
 
@@ -78,10 +91,13 @@ public final class SinevaPlaceholderVisuals {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        boolean shieldMode = shouldHideHeldHands(Minecraft.getInstance().player);
+        Minecraft minecraft = Minecraft.getInstance();
+        boolean shieldMode = shouldHideHeldHands(minecraft.player);
         boolean bladeWireMode = SinevaInputHandler.isBladeWireHeld();
+        boolean grappleMode = ClientToolModelAnimationState.isActive(GRAPPLE_GUN_KEY)
+                || hasActiveLocalGrapple(minecraft);
 
-        if (!shieldMode && !bladeWireMode) {
+        if (!shieldMode && !bladeWireMode && !grappleMode) {
             return;
         }
 
@@ -91,7 +107,6 @@ public final class SinevaPlaceholderVisuals {
         }
 
         PoseStack poseStack = event.getPoseStack();
-        Minecraft minecraft = Minecraft.getInstance();
 
         // Render blade wire in main hand when held (works with or without shield)
         if (bladeWireMode) {
@@ -100,34 +115,75 @@ public final class SinevaPlaceholderVisuals {
             poseStack.mulPose(Axis.YP.rotationDegrees(-80.0f));
             poseStack.mulPose(Axis.XP.rotationDegrees(-15.0f));
             poseStack.scale(0.65f, 0.65f, 0.65f);
-            minecraft.getItemRenderer().renderStatic(
-                    minecraft.player,
-                    BLADE_WIRE_PLACEHOLDER,
-                    ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                    false,
-                    poseStack,
-                    event.getMultiBufferSource(),
-                    minecraft.level,
-                    event.getPackedLight(),
-                    OverlayTexture.NO_OVERLAY,
-                    0
-            );
+            boolean rendered = BlockbenchAnimatedModelRenderer.render(
+                    BLADE_WIRE_MODEL, null, 0.0F, poseStack,
+                    event.getMultiBufferSource(), event.getPackedLight());
+            if (!rendered) {
+                minecraft.getItemRenderer().renderStatic(
+                        minecraft.player,
+                        BLADE_WIRE_PLACEHOLDER,
+                        ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
+                        false,
+                        poseStack,
+                        event.getMultiBufferSource(),
+                        minecraft.level,
+                        event.getPackedLight(),
+                        OverlayTexture.NO_OVERLAY,
+                        0
+                );
+            }
             poseStack.popPose();
         }
 
-        // Render shield in left hand area when shield is deployed
+        // Render the shield first so the offhand grapple gun remains visible over its edge.
         if (shieldMode) {
             float bash = ClientSinevaVisualState.bashProgress(event.getPartialTick());
             float charge = ClientSinevaVisualState.chargeProgress(event.getPartialTick());
-            float thrust = Mth.sin(bash * Mth.PI) * 0.18f + charge * 0.14f;
+            float thrust = Mth.sin(bash * Mth.PI) * 0.08f + charge * 0.05f;
 
             poseStack.pushPose();
-            poseStack.translate(0.0d, 0.02d, -1.08d - thrust);
-            poseStack.mulPose(Axis.XP.rotationDegrees(-2.0f - charge * 6.0f));
+            poseStack.translate(0.0d, 0.78d, -1.22d - thrust * 0.12f);
             renderSinevaShield(poseStack, event.getMultiBufferSource(), event.getPackedLight(), true,
                     ClientSinevaRenderState.isViewportBroken(minecraft.player));
             poseStack.popPose();
         }
+
+        if (grappleMode) {
+            poseStack.pushPose();
+            poseStack.translate(-0.48D, -0.36D, -0.68D);
+            poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(-9.0F));
+            poseStack.scale(0.72F, 0.72F, 0.72F);
+            ClientToolModelAnimationState.AnimationFrame frame = ClientToolModelAnimationState.frame(
+                    GRAPPLE_GUN_KEY, GRAPPLE_GUN_MODEL, null, 0.0F);
+            boolean rendered = BlockbenchAnimatedModelRenderer.render(
+                    GRAPPLE_GUN_MODEL, frame.animation(), frame.seconds(), poseStack,
+                    event.getMultiBufferSource(), event.getPackedLight());
+            if (!rendered) {
+                minecraft.getItemRenderer().renderStatic(
+                        minecraft.player, new ItemStack(Items.CROSSBOW),
+                        ItemDisplayContext.FIRST_PERSON_LEFT_HAND, true, poseStack,
+                        event.getMultiBufferSource(), minecraft.level, event.getPackedLight(),
+                        OverlayTexture.NO_OVERLAY, 0);
+            }
+            poseStack.popPose();
+        }
+    }
+
+    private static boolean hasActiveLocalGrapple(Minecraft minecraft) {
+        return hasActiveGrapple(minecraft, minecraft.player);
+    }
+
+    private static boolean hasActiveGrapple(Minecraft minecraft, Player player) {
+        if (player == null || minecraft.level == null) {
+            return false;
+        }
+        for (Entity entity : minecraft.level.entitiesForRendering()) {
+            if (entity instanceof GrappleHookEntity hook && hook.getRopeOwner() == player) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -162,6 +218,24 @@ public final class SinevaPlaceholderVisuals {
             player.getInventory().items.set(player.getInventory().selected, saved);
         }
 
+        Minecraft minecraft = Minecraft.getInstance();
+        if (!hasActiveGrapple(minecraft, player)
+                || player.isInvisible()
+                || player == minecraft.player && minecraft.options.getCameraType().isFirstPerson()) {
+            return;
+        }
+
+        PoseStack poseStack = event.getPoseStack();
+        poseStack.pushPose();
+        event.getRenderer().getModel().leftArm.translateAndRotate(poseStack);
+        poseStack.translate(0.04D, 0.43D, 0.0D);
+        poseStack.mulPose(Axis.ZP.rotationDegrees(-90.0F));
+        poseStack.mulPose(Axis.XP.rotationDegrees(180.0F));
+        poseStack.scale(0.55F, 0.55F, 0.55F);
+        BlockbenchAnimatedModelRenderer.render(
+                GRAPPLE_GUN_MODEL, null, 0.0F, poseStack,
+                event.getMultiBufferSource(), event.getPackedLight());
+        poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -190,15 +264,22 @@ public final class SinevaPlaceholderVisuals {
 
         MultiBufferSource.BufferSource buffer = minecraft.renderBuffers().bufferSource();
         for (Player player : minecraft.level.players()) {
-            if (!shouldRenderFor(player)) {
+            boolean renderShield = shouldRenderFor(player);
+            boolean renderGrapple = hasActiveGrapple(minecraft, player);
+            if (!renderShield && !renderGrapple) {
                 continue;
             }
             if (player == minecraft.player && minecraft.options.getCameraType().isFirstPerson()) {
                 continue;
             }
-            renderYsmWorldFallbackShield(event, player, buffer);
+            if (renderShield) {
+                renderYsmWorldFallbackShield(event, player, buffer);
+            }
+            if (renderGrapple) {
+                renderYsmWorldFallbackGrapple(event, player, buffer);
+            }
         }
-        buffer.endBatch(RenderType.debugQuads());
+        buffer.endBatch(DfsRenderTypes.untexturedQuads());
         restoreYsmWorldMainHands(minecraft);
     }
 
@@ -264,8 +345,7 @@ public final class SinevaPlaceholderVisuals {
         poseStack.translate(x, y, z);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0f - bodyYaw));
         if (frontShield) {
-            poseStack.translate(0.0d, 1.35d, -0.58d - thrust);
-            poseStack.mulPose(Axis.XP.rotationDegrees(-3.0f - charge * 7.0f));
+            poseStack.translate(0.0d, 0.86d, -0.74d - thrust * 0.45f);
         } else {
             poseStack.translate(0.0d, 1.35d, 0.40d);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
@@ -274,6 +354,35 @@ public final class SinevaPlaceholderVisuals {
         renderSinevaShield(poseStack, buffer, LevelRenderer.getLightColor(player.level(), player.blockPosition()), false,
                 ClientSinevaRenderState.isViewportBroken(player), THIRD_PERSON_WORLD_VIEWPORT_Y);
         poseStack.popPose();
+    }
+
+    private static void renderYsmWorldFallbackGrapple(RenderLevelStageEvent event, Player player, MultiBufferSource buffer) {
+        float partialTick = event.getPartialTick();
+        Vec3 muzzle = GrappleHookEntity.ropeOrigin(player, partialTick)
+                .subtract(event.getCamera().getPosition());
+        Vec3 look = player.getViewVector(partialTick);
+
+        PoseStack poseStack = event.getPoseStack();
+        poseStack.pushPose();
+        poseStack.translate(muzzle.x, muzzle.y, muzzle.z);
+        alignModelX(poseStack, look);
+        poseStack.translate(-0.40D, 0.0D, 0.0D);
+        poseStack.scale(0.55F, 0.55F, 0.55F);
+        BlockbenchAnimatedModelRenderer.render(
+                GRAPPLE_GUN_MODEL, null, 0.0F, poseStack, buffer,
+                LevelRenderer.getLightColor(player.level(), player.blockPosition()));
+        poseStack.popPose();
+    }
+
+    private static void alignModelX(PoseStack poseStack, Vec3 direction) {
+        if (direction.lengthSqr() < 0.000001D) {
+            return;
+        }
+        double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
+        float yaw = (float) Math.toDegrees(Math.atan2(direction.z, direction.x));
+        float pitch = (float) Math.toDegrees(Math.atan2(direction.y, horizontal));
+        poseStack.mulPose(Axis.YP.rotationDegrees(-yaw));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(pitch));
     }
 
     private record YsmSavedMainHand(int slot, ItemStack stack) {
@@ -329,9 +438,7 @@ public final class SinevaPlaceholderVisuals {
             if (frontShield) {
                 getParentModel().body.translateAndRotate(poseStack);
                 poseStack.mulPose(Axis.YP.rotationDegrees(netHeadYaw));
-                poseStack.mulPose(Axis.XP.rotationDegrees(headPitch));
-                poseStack.translate(0.0d, 0.30d, -0.56d - thrust);
-                poseStack.mulPose(Axis.XP.rotationDegrees(-3.0f - charge * 7.0f));
+                poseStack.translate(0.0d, 0.52d, -0.76d - thrust * 0.45f);
             } else {
                 getParentModel().body.translateAndRotate(poseStack);
                 poseStack.translate(0.0d, 0.30d, 0.32d);
@@ -339,53 +446,106 @@ public final class SinevaPlaceholderVisuals {
                 poseStack.mulPose(Axis.XP.rotationDegrees(10.0f));
             }
             renderSinevaShield(poseStack, buffer, packedLight, false,
-                    ClientSinevaRenderState.isViewportBroken(player), THIRD_PERSON_MODEL_VIEWPORT_Y);
+                    ClientSinevaRenderState.isViewportBroken(player), THIRD_PERSON_MODEL_VIEWPORT_Y, true);
             poseStack.popPose();
         }
     }
 
     private static void renderSinevaShield(PoseStack poseStack, MultiBufferSource buffer, int packedLight, boolean firstPerson, boolean viewportBroken) {
         float viewportY = firstPerson ? FIRST_PERSON_VIEWPORT_Y : THIRD_PERSON_WORLD_VIEWPORT_Y;
-        renderSinevaShield(poseStack, buffer, packedLight, firstPerson, viewportBroken, viewportY);
+        renderSinevaShield(poseStack, buffer, packedLight, firstPerson, viewportBroken, viewportY, false);
     }
 
     private static void renderSinevaShield(PoseStack poseStack, MultiBufferSource buffer, int packedLight, boolean firstPerson, boolean viewportBroken, float viewportY) {
-        float outerWidth = firstPerson ? 2.56f : (float) SinevaShieldGeometry.SHIELD_WORLD_WIDTH;
-        float outerHeight = firstPerson ? 1.72f : (float) SinevaShieldGeometry.SHIELD_WORLD_HEIGHT;
-        float faceWidth = outerWidth - (firstPerson ? 0.20f : 0.12f);
-        float faceHeight = outerHeight - (firstPerson ? 0.22f : 0.16f);
-        float viewportX = 0.0f;
-        float viewportWidth = firstPerson ? 2.14f : (float) SinevaShieldGeometry.VIEWPORT_WORLD_WIDTH;
-        float viewportHeight = firstPerson ? 1.18f : (float) SinevaShieldGeometry.VIEWPORT_WORLD_HEIGHT;
-        float frame = firstPerson ? 0.06f : 0.055f;
+        renderSinevaShield(poseStack, buffer, packedLight, firstPerson, viewportBroken, viewportY, false);
+    }
 
-        VertexConsumer bodyConsumer = buffer.getBuffer(RenderType.debugQuads());
+    private static void renderSinevaShield(
+            PoseStack poseStack,
+            MultiBufferSource buffer,
+            int packedLight,
+            boolean firstPerson,
+            boolean viewportBroken,
+            float viewportY,
+            boolean modelSpaceYDown
+    ) {
+        if (!firstPerson && renderSinevaShieldModel(
+                poseStack, buffer, packedLight, false, viewportBroken, modelSpaceYDown)) {
+            return;
+        }
+        float outerWidth = firstPerson ? 3.20f : (float) SinevaShieldGeometry.SHIELD_WORLD_WIDTH;
+        float outerHeight = firstPerson ? 2.10f : (float) SinevaShieldGeometry.SHIELD_WORLD_HEIGHT;
+        float faceWidth = outerWidth - 0.12f;
+        float faceHeight = outerHeight - (firstPerson ? 0.12f : 0.16f);
+        float viewportX = 0.0f;
+        float viewportWidth = firstPerson ? 2.70f : (float) SinevaShieldGeometry.VIEWPORT_WORLD_WIDTH;
+        float viewportHeight = firstPerson ? 1.54f : (float) SinevaShieldGeometry.VIEWPORT_WORLD_HEIGHT;
+        float frame = firstPerson ? 0.045f : 0.055f;
+
+        VertexConsumer bodyConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
         renderRectAroundHole(poseStack, bodyConsumer, outerWidth, outerHeight,
                 faceWidth, faceHeight, 0.000f, OUTER_R, OUTER_G, OUTER_B, 255);
         renderRectAroundHole(poseStack, bodyConsumer, faceWidth, faceHeight,
                 viewportX, viewportY, viewportWidth + frame * 2.0f, viewportHeight + frame * 2.0f,
                 0.002f, FACE_R, FACE_G, FACE_B, 255);
 
-        float trimX = outerWidth * 0.36f;
-        renderRect(poseStack, bodyConsumer, -trimX, -0.10f, firstPerson ? 0.10f : 0.055f,
-                faceHeight * 0.76f, 0.004f, TRIM_R, TRIM_G, TRIM_B, 255);
-        renderRect(poseStack, bodyConsumer, trimX, -0.10f, firstPerson ? 0.10f : 0.055f,
-                faceHeight * 0.76f, 0.004f, TRIM_R, TRIM_G, TRIM_B, 255);
+        if (!firstPerson) {
+            float trimX = outerWidth * 0.36f;
+            renderRect(poseStack, bodyConsumer, -trimX, -0.10f, 0.055f,
+                    faceHeight * 0.76f, 0.004f, TRIM_R, TRIM_G, TRIM_B, 255);
+            renderRect(poseStack, bodyConsumer, trimX, -0.10f, 0.055f,
+                    faceHeight * 0.76f, 0.004f, TRIM_R, TRIM_G, TRIM_B, 255);
+        }
         if (!viewportBroken) {
             renderFrame(poseStack, bodyConsumer, viewportX, viewportY, viewportWidth, viewportHeight,
                     frame, 0.006f, GLASS_R, GLASS_G, GLASS_B, 255);
         }
 
-        VertexConsumer glassConsumer = buffer.getBuffer(RenderType.debugQuads());
+        VertexConsumer glassConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
         if (!firstPerson && !viewportBroken) {
             renderRect(poseStack, glassConsumer, viewportX, viewportY, viewportWidth, viewportHeight,
                     0.008f, GLASS_R, GLASS_G, GLASS_B, 90);
         }
-        if (!viewportBroken) {
+        if (!firstPerson && !viewportBroken) {
             renderRect(poseStack, glassConsumer, viewportX - viewportWidth * 0.30f,
                     viewportY + viewportHeight * 0.24f, viewportWidth * 0.30f, 0.018f,
-                    0.010f, 214, 235, 238, firstPerson ? 95 : 130);
+                    0.010f, 214, 235, 238, 130);
         }
+    }
+
+    private static boolean renderSinevaShieldModel(
+            PoseStack poseStack,
+            MultiBufferSource buffer,
+            int packedLight,
+            boolean firstPerson,
+            boolean viewportBroken,
+            boolean modelSpaceYDown
+    ) {
+        poseStack.pushPose();
+        if (firstPerson) {
+            poseStack.translate(0.0D, -0.46D, 0.0D);
+            poseStack.scale(1.90F, 1.04F, 1.0F);
+        } else if (modelSpaceYDown) {
+            poseStack.translate(0.0D, 0.28D, 0.0D);
+            poseStack.scale(1.0F, -1.0F, 1.0F);
+        } else {
+            poseStack.translate(0.0D, -0.78D, 0.0D);
+        }
+        boolean rendered = BlockbenchAnimatedModelRenderer.render(
+                RIOT_SHIELD_MODEL,
+                ClientSinevaVisualState.shieldAnimation(),
+                ClientSinevaVisualState.shieldAnimationSeconds(Minecraft.getInstance().getFrameTime()),
+                poseStack,
+                buffer,
+                packedLight,
+                viewportBroken ? Set.of("viewport_glass") : Set.of()
+        );
+        poseStack.popPose();
+        return rendered;
+    }
+
+    public static void startGrappleFire() {
+        ClientToolModelAnimationState.start(GRAPPLE_GUN_KEY, GRAPPLE_GUN_MODEL, "fire", 0.5F);
     }
 
     private static void renderRectAroundHole(

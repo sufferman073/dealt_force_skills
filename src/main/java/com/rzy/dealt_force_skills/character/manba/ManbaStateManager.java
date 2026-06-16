@@ -16,6 +16,9 @@ import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
+import com.rzy.dealt_force_skills.skill.SkillModelVisual;
+import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -352,6 +355,14 @@ public final class ManbaStateManager {
 
         player.level().playSound(null, player.blockPosition(), ModSounds.MANBA_ELBOW_START.get(),
                 SoundSource.PLAYERS, 0.8f, 1.0f);
+        SkillModelVisualSync.play(player, SkillModelVisual.MANBA_ELBOW);
+        SkillAnimationScheduler.schedule(
+                player,
+                SkillModelVisual.MANBA_ELBOW.impactTick(),
+                ManbaStateManager::performElbowImpact);
+    }
+
+    private static void performElbowImpact(ServerPlayer player) {
         Vec3 eye = player.getEyePosition();
         Vec3 forward = player.getLookAngle().normalize();
         AABB box = player.getBoundingBox().inflate(ELBOW_RANGE, 1.0D, ELBOW_RANGE);
@@ -403,7 +414,11 @@ public final class ManbaStateManager {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.flashlight_empty"), true);
             active = false;
         }
+        boolean changed = data(player).getBoolean(FLASHLIGHT_ACTIVE) != active;
         data(player).putBoolean(FLASHLIGHT_ACTIVE, active);
+        if (changed) {
+            SkillModelVisualSync.play(player, SkillModelVisual.MANBA_FLASHLIGHT_TOGGLE);
+        }
         if (!active) {
             clearFlashProgress(player);
             clearFlashlightLightBlocks(player);

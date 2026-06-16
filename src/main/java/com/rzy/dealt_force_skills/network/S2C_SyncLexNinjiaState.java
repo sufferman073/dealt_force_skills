@@ -22,7 +22,8 @@ public record S2C_SyncLexNinjiaState(
         int deathFlameTicks,
         float deathFlameOverflow,
         int hamPowerTicks,
-        int hamBerserkTicks
+        int hamBerserkTicks,
+        int scientificToolLevel
 ) {
     public static void encode(S2C_SyncLexNinjiaState msg, FriendlyByteBuf buf) {
         buf.writeFloat(msg.leicra);
@@ -39,6 +40,7 @@ public record S2C_SyncLexNinjiaState(
         buf.writeFloat(msg.deathFlameOverflow);
         buf.writeVarInt(msg.hamPowerTicks);
         buf.writeVarInt(msg.hamBerserkTicks);
+        buf.writeVarInt(msg.scientificToolLevel);
     }
 
     public static S2C_SyncLexNinjiaState decode(FriendlyByteBuf buf) {
@@ -55,6 +57,7 @@ public record S2C_SyncLexNinjiaState(
                 buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readFloat(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt()
         );
@@ -77,7 +80,8 @@ public record S2C_SyncLexNinjiaState(
                         msg.deathFlameTicks,
                         msg.deathFlameOverflow,
                         msg.hamPowerTicks,
-                        msg.hamBerserkTicks
+                        msg.hamBerserkTicks,
+                        msg.scientificToolLevel
                 )
         ));
         ctx.get().setPacketHandled(true);

@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.nox.NoxTool;
 import com.rzy.dealt_force_skills.character.nox.NoxToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientNoxHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_NoxToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -29,6 +30,7 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxInputHandler {
     private static final int FLASH_EQUIP_HOLD_TICKS = 8;
+    private static final int FLASH_RELEASE_TICKS = 3;
     private static final int ROTOR_LOCK_TICKS = 10;
     private static final double ROTOR_LOCK_RANGE = 48.0D;
     private static final double ROTOR_LOCK_MIN_ALIGNMENT = 0.78D;
@@ -110,9 +112,12 @@ public final class NoxInputHandler {
             return;
         }
         if (tool == NoxTool.FLASH_GRENADE && event.getAction() == GLFW.GLFW_PRESS) {
-            NetworkHandler.sendToServer(new C2S_NoxToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? NoxToolAction.THROW_FLASH_GRENADE
-                    : NoxToolAction.STOW_TOOL, -1, true));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginFlashThrow(true);
+            } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.NOX_FLASH_GRENADE);
+                NetworkHandler.sendToServer(new C2S_NoxToolAction(NoxToolAction.STOW_TOOL, -1, true));
+            }
         }
     }
 
@@ -132,9 +137,10 @@ public final class NoxInputHandler {
             if (tool == NoxTool.ROTOR) {
                 NetworkHandler.sendToServer(new C2S_NoxToolAction(NoxToolAction.THROW_ROTOR, -1, false));
             } else if (tool == NoxTool.FLASH_GRENADE) {
-                NetworkHandler.sendToServer(new C2S_NoxToolAction(NoxToolAction.THROW_FLASH_GRENADE, -1, true));
+                beginFlashThrow(true);
             }
         } else if (event.isUseItem()) {
+            ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.NOX_FLASH_GRENADE);
             NetworkHandler.sendToServer(new C2S_NoxToolAction(NoxToolAction.STOW_TOOL));
             resetRotorLock();
         }
@@ -175,9 +181,19 @@ public final class NoxInputHandler {
         }
 
         if (active2WasDown && !sentFlashEquip) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+            beginFlashThrow(false);
         }
         resetActive2();
+    }
+
+    private static void beginFlashThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.NOX_FLASH_GRENADE,
+                FLASH_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_NoxToolAction(
+                                NoxToolAction.THROW_FLASH_GRENADE, -1, true))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2));
     }
 
     private static void handleCoreKey() {

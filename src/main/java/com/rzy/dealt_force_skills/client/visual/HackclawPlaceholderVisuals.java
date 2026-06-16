@@ -5,12 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawTool;
 import com.rzy.dealt_force_skills.client.character.ClientHackclawHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -20,12 +18,16 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawPlaceholderVisuals {
+    private static final ResourceLocation KNIFE_MODEL = model("hackclaw_knife");
+    private static final ResourceLocation FLASH_DRONE_MODEL = model("hackclaw_flash_drone");
+
     private HackclawPlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientHackclawHudState.hasEquippedTool()) {
+        ClientToolReleaseAction.Action action = activeAction();
+        if (!ClientHackclawHudState.hasEquippedTool() && action == null) {
             return;
         }
         event.setCanceled(true);
@@ -35,7 +37,11 @@ public final class HackclawPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        HackclawTool tool = ClientHackclawHudState.equippedTool();
+        HackclawTool tool = action == ClientToolReleaseAction.Action.HACKCLAW_FLASH_DRONE
+                ? HackclawTool.FLASH_DRONE
+                : action == ClientToolReleaseAction.Action.HACKCLAW_KNIFE
+                ? HackclawTool.HACKING_KNIFE
+                : ClientHackclawHudState.equippedTool();
         if (tool == HackclawTool.HACKING_KNIFE) {
             poseStack.translate(0.46D, -0.18D, -0.58D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-28.0F));
@@ -50,33 +56,46 @@ public final class HackclawPlaceholderVisuals {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(tool),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = action == null
+                ? new ClientToolModelAnimationState.AnimationFrame(animationFor(tool), seconds)
+                : ClientToolReleaseAction.frame(action, animationFor(tool), seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientHackclawHudState.hasEquippedTool()) {
+        if (ClientHackclawHudState.hasEquippedTool() || activeAction() != null) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack(HackclawTool tool) {
+    private static ClientToolReleaseAction.Action activeAction() {
+        if (ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.HACKCLAW_FLASH_DRONE)) {
+            return ClientToolReleaseAction.Action.HACKCLAW_FLASH_DRONE;
+        }
+        return ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.HACKCLAW_KNIFE)
+                ? ClientToolReleaseAction.Action.HACKCLAW_KNIFE
+                : null;
+    }
+
+    private static ResourceLocation modelFor(HackclawTool tool) {
         return switch (tool) {
-            case HACKING_KNIFE -> new ItemStack(Items.IRON_SWORD);
-            case FLASH_DRONE -> new ItemStack(Items.DAYLIGHT_DETECTOR);
-            case NONE -> ItemStack.EMPTY;
+            case HACKING_KNIFE, NONE -> KNIFE_MODEL;
+            case FLASH_DRONE -> FLASH_DRONE_MODEL;
         };
+    }
+
+    private static String animationFor(HackclawTool tool) {
+        return switch (tool) {
+            case HACKING_KNIFE, NONE -> "idle_charge";
+            case FLASH_DRONE -> "idle_closed";
+        };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

@@ -20,6 +20,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.AABB;
@@ -36,6 +37,9 @@ public final class SinevaSkills {
     private static final int CHARGE_COOLDOWN_TICKS = 20;
     private static final int BASH_ACTIVE_STAMINA_TICKS = 20;
     private static final int SILENCE_TICKS = 60;
+    private static final double PROJECTILE_REFLECT_MIN_SPEED = 1.4D;
+    private static final double PROJECTILE_REFLECT_MAX_SPEED = 3.8D;
+    private static final double PROJECTILE_CHARGE_SPEED_BONUS = 0.45D;
     private static final ConcurrentHashMap<UUID, ChargeData> CHARGING_PLAYERS = new ConcurrentHashMap<>();
 
     private SinevaSkills() {
@@ -101,6 +105,8 @@ public final class SinevaSkills {
 
         Vec3 forward = player.getLookAngle().normalize();
         AABB box = player.getBoundingBox().inflate(2.0, 1.0, 2.0);
+        reflectProjectiles(player, box, forward, FRONT_DOT, null, 0.0D);
+        boolean controlVoicePlayed = false;
         for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
                 entity -> entity != player && entity.isAlive())) {
             Vec3 toTarget = target.position().add(0, target.getBbHeight() * 0.5, 0)
@@ -112,7 +118,10 @@ public final class SinevaSkills {
                 player.level().playSound(null, target.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
                         SoundSource.PLAYERS, 1.0f, 1.0f);
             }
-            applyShieldBashControl(player, target);
+            if (applyShieldBashControl(player, target) && !controlVoicePlayed) {
+                playShieldBashControlVoice(player);
+                controlVoicePlayed = true;
+            }
         }
         return true;
     }
@@ -161,6 +170,7 @@ public final class SinevaSkills {
             player.hurtMarked = true;
 
             AABB box = player.getBoundingBox().inflate(2.0, 1.0, 2.0);
+            reflectProjectiles(player, box, data.direction, 0.0D, data.reflectedProjectiles, PROJECTILE_CHARGE_SPEED_BONUS);
             for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
                     entity -> entity != player && entity.isAlive() && !data.hitEntities.contains(entity))) {
                 Vec3 toTarget = target.position().subtract(player.position()).normalize();
@@ -171,18 +181,87 @@ public final class SinevaSkills {
                     player.level().playSound(null, target.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
                             SoundSource.PLAYERS, 1.0f, 1.0f);
                 }
-                applyShieldBashControl(player, target);
+                if (applyShieldBashControl(player, target) && !data.controlVoicePlayed) {
+                    playShieldBashControlVoice(player);
+                    data.controlVoicePlayed = true;
+                }
                 data.hitEntities.add(target);
             }
         }
     }
 
-    private static void applyShieldBashControl(ServerPlayer player, LivingEntity target) {
+    private static boolean applyShieldBashControl(ServerPlayer player, LivingEntity target) {
         if (!target.isAlive()) {
-            return;
+            return false;
         }
         target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), SILENCE_TICKS, 0, false, true));
         SinevaKnockdownState.apply(player, target, SILENCE_TICKS);
+        return true;
+    }
+
+    private static void playShieldBashControlVoice(ServerPlayer player) {
+        player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_SHIELD_BASH_CONTROL.get(),
+                SoundSource.PLAYERS, 1.0f, 1.0f);
+    }
+
+    private static void reflectProjectiles(ServerPlayer player, AABB box, Vec3 facing, double minDot,
+                                           Set<UUID> alreadyReflected, double speedBonus) {
+        Vec3 shieldFacing = normalizeOrFallback(facing, player.getLookAngle());
+        for (Projectile projectile : player.level().getEntitiesOfClass(Projectile.class, box, candidate ->
+                candidate.isAlive() && candidate.getOwner() != player)) {
+            UUID projectileId = projectile.getUUID();
+            if (alreadyReflected != null && alreadyReflected.contains(projectileId)) {
+                continue;
+            }
+
+            Vec3 toProjectile = projectile.position().add(0.0D, projectile.getBbHeight() * 0.5D, 0.0D)
+                    .subtract(player.getEyePosition());
+            Vec3 fallbackDirection = normalizeOrFallback(toProjectile, shieldFacing);
+            if (shieldFacing.dot(fallbackDirection) < minDot) {
+                continue;
+            }
+
+            reflectProjectile(player, projectile, fallbackDirection, speedBonus);
+            if (alreadyReflected != null) {
+                alreadyReflected.add(projectileId);
+            }
+        }
+    }
+
+    private static void reflectProjectile(ServerPlayer player, Projectile projectile, Vec3 fallbackDirection, double speedBonus) {
+        Vec3 incomingMotion = projectile.getDeltaMovement();
+        double incomingSpeed = incomingMotion.length();
+        double reflectSpeed = Math.min(PROJECTILE_REFLECT_MAX_SPEED,
+                Math.max(PROJECTILE_REFLECT_MIN_SPEED, incomingSpeed + speedBonus));
+        Vec3 reflectedMotion = incomingSpeed > 1.0E-4D
+                ? incomingMotion.normalize().scale(-reflectSpeed)
+                : fallbackDirection.scale(reflectSpeed);
+        if (reflectedMotion.dot(fallbackDirection) < 0.15D) {
+            reflectedMotion = fallbackDirection.scale(reflectSpeed);
+        }
+
+        projectile.setOwner(player);
+        projectile.setDeltaMovement(reflectedMotion);
+        alignProjectileRotation(projectile, reflectedMotion);
+        projectile.hasImpulse = true;
+        projectile.hurtMarked = true;
+        player.level().playSound(null, projectile.blockPosition(), ModSounds.SINEVA_PROJECTILE_REFLECT.get(),
+                SoundSource.PLAYERS, 0.9f, 1.0f);
+    }
+
+    private static void alignProjectileRotation(Projectile projectile, Vec3 motion) {
+        double horizontal = motion.horizontalDistance();
+        projectile.setYRot((float) (Math.atan2(motion.x, motion.z) * (180.0D / Math.PI)));
+        projectile.setXRot((float) (Math.atan2(motion.y, horizontal) * -(180.0D / Math.PI)));
+        projectile.yRotO = projectile.getYRot();
+        projectile.xRotO = projectile.getXRot();
+    }
+
+    private static Vec3 normalizeOrFallback(Vec3 vector, Vec3 fallback) {
+        if (vector.lengthSqr() >= 1.0E-6D) {
+            return vector.normalize();
+        }
+        return fallback.lengthSqr() >= 1.0E-6D ? fallback.normalize() : new Vec3(0.0D, 0.0D, 1.0D);
     }
 
     public static boolean canUseShieldAction(Player player) {
@@ -220,8 +299,8 @@ public final class SinevaSkills {
         ServerLevel level = player.serverLevel();
         GrappleHookEntity hook = new GrappleHookEntity(ModEntities.GRAPPLE_HOOK.get(), level, player);
         Vec3 look = player.getLookAngle().normalize();
-        Vec3 start = player.getEyePosition().add(look.scale(0.6));
-        hook.setPos(start.x, start.y - 0.1, start.z);
+        Vec3 start = GrappleHookEntity.ropeOrigin(player, 1.0F);
+        hook.setPos(start.x, start.y, start.z);
         hook.setDeltaMovement(look.scale(2.2));
         hook.setYRot(player.getYRot());
         hook.setXRot(player.getXRot());
@@ -294,6 +373,8 @@ public final class SinevaSkills {
     private static final class ChargeData {
         private final Vec3 direction;
         private final Set<LivingEntity> hitEntities = new HashSet<>();
+        private final Set<UUID> reflectedProjectiles = new HashSet<>();
+        private boolean controlVoicePlayed;
         private int ticksRemaining;
 
         private ChargeData(Vec3 direction, int ticksRemaining) {

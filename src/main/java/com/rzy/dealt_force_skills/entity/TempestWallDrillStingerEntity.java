@@ -40,9 +40,19 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class TempestWallDrillStingerEntity extends Projectile implements ItemSupplier {
+public class TempestWallDrillStingerEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
     private static final EntityDataAccessor<Boolean> ATTACHED =
             SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
+            SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Float> DATA_RELEASE_X =
+            SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_RELEASE_Y =
+            SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_RELEASE_Z =
+            SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Integer> DATA_CHARGE_TICKS =
+            SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.INT);
     private static final int CHARGE_TICKS = 3 * 20;
     private static final double RELEASE_RANGE = 10.0D;
     private static final double RELEASE_HALF_WIDTH = 1.0D;
@@ -73,6 +83,11 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
     @Override
     protected void defineSynchedData() {
         entityData.define(ATTACHED, false);
+        entityData.define(DATA_ATTACHED_FACE, Direction.UP.get3DDataValue());
+        entityData.define(DATA_RELEASE_X, 0.0F);
+        entityData.define(DATA_RELEASE_Y, 0.0F);
+        entityData.define(DATA_RELEASE_Z, 0.0F);
+        entityData.define(DATA_CHARGE_TICKS, 0);
     }
 
     @Override
@@ -107,6 +122,7 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
         attachedEntityOffsetY = tag.getDouble("AttachedEntityOffsetY");
         chargeTicks = tag.getInt("ChargeTicks");
         setAttached(tag.getBoolean("Attached"));
+        syncPoseData();
         noPhysics = isAttached();
     }
 
@@ -138,6 +154,38 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
                     18, 0.18D, 0.18D, 0.18D, 0.04D);
         }
         discard();
+    }
+
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        Vec3 direction = new Vec3(
+                entityData.get(DATA_RELEASE_X),
+                entityData.get(DATA_RELEASE_Y),
+                entityData.get(DATA_RELEASE_Z)
+        );
+        if (direction.lengthSqr() >= 0.0001D) {
+            return direction.normalize();
+        }
+        Vec3 motion = getDeltaMovement();
+        return motion.lengthSqr() >= 0.0001D ? motion.normalize() : new Vec3(0.0D, 0.0D, 1.0D);
+    }
+
+    @Override
+    public float blockbenchYawOffsetDegrees() {
+        return 180.0F;
+    }
+
+    @Override
+    public String blockbenchAnimation(String introAnimation, String loopAnimation, float ageSeconds) {
+        return isAttached() ? "impact_anchor" : loopAnimation;
+    }
+
+    @Override
+    public float blockbenchAnimationSeconds(String animation, float ageSeconds) {
+        if ("impact_anchor".equals(animation)) {
+            return entityData.get(DATA_CHARGE_TICKS) / 20.0F;
+        }
+        return ageSeconds;
     }
 
     private void tickFlight() {
@@ -192,8 +240,10 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
         setPos(pos.x, pos.y, pos.z);
         setDeltaMovement(Vec3.ZERO);
         setAttached(true);
+        syncPoseData();
         noPhysics = true;
         chargeTicks = 0;
+        entityData.set(DATA_CHARGE_TICKS, chargeTicks);
         if (level() instanceof ServerLevel level) {
             level.playSound(null, blockPosition(), ModSounds.TEMPEST_WALL_DRILL_ATTACH.get(),
                     SoundSource.PLAYERS, 0.85F, 1.0F);
@@ -214,8 +264,10 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
         setPos(target.getX(), target.getY() + attachedEntityOffsetY, target.getZ());
         setDeltaMovement(Vec3.ZERO);
         setAttached(true);
+        syncPoseData();
         noPhysics = true;
         chargeTicks = 0;
+        entityData.set(DATA_CHARGE_TICKS, chargeTicks);
         if (level() instanceof ServerLevel level) {
             level.playSound(null, target.blockPosition(), ModSounds.TEMPEST_WALL_DRILL_ATTACH.get(),
                     SoundSource.PLAYERS, 0.85F, 1.08F);
@@ -239,6 +291,7 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
                     attachedEntityOffsetY), target.getZ());
         }
         chargeTicks++;
+        entityData.set(DATA_CHARGE_TICKS, chargeTicks);
         if (chargeTicks % 20 == 0 && level() instanceof ServerLevel level) {
             level.playSound(null, blockPosition(), ModSounds.TEMPEST_WALL_DRILL_CHARGE_TICK.get(),
                     SoundSource.PLAYERS, 0.45F, 1.0F + chargeTicks / 80.0F);
@@ -313,6 +366,16 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
 
     private void setAttached(boolean attached) {
         entityData.set(ATTACHED, attached);
+    }
+
+    private void syncPoseData() {
+        Vec3 direction = releaseDirection.lengthSqr() < 0.0001D
+                ? Vec3.atLowerCornerOf(attachedFace.getOpposite().getNormal())
+                : releaseDirection.normalize();
+        entityData.set(DATA_ATTACHED_FACE, attachedFace.get3DDataValue());
+        entityData.set(DATA_RELEASE_X, (float) direction.x);
+        entityData.set(DATA_RELEASE_Y, (float) direction.y);
+        entityData.set(DATA_RELEASE_Z, (float) direction.z);
     }
 
     private Entity owner(ServerLevel level) {

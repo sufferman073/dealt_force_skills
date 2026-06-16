@@ -5,7 +5,9 @@ import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncToxikState;
+import com.rzy.dealt_force_skills.entity.ToxikFireflyEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
@@ -48,6 +50,7 @@ public final class ToxikStateManager {
     private static final double FIREFLY_MAX_OFF_AXIS = 18.0D;
     private static final int FIREFLY_FAN_HORIZONTAL_SAMPLES = 13;
     private static final int FIREFLY_FAN_VERTICAL_SAMPLES = 5;
+    private static final int FIREFLY_SWARM_COUNT = 22;
     private static final DustParticleOptions FIREFLY_DUST = new DustParticleOptions(new Vector3f(0.72f, 1.0f, 0.22f), 1.15f);
     private static final Set<java.util.UUID> EFFECT_SCALING_GUARD = new HashSet<>();
 
@@ -366,28 +369,39 @@ public final class ToxikStateManager {
         ServerLevel level = player.serverLevel();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
-        AABB box = player.getBoundingBox().inflate(FIREFLY_RANGE);
-        int hitCount = 0;
-        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (target == player || !TargetingUtil.isTargetableLiving(target) || !isInFireflyCone(level, eye, look, target)) {
-                continue;
-            }
-            if (mode == ToxikFireflyMode.AMPLIFY && target instanceof Player) {
-                applyAdrenaline(player, target, FIREFLY_BASE_DURATION_TICKS);
-            } else {
-                applyFireflyInterference(player, target, FIREFLY_BASE_DURATION_TICKS);
-            }
-            hitCount++;
-        }
 
+        spawnFireflySwarm(level, player, mode, eye, look);
         spawnFireflyParticles(level, eye, look);
         level.playSound(null, player.blockPosition(), ModSounds.TOXIK_FIREFLY_RELEASE.get(),
                 SoundSource.PLAYERS, 0.95f, mode == ToxikFireflyMode.LETHAL ? 0.95f : 1.12f);
-        if (hitCount > 0) {
-            level.playSound(null, player.blockPosition(), ModSounds.TOXIK_FIREFLY_HIT.get(),
-                    SoundSource.PLAYERS, 0.75f, 1.0f);
-        }
         setEquippedTool(player, ToxikTool.NONE);
+    }
+
+    private static void spawnFireflySwarm(ServerLevel level, ServerPlayer owner, ToxikFireflyMode mode, Vec3 eye, Vec3 look) {
+        Vec3 forward = look.lengthSqr() < 0.0001D ? new Vec3(0.0D, 0.0D, 1.0D) : look.normalize();
+        Vec3 right = forward.cross(new Vec3(0.0D, 1.0D, 0.0D));
+        if (right.lengthSqr() < 0.0001D) {
+            right = new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        right = right.normalize();
+        Vec3 up = right.cross(forward).normalize();
+        for (int i = 0; i < FIREFLY_SWARM_COUNT; i++) {
+            double angle = Math.toRadians(i * 137.5D);
+            double ring = 0.12D + (i % 6) * 0.045D;
+            double side = Math.cos(angle) * ring;
+            double vertical = Math.sin(angle) * ring * 0.75D;
+            Vec3 direction = forward
+                    .add(right.scale(side * 0.62D))
+                    .add(up.scale(vertical * 0.62D))
+                    .normalize();
+            Vec3 start = eye
+                    .add(forward.scale(0.45D + (i % 4) * 0.035D))
+                    .add(right.scale(side))
+                    .add(up.scale(vertical - 0.08D));
+            ToxikFireflyEntity firefly = new ToxikFireflyEntity(ModEntities.TOXIK_FIREFLY.get(), level, owner, mode, direction);
+            firefly.setPos(start.x, start.y, start.z);
+            level.addFreshEntity(firefly);
+        }
     }
 
     public static void applyFireflyInterference(ServerPlayer owner, LivingEntity target, int baseTicks) {

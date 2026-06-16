@@ -29,7 +29,10 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> BOMB_SUIT_EQUIP = reg("bomb_suit_equip");
     public static final RegistryObject<SoundEvent> SINEVA_WALK = reg("sineva_walk");
     public static final RegistryObject<SoundEvent> SINEVA_SHIELD_HIT = reg("sineva_shield_hit");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BASH_CONTROL = reg("sineva_shield_bash_control");
     public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BLOCK = reg("sineva_shield_block");
+    public static final RegistryObject<SoundEvent> SINEVA_PROJECTILE_REFLECT = reg("sineva_projectile_reflect");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_HIT_CASTER = reg("sineva_grapple_hit_caster");
 
     public static final RegistryObject<SoundEvent> INCENDIARY_READY = reg("incendiary_ready");
     public static final RegistryObject<SoundEvent> INCENDIARY_THROW = reg("incendiary_throw");

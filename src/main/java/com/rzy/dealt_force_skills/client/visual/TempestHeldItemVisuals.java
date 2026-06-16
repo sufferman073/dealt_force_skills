@@ -4,12 +4,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.client.character.ClientTempestHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -19,6 +17,9 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class TempestHeldItemVisuals {
+    private static final ResourceLocation WALL_DRILL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "tempest_wall_drill_stinger");
+
     private TempestHeldItemVisuals() {
     }
 
@@ -41,18 +42,10 @@ public final class TempestHeldItemVisuals {
         poseStack.scale(0.68F, 0.68F, 0.68F);
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                new ItemStack(Items.LIGHTNING_ROD),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        BlockbenchAnimatedModelRenderer.render(
+                WALL_DRILL, "idle",
+                (minecraft.player.tickCount + event.getPartialTick()) / 20.0F,
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 

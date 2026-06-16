@@ -127,7 +127,9 @@ public class HackclawKnifeEntity extends Projectile implements ItemSupplier {
             target.setDeltaMovement(before);
             target.hurtMarked = true;
         }
-        deployField(level, hit.getLocation());
+        Vec3 motion = getDeltaMovement();
+        Direction attachedFace = Direction.getNearest(-motion.x, -motion.y, -motion.z);
+        deployField(level, hit.getLocation(), attachedFace);
     }
 
     private void hitBlock(BlockHitResult hit) {
@@ -138,14 +140,14 @@ public class HackclawKnifeEntity extends Projectile implements ItemSupplier {
 
         Direction direction = hit.getDirection();
         Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
-        deployField(level, hit.getLocation().add(normal.scale(0.05D)));
+        deployField(level, hit.getLocation().add(normal.scale(0.05D)), direction);
     }
 
-    private void deployField(ServerLevel level, Vec3 center) {
+    private void deployField(ServerLevel level, Vec3 center, Direction attachedFace) {
         RangedSoundHelper.playThrottled(level, center, ModSounds.HACKCLAW_INTERFERENCE_DEPLOY.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f, 24.0D, 4, 3.0D);
         HackclawInterferenceFieldEntity field = new HackclawInterferenceFieldEntity(
-                ModEntities.HACKCLAW_INTERFERENCE_FIELD.get(), level, ownerId);
+                ModEntities.HACKCLAW_INTERFERENCE_FIELD.get(), level, ownerId, attachedFace);
         field.setPos(center.x, center.y, center.z);
         level.addFreshEntity(field);
         discard();

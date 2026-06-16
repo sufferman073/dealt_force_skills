@@ -4,6 +4,7 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.vyron.VyronTool;
 import com.rzy.dealt_force_skills.character.vyron.VyronToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientVyronHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientVyronToolAnimationState;
 import com.rzy.dealt_force_skills.network.C2S_VyronDash;
 import com.rzy.dealt_force_skills.network.C2S_VyronToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -23,10 +24,13 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VyronInputHandler {
     private static final int BOMB_HOLD_EQUIP_TICKS = 8;
+    private static final int BOMB_FIRE_TICKS = 5;
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean sentBombEquip;
     private static boolean canceledBombHold;
+    private static int pendingBombThrowTicks;
+    private static boolean pendingBombHighThrow;
 
     private VyronInputHandler() {
     }
@@ -34,6 +38,8 @@ public final class VyronInputHandler {
     public static void tick(Minecraft minecraft) {
         if (minecraft.player == null || !ClientVyronHudState.shouldRender()) {
             resetActive2();
+            resetPendingBombThrow();
+            ClientVyronToolAnimationState.reset();
             return;
         }
 
@@ -42,8 +48,9 @@ public final class VyronInputHandler {
             NetworkHandler.sendToServer(new C2S_VyronDash(direction.x, direction.z));
         }
 
+        handlePendingBombThrow();
         handleActive2Key();
-        if (ClientVyronHudState.hasEquippedTool() || isMagneticBombHeldForVisual()) {
+        if (ClientVyronHudState.hasEquippedTool() || isMagneticBombHeldForVisual() || pendingBombThrowTicks > 0) {
             releaseBlockedKey(minecraft.options.keyAttack);
             releaseBlockedKey(minecraft.options.keyUse);
             releaseBlockedKey(minecraft.options.keyPickItem);
@@ -53,7 +60,8 @@ public final class VyronInputHandler {
     }
 
     public static boolean isMagneticBombHeldForVisual() {
-        return ClientVyronHudState.shouldRender() && active2WasDown && !canceledBombHold && active2HeldTicks >= BOMB_HOLD_EQUIP_TICKS;
+        return ClientVyronHudState.shouldRender() && (pendingBombThrowTicks > 0
+                || active2WasDown && !canceledBombHold && active2HeldTicks >= BOMB_HOLD_EQUIP_TICKS);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -67,6 +75,7 @@ public final class VyronInputHandler {
         }
 
         if (ClientVyronHudState.equippedTool() == VyronTool.TIGER_CANNON && event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            ClientVyronToolAnimationState.startFire(VyronTool.TIGER_CANNON);
             NetworkHandler.sendToServer(new C2S_VyronToolAction(VyronToolAction.FIRE_TIGER_CANNON));
         } else {
             if (ClientVyronHudState.equippedTool() == VyronTool.MAGNETIC_BOMB) {
@@ -87,6 +96,7 @@ public final class VyronInputHandler {
             return;
         }
         if (ClientVyronHudState.equippedTool() == VyronTool.TIGER_CANNON && event.isAttack()) {
+            ClientVyronToolAnimationState.startFire(VyronTool.TIGER_CANNON);
             NetworkHandler.sendToServer(new C2S_VyronToolAction(VyronToolAction.FIRE_TIGER_CANNON));
         } else {
             if (ClientVyronHudState.equippedTool() == VyronTool.MAGNETIC_BOMB) {
@@ -114,6 +124,11 @@ public final class VyronInputHandler {
         if (KeybindRegister.ACTIVE_SKILL_2 == null) {
             return;
         }
+        if (pendingBombThrowTicks > 0) {
+            while (KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
+            }
+            return;
+        }
 
         boolean down = KeybindRegister.ACTIVE_SKILL_2.isDown();
         if (down) {
@@ -132,10 +147,23 @@ public final class VyronInputHandler {
         }
 
         if (active2WasDown && !canceledBombHold) {
-            boolean highThrow = active2HeldTicks >= BOMB_HOLD_EQUIP_TICKS;
-            NetworkHandler.sendToServer(new C2S_VyronToolAction(VyronToolAction.THROW_MAGNETIC_BOMB, highThrow));
+            pendingBombHighThrow = active2HeldTicks >= BOMB_HOLD_EQUIP_TICKS;
+            pendingBombThrowTicks = BOMB_FIRE_TICKS;
+            ClientVyronToolAnimationState.startFire(VyronTool.MAGNETIC_BOMB);
         }
         resetActive2();
+    }
+
+    private static void handlePendingBombThrow() {
+        if (pendingBombThrowTicks <= 0) {
+            return;
+        }
+        pendingBombThrowTicks--;
+        if (pendingBombThrowTicks == 0) {
+            NetworkHandler.sendToServer(new C2S_VyronToolAction(
+                    VyronToolAction.THROW_MAGNETIC_BOMB, pendingBombHighThrow));
+            pendingBombHighThrow = false;
+        }
     }
 
     private static Vec3 movementDirection(Minecraft minecraft) {
@@ -169,6 +197,11 @@ public final class VyronInputHandler {
         canceledBombHold = true;
         active2HeldTicks = 0;
         sentBombEquip = false;
+    }
+
+    private static void resetPendingBombThrow() {
+        pendingBombThrowTicks = 0;
+        pendingBombHighThrow = false;
     }
 
     private static boolean isPrimaryOrSecondary(int button) {

@@ -5,12 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.morse.MorseTool;
 import com.rzy.dealt_force_skills.client.character.ClientMorseHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -20,12 +18,18 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class MorsePlaceholderVisuals {
+    private static final ResourceLocation SHOCK_ORB_MODEL = model("morse_shock_orb");
+    private static final ResourceLocation FLASH_GRENADE_MODEL = model("morse_flash_grenade");
+    private static final ResourceLocation SONAR_DETECTOR_MODEL = model("morse_sonar_detector");
+
     private MorsePlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientMorseHudState.hasEquippedTool()) {
+        boolean flashAction = ClientToolReleaseAction.isActive(
+                ClientToolReleaseAction.Action.MORSE_FLASH_GRENADE);
+        if (!ClientMorseHudState.hasEquippedTool() && !flashAction) {
             return;
         }
         event.setCanceled(true);
@@ -40,34 +44,44 @@ public final class MorsePlaceholderVisuals {
         poseStack.scale(0.74F, 0.74F, 0.74F);
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(ClientMorseHudState.equippedTool()),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        MorseTool tool = flashAction ? MorseTool.FLASH_GRENADE : ClientMorseHudState.equippedTool();
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = flashAction
+                ? ClientToolReleaseAction.frame(
+                        ClientToolReleaseAction.Action.MORSE_FLASH_GRENADE,
+                        animationFor(tool),
+                        seconds)
+                : new ClientToolModelAnimationState.AnimationFrame(animationFor(tool), seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientMorseHudState.hasEquippedTool()) {
+        if (ClientMorseHudState.hasEquippedTool()
+                || ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.MORSE_FLASH_GRENADE)) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack(MorseTool tool) {
+    private static ResourceLocation modelFor(MorseTool tool) {
         return switch (tool) {
-            case SHOCK_ORB -> new ItemStack(Items.ECHO_SHARD);
-            case FLASH_GRENADE -> new ItemStack(Items.GLOWSTONE_DUST);
-            case SONAR_DETECTOR -> new ItemStack(Items.SCULK_SENSOR);
-            case NONE -> ItemStack.EMPTY;
+            case SHOCK_ORB, NONE -> SHOCK_ORB_MODEL;
+            case FLASH_GRENADE -> FLASH_GRENADE_MODEL;
+            case SONAR_DETECTOR -> SONAR_DETECTOR_MODEL;
         };
+    }
+
+    private static String animationFor(MorseTool tool) {
+        return switch (tool) {
+            case SHOCK_ORB, NONE -> "idle_hold";
+            case FLASH_GRENADE -> "flash_prepare";
+            case SONAR_DETECTOR -> "deploy_ready";
+        };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

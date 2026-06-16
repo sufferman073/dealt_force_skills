@@ -251,11 +251,16 @@ public final class StingerSkills {
                 mode
         );
         Vec3 look = player.getLookAngle().normalize();
-        Vec3 start = player.getEyePosition().add(look.scale(0.62D));
+        Vec3 right = look.cross(new Vec3(0.0D, 1.0D, 0.0D)).normalize();
+        Vec3 vertical = right.cross(look).normalize();
+        Vec3 start = player.getEyePosition()
+                .add(look.scale(0.58D))
+                .add(right.scale(0.30D))
+                .add(vertical.scale(-0.24D));
         Vec3 direction = target == null
                 ? look
                 : target.position().add(0.0D, target.getBbHeight() * 0.58D, 0.0D).subtract(start).normalize();
-        projectile.setPos(start.x, start.y - 0.08D, start.z);
+        projectile.setPos(start.x, start.y, start.z);
         projectile.setDeltaMovement(direction.scale(STIM_PROJECTILE_SPEED));
         projectile.setYRot(player.getYRot());
         projectile.setXRot(player.getXRot());

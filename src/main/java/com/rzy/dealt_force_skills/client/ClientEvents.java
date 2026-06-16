@@ -8,7 +8,10 @@ import com.rzy.dealt_force_skills.client.character.ClientDWolfHudState;
 import com.rzy.dealt_force_skills.client.character.ClientDepartmentHudState;
 import com.rzy.dealt_force_skills.client.character.ClientGizmoHudState;
 import com.rzy.dealt_force_skills.client.character.ClientHackclawHudState;
+import com.rzy.dealt_force_skills.client.character.ClientHackclawCoreVisualState;
+import com.rzy.dealt_force_skills.client.character.ClientHeldToolVisualState;
 import com.rzy.dealt_force_skills.client.character.ClientLunaHudState;
+import com.rzy.dealt_force_skills.client.character.ClientLunaBowVisualState;
 import com.rzy.dealt_force_skills.client.character.ClientLexNinjiaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientManbaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientMorseHudState;
@@ -18,6 +21,7 @@ import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
 import com.rzy.dealt_force_skills.client.character.ClientShepherdHudState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaRenderState;
+import com.rzy.dealt_force_skills.client.character.ClientSkillModelVisualState;
 import com.rzy.dealt_force_skills.client.character.ClientStingerHudState;
 import com.rzy.dealt_force_skills.client.character.ClientTempestHudState;
 import com.rzy.dealt_force_skills.client.character.ClientToxikHudState;
@@ -29,9 +33,17 @@ import com.rzy.dealt_force_skills.client.particle.GizmoLargeSmokeParticle;
 import com.rzy.dealt_force_skills.client.particle.LargeSmokeParticle;
 import com.rzy.dealt_force_skills.client.particle.ToxikLargeSmokeParticle;
 import com.rzy.dealt_force_skills.client.renderer.CatDadRoadTruckRenderer;
+import com.rzy.dealt_force_skills.client.renderer.BladeWireBlockEntityRenderer;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchProjectileRenderer;
+import com.rzy.dealt_force_skills.client.renderer.DWolfHandCannonGrenadeRenderer;
+import com.rzy.dealt_force_skills.client.renderer.GrappleHookRenderer;
 import com.rzy.dealt_force_skills.client.renderer.NoxDecoyRenderer;
+import com.rzy.dealt_force_skills.client.renderer.TempestRecallAnchorRenderer;
+import com.rzy.dealt_force_skills.client.renderer.VyronMagneticBombRenderer;
+import com.rzy.dealt_force_skills.client.renderer.VyronTigerCannonProjectileRenderer;
 import com.rzy.dealt_force_skills.client.visual.ClientSinevaKnockdownState;
 import com.rzy.dealt_force_skills.client.visual.ClientSinevaVisualState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.client.visual.DfsEquipmentModelVisuals;
 import com.rzy.dealt_force_skills.client.visual.DWolfSlideVisuals;
 import com.rzy.dealt_force_skills.client.visual.ManbaFlashlightBeamRenderer;
@@ -43,6 +55,7 @@ import com.rzy.dealt_force_skills.item.DfsEquipmentItem.SpecialAbility;
 import com.rzy.dealt_force_skills.network.C2S_OpenSelectionOrShop;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.registry.ModEntities;
+import com.rzy.dealt_force_skills.registry.ModBlockEntities;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModParticles;
 import net.minecraft.client.KeyMapping;
@@ -51,6 +64,7 @@ import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -316,10 +330,12 @@ public class ClientEvents {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) {
             forcedCharacterSpinActive = false;
+            ClientToolReleaseAction.reset();
             ClientCharacterSelectionState.resetSession();
             return;
         }
 
+        ClientToolReleaseAction.tick();
         ClientCharacterSelectionState.openInitialSelectionIfNeeded();
         reduceAdrenalinePlacementDelay(mc);
         tickMask1LockOn(mc);
@@ -347,6 +363,10 @@ public class ClientEvents {
         ClientTempestHudState.tick();
         ManbaFlashlightBeamRenderer.tick(mc);
         ClientSinevaRenderState.tick(mc);
+        ClientHackclawCoreVisualState.tick(mc);
+        ClientHeldToolVisualState.tick(mc);
+        ClientLunaBowVisualState.tick(mc);
+        ClientSkillModelVisualState.tick(mc);
         ClientSinevaVisualState.tick(mc);
         ClientSinevaKnockdownState.tick(mc);
         SinevaShieldInputHandler.tick(mc);
@@ -402,7 +422,7 @@ public class ClientEvents {
             drainKey(mc.options.keySwapOffhand);
         }
 
-        if (!UndeadInputHandler.ownsSelectionKey()) {
+        if (!UndeadInputHandler.ownsSelectionKey() && !LexNinjiaInputHandler.ownsSelectionKey()) {
             while (KeybindRegister.CHARACTER_SELECT != null && KeybindRegister.CHARACTER_SELECT.consumeClick()) {
                 NetworkHandler.sendToServer(new C2S_OpenSelectionOrShop());
             }
@@ -433,7 +453,11 @@ public class ClientEvents {
                     && !ClientRaptorHudState.shouldRender()
                     && !ClientVlinderHudState.shouldRender()
                     && !ClientTempestHudState.shouldRender()) {
-                ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+                if (ClientSinevaHudState.shouldRender()) {
+                    SinevaInputHandler.startGrappleUse();
+                } else {
+                    ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+                }
             }
         }
 
@@ -789,58 +813,141 @@ public class ClientEvents {
 
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers e) {
-            e.registerEntityRenderer(ModEntities.GRAPPLE_HOOK.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.BLADE_WIRE_PROJECTILE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.ULURU_INCENDIARY_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.ULURU_FIRE_FIELD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.ULURU_QUICK_COVER_PACKAGE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.ULURU_LOITERING_MISSILE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.ULURU_BOMBLET.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.D_WOLF_HAND_CANNON_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.D_WOLF_SMOKE_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerBlockEntityRenderer(ModBlockEntities.BLADE_WIRE.get(), BladeWireBlockEntityRenderer::new);
+            e.registerEntityRenderer(ModEntities.GRAPPLE_HOOK.get(), GrappleHookRenderer::new);
+            e.registerEntityRenderer(ModEntities.BLADE_WIRE_PROJECTILE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("sineva_blade_wire_core"), null, null, 0.8F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.ULURU_INCENDIARY_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("uluru_incendiary_grenade"), "arm", null, 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_X));
+            e.registerEntityRenderer(ModEntities.ULURU_FIRE_FIELD.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("uluru_incendiary_grenade"), null, null, 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.ULURU_QUICK_COVER_PACKAGE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("uluru_quick_cover_package"), "arm", null, 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.ULURU_LOITERING_MISSILE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("uluru_loitering_missile"), "deploy", "flight", 0.5F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_X));
+            e.registerEntityRenderer(ModEntities.ULURU_BOMBLET.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("uluru_bomblet"), "arm", "flight", 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_X));
+            e.registerEntityRenderer(ModEntities.D_WOLF_HAND_CANNON_GRENADE.get(), DWolfHandCannonGrenadeRenderer::new);
+            e.registerEntityRenderer(ModEntities.D_WOLF_SMOKE_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("d_wolf_smoke_grenade"), null, "flight", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
             e.registerEntityRenderer(ModEntities.D_WOLF_SMOKE_CLOUD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.GIZMO_SMOKE_TRAP.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.GIZMO_SMOKE_TRAP.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("gizmo_smoke_trap"), null, "idle", 0.38F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
             e.registerEntityRenderer(ModEntities.GIZMO_SMOKE_CLOUD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.GIZMO_SPIDER_NEST_TRAP.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.GIZMO_SPIDERLING.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.GIZMO_T_BOY.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.SHEPHERD_SONIC_TRAP.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.SHEPHERD_FRAG_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.SHEPHERD_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.LUNA_SHOCK_ARROW.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.LUNA_COMPOSITE_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.LUNA_RECON_ARROW.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.HACKCLAW_KNIFE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.HACKCLAW_INTERFERENCE_FIELD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.HACKCLAW_FLASH_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.VYRON_MAGNETIC_BOMB.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.VYRON_TIGER_CANNON.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.STINGER_SMOKE_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.GIZMO_SPIDER_NEST_TRAP.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("gizmo_spider_nest_trap"), null, "idle", 0.72F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.GIZMO_SPIDERLING.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("gizmo_spiderling"), null, "crawl", 0.5F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.GIZMO_T_BOY.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("gizmo_t_boy"), null, "walk", 1.0F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.SHEPHERD_SONIC_TRAP.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("shepherd_sonic_trap"), null, "idle", 0.38F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.SHEPHERD_FRAG_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("shared_hand_grenade"), null, "flight_spin", 0.55F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.SHEPHERD_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("shepherd_drone"), null, "idle", 0.9F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.LUNA_SHOCK_ARROW.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("luna_shock_arrow"), null, "flight_charge", 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.LUNA_COMPOSITE_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("shared_hand_grenade"), null, "flight_spin", 0.55F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.LUNA_RECON_ARROW.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("luna_recon_arrow"), null, "flight_scan", 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.HACKCLAW_KNIFE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("hackclaw_knife"), null, "flight_spin", 0.38F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_X));
+            e.registerEntityRenderer(ModEntities.HACKCLAW_INTERFERENCE_FIELD.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("hackclaw_knife"), null, "idle_charge", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.HACKCLAW_FLASH_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("hackclaw_flash_drone"), "deploy_ready", "flight_ready", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.VYRON_MAGNETIC_BOMB.get(), VyronMagneticBombRenderer::new);
+            e.registerEntityRenderer(ModEntities.VYRON_TIGER_CANNON.get(), VyronTigerCannonProjectileRenderer::new);
+            e.registerEntityRenderer(ModEntities.STINGER_SMOKE_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("stinger_smoke_grenade"), "prime", "idle", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
             e.registerEntityRenderer(ModEntities.STINGER_SMOKE_CLOUD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.STINGER_SMOKE_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.STINGER_STIM_PROJECTILE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.NOX_ROTOR_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.NOX_FLASH_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.STINGER_SMOKE_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("stinger_smoke_drone"), null, "idle", 0.9F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.STINGER_STIM_PROJECTILE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("stinger_stim_projectile"), null, "flight_streak", 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.NOX_ROTOR_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("nox_rotor_drone"), null, "idle", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.NOX_FLASH_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("nox_flash_grenade"), "prime_flash", "idle", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
             e.registerEntityRenderer(ModEntities.NOX_DECOY.get(), NoxDecoyRenderer::new);
-            e.registerEntityRenderer(ModEntities.MORSE_SHOCK_ORB.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.MORSE_FLASH_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.MORSE_SONAR_DETECTOR.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.TOXIK_TEAR_GAS_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.MORSE_SHOCK_ORB.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("morse_shock_orb"), "throw_spin", "idle_hold", 0.8F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.MORSE_FLASH_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("morse_flash_grenade"), null, "flight_spin", 0.65F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.MORSE_SONAR_DETECTOR.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("morse_sonar_detector"), "deploy_ready", "scan_sweep", 1.0F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.TOXIK_TEAR_GAS_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("toxik_tear_gas_grenade"), "prime_release", "idle", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
             e.registerEntityRenderer(ModEntities.TOXIK_TEAR_GAS_CLOUD.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.RAPTOR_PULSE_GRENADE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.RAPTOR_FALCON_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.VLINDER_MEDICAL_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.VLINDER_REMOTE_SMOKE_ROUND.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.VLINDER_ACTIVE_DEFENSE_DRONE.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.TEMPEST_WALL_DRILL_STINGER.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.TOXIK_FIREFLY.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("toxik_firefly_swarm"), null, "idle_hover", 0.16F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.RAPTOR_PULSE_GRENADE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("raptor_pulse_grenade"), "throw_spin", "idle_hold", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.RAPTOR_FALCON_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("raptor_falcon_drone"), "launch_deploy", "idle_flight", 0.9F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.VLINDER_MEDICAL_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("vlinder_medical_drone"), null, "idle_hover", 0.9F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.VLINDER_REMOTE_SMOKE_ROUND.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("vlinder_remote_smoke_round"), "activate", "idle", 0.8F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_X));
+            e.registerEntityRenderer(ModEntities.VLINDER_ACTIVE_DEFENSE_DRONE.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("vlinder_active_defense_drone"), "deploy_shield_wings", "idle_hover", 0.9F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.TEMPEST_WALL_DRILL_STINGER.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("tempest_wall_drill_stinger"), null, "idle", 0.85F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.TEMPEST_RECALL_ANCHOR.get(), TempestRecallAnchorRenderer::new);
             e.registerEntityRenderer(ModEntities.CATDAD_ROAD_TRUCK.get(), CatDadRoadTruckRenderer::new);
-            e.registerEntityRenderer(ModEntities.DEPARTMENT_OVERHEAT_LASER.get(), ctx -> new ThrownItemRenderer<>(ctx));
-            e.registerEntityRenderer(ModEntities.DEPARTMENT_EXPLOSIVE_TRAP.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.DEPARTMENT_OVERHEAT_LASER.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("department_overheat_laser"), null, "beam_pulse", 0.75F,
+                    BlockbenchProjectileRenderer.Alignment.MOTION_Z));
+            e.registerEntityRenderer(ModEntities.DEPARTMENT_EXPLOSIVE_TRAP.get(), ctx -> new BlockbenchProjectileRenderer<>(
+                    ctx, model("department_explosive_trap"), "flip_open", "idle_hold", 1.2F,
+                    BlockbenchProjectileRenderer.Alignment.NONE));
         }
 
         @SubscribeEvent
         public static void addLayers(EntityRenderersEvent.AddLayers e) {
             DfsEquipmentModelVisuals.registerLayers(e);
         }
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

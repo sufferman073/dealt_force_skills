@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.vyron.VyronTool;
 import com.rzy.dealt_force_skills.client.VyronInputHandler;
 import com.rzy.dealt_force_skills.client.character.ClientVyronHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.InteractionHand;
@@ -36,31 +37,46 @@ public final class VyronPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        if (ClientVyronHudState.equippedTool() == VyronTool.TIGER_CANNON) {
-            poseStack.translate(0.50D, -0.16D, -0.70D);
-            poseStack.mulPose(Axis.YP.rotationDegrees(-24.0F));
+        VyronTool tool = displayedTool();
+        if (tool == VyronTool.TIGER_CANNON) {
+            poseStack.translate(0.44D, -0.24D, -0.72D);
+            poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(-9.0F));
-            poseStack.scale(1.16F, 1.16F, 1.16F);
+            poseStack.mulPose(Axis.ZP.rotationDegrees(-4.0F));
+            poseStack.scale(0.58F, 0.58F, 0.58F);
         } else {
-            poseStack.translate(0.36D, -0.20D, -0.54D);
-            poseStack.mulPose(Axis.YP.rotationDegrees(-16.0F));
+            poseStack.translate(0.36D, -0.55D, -0.62D);
+            poseStack.mulPose(Axis.YP.rotationDegrees(164.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F));
-            poseStack.scale(1.28F, 1.28F, 1.28F);
+            poseStack.scale(0.96F, 0.96F, 0.96F);
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
+        ClientVyronToolAnimationState.observeEquipped(ClientVyronHudState.equippedTool());
+        ClientVyronToolAnimationState.AnimationFrame frame = ClientVyronToolAnimationState.frame(
+                tool, (minecraft.level.getGameTime() + minecraft.getFrameTime()) / 20.0F);
+        boolean rendered = BlockbenchAnimatedModelRenderer.render(
+                ClientVyronToolAnimationState.modelFor(tool),
+                frame.animation(),
+                frame.seconds(),
                 poseStack,
                 event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
+                event.getPackedLight()
         );
+        if (!rendered) {
+            minecraft.getItemRenderer().renderStatic(
+                    minecraft.player,
+                    placeholderStack(tool),
+                    ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
+                    false,
+                    poseStack,
+                    event.getMultiBufferSource(),
+                    minecraft.level,
+                    event.getPackedLight(),
+                    OverlayTexture.NO_OVERLAY,
+                    0
+            );
+        }
         poseStack.popPose();
     }
 
@@ -72,11 +88,24 @@ public final class VyronPlaceholderVisuals {
     }
 
     private static boolean shouldRenderPlaceholder() {
-        return ClientVyronHudState.hasEquippedTool() || VyronInputHandler.isMagneticBombHeldForVisual();
+        return ClientVyronHudState.hasEquippedTool()
+                || VyronInputHandler.isMagneticBombHeldForVisual()
+                || ClientVyronToolAnimationState.hasActiveFire();
     }
 
-    private static ItemStack placeholderStack() {
-        if (ClientVyronHudState.equippedTool() == VyronTool.TIGER_CANNON) {
+    private static VyronTool displayedTool() {
+        VyronTool firing = ClientVyronToolAnimationState.activeFireTool();
+        if (firing != VyronTool.NONE) {
+            return firing;
+        }
+        if (ClientVyronHudState.equippedTool() != VyronTool.NONE) {
+            return ClientVyronHudState.equippedTool();
+        }
+        return VyronTool.MAGNETIC_BOMB;
+    }
+
+    private static ItemStack placeholderStack(VyronTool tool) {
+        if (tool == VyronTool.TIGER_CANNON) {
             return new ItemStack(Items.CROSSBOW);
         }
         return new ItemStack(Items.SLIME_BALL);

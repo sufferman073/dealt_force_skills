@@ -6,12 +6,10 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoTool;
 import com.rzy.dealt_force_skills.client.GizmoInputHandler;
 import com.rzy.dealt_force_skills.client.character.ClientGizmoHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -21,6 +19,10 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class GizmoPlaceholderVisuals {
+    private static final ResourceLocation SMOKE_TRAP_MODEL = model("gizmo_smoke_trap");
+    private static final ResourceLocation SPIDER_NEST_MODEL = model("gizmo_spider_nest_trap");
+    private static final ResourceLocation T_BOY_MODEL = model("gizmo_t_boy");
+
     private GizmoPlaceholderVisuals() {
     }
 
@@ -36,24 +38,21 @@ public final class GizmoPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
+        GizmoTool tool = ClientGizmoHudState.equippedTool();
         poseStack.translate(0.38D, -0.16D, -0.58D);
         poseStack.mulPose(Axis.YP.rotationDegrees(-18.0F));
         poseStack.mulPose(Axis.XP.rotationDegrees(-18.0F));
-        poseStack.scale(0.86F, 0.86F, 0.86F);
+        float scale = switch (tool) {
+            case SMOKE_TRAP, NONE -> 0.32F;
+            case SPIDER_NEST -> 0.54F;
+            case T_BOY -> 0.70F;
+        };
+        poseStack.scale(scale, scale, scale);
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), "idle", seconds,
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
@@ -64,12 +63,15 @@ public final class GizmoPlaceholderVisuals {
         }
     }
 
-    private static ItemStack placeholderStack() {
-        return switch (ClientGizmoHudState.equippedTool()) {
-            case SMOKE_TRAP -> new ItemStack(Items.LIGHT_WEIGHTED_PRESSURE_PLATE);
-            case SPIDER_NEST -> new ItemStack(Items.SPIDER_EYE);
-            case T_BOY -> new ItemStack(Items.FERMENTED_SPIDER_EYE);
-            case NONE -> ItemStack.EMPTY;
+    private static ResourceLocation modelFor(GizmoTool tool) {
+        return switch (tool) {
+            case SMOKE_TRAP, NONE -> SMOKE_TRAP_MODEL;
+            case SPIDER_NEST -> SPIDER_NEST_MODEL;
+            case T_BOY -> T_BOY_MODEL;
         };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

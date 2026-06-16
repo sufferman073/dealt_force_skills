@@ -32,6 +32,7 @@ public class BladeWireBlockEntity extends BlockEntity {
     private boolean core;
     private int linkedWireCount;
     private int coreHealth = MAX_CORE_HEALTH;
+    private int clientAge;
 
     public BladeWireBlockEntity(BlockPos pos, BlockState state) {
         super(com.rzy.dealt_force_skills.registry.ModBlockEntities.BLADE_WIRE.get(), pos, state);
@@ -61,7 +62,10 @@ public class BladeWireBlockEntity extends BlockEntity {
     }
 
     public static void tick(Level level, BlockPos pos, BlockState state, BladeWireBlockEntity be) {
-        if (level.isClientSide) return;
+        if (level.isClientSide) {
+            be.clientAge++;
+            return;
+        }
         if (!(level instanceof ServerLevel serverLevel)) return;
 
         if (!be.core && !isBladeWireCore(level, be.corePos)) {
@@ -100,6 +104,14 @@ public class BladeWireBlockEntity extends BlockEntity {
             level.playSound(null, target.blockPosition(), ModSounds.WIRE_STEP.get(),
                     SoundSource.BLOCKS, 0.35f, 1.0f);
         }
+    }
+
+    public boolean isCore() {
+        return core;
+    }
+
+    public float clientAgeSeconds(float partialTick) {
+        return (clientAge + partialTick) / 20.0F;
     }
 
     public void onRemoved() {

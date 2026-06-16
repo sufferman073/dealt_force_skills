@@ -6,11 +6,13 @@ import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
+import com.rzy.dealt_force_skills.entity.TempestRecallAnchorEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncTempestState;
 import com.rzy.dealt_force_skills.network.S2C_TempestStartRoll;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import net.minecraft.core.BlockPos;
@@ -48,10 +50,13 @@ public final class TempestStateManager {
     public static final int DISARMED_TICKS = 3 * 20;
     public static final int DOWNED_SELF_RESCUE_TICKS = 5 * 20;
     public static final double ROPE_MAX_LENGTH = 300.0D;
-    public static final double RECALL_SPEED_PER_TICK = 3.0D;
+    public static final double RECALL_SPEED_PER_TICK = 0.8D;
 
     private static final double PATH_NODE_DISTANCE = 1.0D;
     private static final double NEAR_MISS_RADIUS = 2.0D;
+    private static final double RECALL_POSITION_TOLERANCE_SQR = 0.65D * 0.65D;
+    private static final int RECALL_MAX_TICKS = 30 * 20;
+    private static final int RECALL_MAX_STALLED_TICKS = 40;
     private static final int ROLL_BOOST_TICKS_TOTAL = 9;
     private static final double ROLL_BOOST_SPEED_PER_TICK = 2.75D;
     private static final DustParticleOptions SPINE_DUST = new DustParticleOptions(new Vector3f(0.48f, 1.0f, 0.36f), 1.1f);
@@ -71,10 +76,14 @@ public final class TempestStateManager {
     private static final String RECALLING = "Recalling";
     private static final String AUTO_RECALL = "AutoRecall";
     private static final String RECALL_INDEX = "RecallIndex";
+    private static final String RECALL_TICKS = "RecallTicks";
+    private static final String RECALL_STALLED_TICKS = "RecallStalledTicks";
+    private static final String RECALL_LAST_POSITION = "RecallLastPosition";
     private static final String ROPE_LENGTH = "RopeLength";
     private static final String ROPE_DIMENSION = "RopeDimension";
     private static final String PATH = "Path";
     private static final String ANCHOR = "Anchor";
+    private static final String ANCHOR_ENTITY = "AnchorEntity";
     private static final String LAST_WARNING_TICK = "LastWarningTick";
     private static final String FALL_START_Y = "FallStartY";
     private static final String SUSPENDED = "Suspended";
@@ -434,6 +443,7 @@ public final class TempestStateManager {
     private static void placeAnchor(ServerPlayer player) {
         CompoundTag tag = data(player);
         Vec3 anchor = player.position();
+        removeAnchorEntity(player, tag);
         tag.putBoolean(ROPE_ACTIVE, true);
         tag.putBoolean(RECALLING, false);
         tag.putBoolean(AUTO_RECALL, false);
@@ -445,6 +455,11 @@ public final class TempestStateManager {
         ListTag path = new ListTag();
         path.add(vecTag(anchor));
         tag.put(PATH, path);
+        TempestRecallAnchorEntity anchorEntity = new TempestRecallAnchorEntity(
+                ModEntities.TEMPEST_RECALL_ANCHOR.get(), player.level(), player);
+        anchorEntity.setPos(anchor.x, anchor.y + 0.04D, anchor.z);
+        player.level().addFreshEntity(anchorEntity);
+        tag.putUUID(ANCHOR_ENTITY, anchorEntity.getUUID());
         player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_ANCHOR_PLACE.get(),
                 SoundSource.PLAYERS, 0.9F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.anchor_placed"), true);
@@ -460,6 +475,9 @@ public final class TempestStateManager {
         tag.putBoolean(RECALLING, true);
         tag.putBoolean(AUTO_RECALL, automatic);
         tag.putInt(RECALL_INDEX, Math.max(0, path.size() - 2));
+        tag.putInt(RECALL_TICKS, 0);
+        tag.putInt(RECALL_STALLED_TICKS, 0);
+        putVec(tag, RECALL_LAST_POSITION, player.position());
         player.stopUsingItem();
         player.setSprinting(false);
         player.level().playSound(null, player.blockPosition(), automatic
@@ -503,6 +521,25 @@ public final class TempestStateManager {
             clearRope(player, true);
             return;
         }
+        int recallTicks = tag.getInt(RECALL_TICKS) + 1;
+        tag.putInt(RECALL_TICKS, recallTicks);
+        if (recallTicks > RECALL_MAX_TICKS) {
+            finishRecall(player);
+            return;
+        }
+
+        Vec3 current = player.position();
+        if (tag.contains(RECALL_LAST_POSITION, Tag.TAG_COMPOUND)) {
+            Vec3 lastRequestedPosition = vec(tag.getCompound(RECALL_LAST_POSITION));
+            int stalledTicks = current.distanceToSqr(lastRequestedPosition) > RECALL_POSITION_TOLERANCE_SQR
+                    ? tag.getInt(RECALL_STALLED_TICKS) + 1
+                    : 0;
+            tag.putInt(RECALL_STALLED_TICKS, stalledTicks);
+            if (stalledTicks >= RECALL_MAX_STALLED_TICKS) {
+                finishRecall(player);
+                return;
+            }
+        }
         player.stopUsingItem();
         player.setSprinting(false);
         if (player.containerMenu != player.inventoryMenu) {
@@ -521,7 +558,6 @@ public final class TempestStateManager {
         }
 
         Vec3 target = vec(path.getCompound(Math.min(index, path.size() - 1)));
-        Vec3 current = player.position();
         Vec3 delta = target.subtract(current);
         double distance = delta.length();
         Vec3 next;
@@ -533,27 +569,41 @@ public final class TempestStateManager {
         }
 
         if (!canOccupy(player, next)) {
-            finishRecallAt(player, findSafeStandPosition(player.serverLevel(), next, anchor(tag)));
+            finishRecall(player);
             return;
         }
-        player.teleportTo(next.x, next.y, next.z);
+        if (tag.getInt(RECALL_INDEX) < 0) {
+            finishRecall(player);
+            return;
+        }
+        requestRecallPosition(player, next);
         player.setDeltaMovement(Vec3.ZERO);
         player.fallDistance = 0.0F;
-        if (tag.getInt(RECALL_INDEX) < 0 || next.distanceTo(anchor(tag)) < 0.75D) {
-            finishRecall(player);
-        }
     }
 
     private static void finishRecall(ServerPlayer player) {
-        finishRecallAt(player, findSafeStandPosition(player.serverLevel(), anchor(data(player)), anchor(data(player))));
+        Vec3 savedAnchor = anchor(data(player));
+        Vec3 destination = canOccupy(player, savedAnchor)
+                ? savedAnchor
+                : findSafeStandPosition(player.serverLevel(), savedAnchor, savedAnchor);
+        finishRecallAt(player, destination);
     }
 
     private static void finishRecallAt(ServerPlayer player, Vec3 destination) {
-        CompoundTag tag = data(player);
-        boolean automatic = tag.getBoolean(AUTO_RECALL);
-        player.teleportTo(destination.x, destination.y, destination.z);
+        requestRecallPosition(player, destination);
         player.setDeltaMovement(Vec3.ZERO);
         player.fallDistance = 0.0F;
+        endRecall(player);
+    }
+
+    private static void requestRecallPosition(ServerPlayer player, Vec3 destination) {
+        player.connection.teleport(destination.x, destination.y, destination.z, player.getYRot(), player.getXRot());
+        putVec(data(player), RECALL_LAST_POSITION, destination);
+    }
+
+    private static void endRecall(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        boolean automatic = tag.getBoolean(AUTO_RECALL);
         clearRope(player, true);
         player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_END.get(),
                 SoundSource.PLAYERS, 0.9F, 1.0F);
@@ -639,18 +689,37 @@ public final class TempestStateManager {
 
     private static void clearRope(ServerPlayer player, boolean startCooldown) {
         CompoundTag tag = data(player);
+        removeAnchorEntity(player, tag);
         tag.putBoolean(ROPE_ACTIVE, false);
         tag.putBoolean(RECALLING, false);
         tag.putBoolean(AUTO_RECALL, false);
         tag.putDouble(ROPE_LENGTH, 0.0D);
         tag.remove(PATH);
         tag.remove(ANCHOR);
+        tag.remove(ANCHOR_ENTITY);
         tag.remove(ROPE_DIMENSION);
         tag.putInt(RECALL_INDEX, 0);
+        tag.remove(RECALL_TICKS);
+        tag.remove(RECALL_STALLED_TICKS);
+        tag.remove(RECALL_LAST_POSITION);
         tag.putBoolean(SUSPENDED, false);
         if (startCooldown) {
             tag.putLong(CORE_COOLDOWN_UNTIL,
                     SkillCooldownHelper.until(player, player.level().getGameTime(), CORE_COOLDOWN_TICKS));
+        }
+    }
+
+    private static void removeAnchorEntity(ServerPlayer player, CompoundTag tag) {
+        if (!tag.hasUUID(ANCHOR_ENTITY)) {
+            return;
+        }
+        UUID anchorId = tag.getUUID(ANCHOR_ENTITY);
+        for (ServerLevel level : player.server.getAllLevels()) {
+            Entity entity = level.getEntity(anchorId);
+            if (entity instanceof TempestRecallAnchorEntity) {
+                entity.discard();
+                break;
+            }
         }
     }
 

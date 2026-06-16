@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.morse.MorseTool;
 import com.rzy.dealt_force_skills.character.morse.MorseToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientMorseHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_MorseToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.registry.ModEffects;
@@ -30,6 +31,7 @@ import java.lang.reflect.Method;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class MorseInputHandler {
     private static final int FLASH_EQUIP_HOLD_TICKS = 8;
+    private static final int FLASH_RELEASE_TICKS = 2;
     private static final String TACZ_CLIENT_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
     private static boolean active2WasDown;
     private static int active2HeldTicks;
@@ -162,6 +164,7 @@ public final class MorseInputHandler {
 
     private static void handleToolMouse(boolean primary) {
         if (!primary) {
+            ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.MORSE_FLASH_GRENADE);
             NetworkHandler.sendToServer(new C2S_MorseToolAction(MorseToolAction.STOW_TOOL));
             return;
         }
@@ -169,7 +172,7 @@ public final class MorseInputHandler {
         if (tool == MorseTool.SHOCK_ORB) {
             NetworkHandler.sendToServer(new C2S_MorseToolAction(MorseToolAction.THROW_SHOCK_ORB));
         } else if (tool == MorseTool.FLASH_GRENADE) {
-            NetworkHandler.sendToServer(new C2S_MorseToolAction(MorseToolAction.THROW_FLASH_GRENADE, true));
+            beginFlashThrow(true);
         } else if (tool == MorseTool.SONAR_DETECTOR) {
             NetworkHandler.sendToServer(new C2S_MorseToolAction(MorseToolAction.DEPLOY_SONAR));
         }
@@ -201,9 +204,19 @@ public final class MorseInputHandler {
             return;
         }
         if (active2WasDown && !sentFlashEquip) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+            beginFlashThrow(false);
         }
         resetActive2();
+    }
+
+    private static void beginFlashThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.MORSE_FLASH_GRENADE,
+                FLASH_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_MorseToolAction(
+                                MorseToolAction.THROW_FLASH_GRENADE, true))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2));
     }
 
     private static void handleCoreKey() {

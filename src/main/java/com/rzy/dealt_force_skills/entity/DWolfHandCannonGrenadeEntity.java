@@ -33,6 +33,7 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
 
     private int fuseRemaining = FUSE_TICKS;
     private boolean stopped;
+    private int lastImpactTick = -1000;
 
     public DWolfHandCannonGrenadeEntity(EntityType<? extends DWolfHandCannonGrenadeEntity> type, Level level) {
         super(type, level);
@@ -109,6 +110,7 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
     }
 
     private void handleBlockHit(BlockHitResult hit) {
+        lastImpactTick = tickCount;
         Direction direction = hit.getDirection();
 
         if (direction == Direction.UP) {
@@ -179,5 +181,13 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
         if (level().isClientSide) {
             level().addParticle(ParticleTypes.SMOKE, getX(), getY() + 0.04D, getZ(), 0.0D, 0.01D, 0.0D);
         }
+    }
+
+    public boolean isStoppedForRender() {
+        return stopped;
+    }
+
+    public float impactAnimationSeconds(float partialTick) {
+        return (tickCount - lastImpactTick + partialTick) / 20.0F;
     }
 }

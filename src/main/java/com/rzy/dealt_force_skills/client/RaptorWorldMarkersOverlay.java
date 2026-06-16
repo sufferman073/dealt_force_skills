@@ -2,14 +2,17 @@ package com.rzy.dealt_force_skills.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -20,6 +23,11 @@ import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class RaptorWorldMarkersOverlay {
+    private static final ResourceLocation FOOTPRINT_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "raptor_footprint");
+    private static final int UNSCANNED_FOOTPRINT_COLOR = 0x88FF3A3A;
+    private static final int SCANNED_FOOTPRINT_COLOR = 0x88FFF0A0;
+
     private RaptorWorldMarkersOverlay() {
     }
 
@@ -41,10 +49,8 @@ public final class RaptorWorldMarkersOverlay {
         RenderSystem.disableDepthTest();
         if (ClientRaptorHudState.shouldRender()) {
             for (var marker : ClientRaptorHudState.footprints()) {
-                Vec3 pos = marker.position().add(0.0D, 0.12D, 0.0D);
-                String text = Component.translatable("hud.dealt_force_skills.raptor.footprint",
-                        marker.ownerName(), Math.max(0, marker.ageTicks() / 20)).getString();
-                renderMarker(poseStack, buffers, font, camera, cameraPos, pos, text, 0xFF9EC9FF);
+                renderFootprint(poseStack, buffers, cameraPos, marker.position().add(0.0D, 0.03D, 0.0D),
+                        marker.id(), marker.scanned() ? SCANNED_FOOTPRINT_COLOR : UNSCANNED_FOOTPRINT_COLOR);
             }
         }
         for (Map.Entry<Integer, Vec3> entry : ClientRaptorHudState.revealedPositions().entrySet()) {
@@ -56,6 +62,23 @@ public final class RaptorWorldMarkersOverlay {
         }
         buffers.endBatch();
         RenderSystem.enableDepthTest();
+    }
+
+    private static void renderFootprint(
+            PoseStack poseStack,
+            MultiBufferSource.BufferSource buffers,
+            Vec3 cameraPos,
+            Vec3 pos,
+            int markerId,
+            int color
+    ) {
+        poseStack.pushPose();
+        poseStack.translate(pos.x - cameraPos.x, pos.y - cameraPos.y, pos.z - cameraPos.z);
+        poseStack.mulPose(Axis.YP.rotationDegrees((markerId * 37) % 360));
+        poseStack.scale(1.15F, 1.15F, 1.15F);
+        BlockbenchAnimatedModelRenderer.render(FOOTPRINT_MODEL, null, 0.0F,
+                poseStack, buffers, LightTexture.FULL_BRIGHT, color);
+        poseStack.popPose();
     }
 
     private static void renderMarker(

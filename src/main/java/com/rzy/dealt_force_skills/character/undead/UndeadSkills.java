@@ -4,6 +4,9 @@ import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
+import com.rzy.dealt_force_skills.skill.SkillModelVisual;
+import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -101,6 +104,7 @@ public final class UndeadSkills {
                 ? 120
                 : 60;
         if (heldTicks > 0 && player.tickCount % 5 == 0) {
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_EXPLORER_LANTERN_HOLD, 8);
             renderExplorerGuidance(player, heldTicks, maximumTicks);
         }
         if (heldTicks < maximumTicks) {
@@ -153,6 +157,8 @@ public final class UndeadSkills {
             } else {
                 UndeadStateManager.startKnightCharge(player);
             }
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_CHARGE,
+                    target.isPresent() ? 33 : 15);
             particles(player, ParticleTypes.END_ROD, 18, 0.55D, 0.4D);
             play(player, SoundEvents.PLAYER_ATTACK_SWEEP, 1.0F, 0.7F);
             return true;
@@ -161,7 +167,12 @@ public final class UndeadSkills {
             if (!UndeadStateManager.consumeEnergy(player, 10.0F)) {
                 return true;
             }
-            UndeadStateManager.startKnightParry(player);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_BARRIER,
+                    SkillModelVisual.UNDEAD_KNIGHT_BARRIER.impactTick() + 16);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_KNIGHT_BARRIER.impactTick(),
+                    UndeadStateManager::startKnightParry);
             particles(player, ParticleTypes.ENCHANTED_HIT, 18, 0.55D, 0.8D);
             play(player, SoundEvents.SHIELD_BLOCK, 0.9F, 1.15F);
             return true;
@@ -171,7 +182,12 @@ public final class UndeadSkills {
                 return true;
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.KNIGHT, 90 * 20);
-            UndeadStateManager.startKnightShield(player);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_WALL,
+                    SkillModelVisual.UNDEAD_KNIGHT_WALL.impactTick() + 20 * 20);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_KNIGHT_WALL.impactTick(),
+                    UndeadStateManager::startKnightShield);
             particles(player, ParticleTypes.TOTEM_OF_UNDYING, 35, 0.8D, 1.0D);
             play(player, SoundEvents.BEACON_ACTIVATE, 0.9F, 0.75F);
             return true;
@@ -191,20 +207,29 @@ public final class UndeadSkills {
             if (!UndeadStateManager.consumeEnergy(player, 30.0F)) {
                 return true;
             }
-            renderSlashArc(player, 3.0D, 110.0D);
-            if (lockedTarget.isPresent()) {
-                LivingEntity target = lockedTarget.get();
-                target.invulnerableTime = 0;
-                SkillDamageHelper.hurt(target, player.damageSources().playerAttack(player), player, 15.0F);
-                particlesAt(player, target, ParticleTypes.CRIT, 24, 0.45D);
-            } else {
-                for (LivingEntity target : targetsInCone(player, 3.0D, 110.0D)) {
-                    target.invulnerableTime = 0;
-                    SkillDamageHelper.hurt(target, player.damageSources().playerAttack(player), player, 9.0F);
-                    particlesAt(player, target, ParticleTypes.SWEEP_ATTACK, 3, 0.2D);
-                }
-            }
-            play(player, SoundEvents.PLAYER_ATTACK_STRONG, 1.0F, 0.75F);
+            LivingEntity locked = lockedTarget.orElse(null);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_WARRIOR_AXE);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_WARRIOR_AXE.impactTick(),
+                    delayedPlayer -> {
+                        renderSlashArc(delayedPlayer, 3.0D, 110.0D);
+                        if (locked != null && locked.isAlive() && locked.level() == delayedPlayer.level()) {
+                            locked.invulnerableTime = 0;
+                            SkillDamageHelper.hurt(locked, delayedPlayer.damageSources().playerAttack(delayedPlayer),
+                                    delayedPlayer, 15.0F);
+                            particlesAt(delayedPlayer, locked, ParticleTypes.CRIT, 24, 0.45D);
+                        } else {
+                            for (LivingEntity target : targetsInCone(delayedPlayer, 3.0D, 110.0D)) {
+                                target.invulnerableTime = 0;
+                                SkillDamageHelper.hurt(target,
+                                        delayedPlayer.damageSources().playerAttack(delayedPlayer),
+                                        delayedPlayer, 9.0F);
+                                particlesAt(delayedPlayer, target, ParticleTypes.SWEEP_ATTACK, 3, 0.2D);
+                            }
+                        }
+                        play(delayedPlayer, SoundEvents.PLAYER_ATTACK_STRONG, 1.0F, 0.75F);
+                    });
             return true;
         }
         if (slot == SkillSlot.ACTIVE_2) {
@@ -244,21 +269,29 @@ public final class UndeadSkills {
             int halfSeconds = Math.max(0, Math.min(maximumTicks, heldTicks)) / 10;
             double radius = 2.0D + halfSeconds * (knowledge ? 1.0D : 0.5D);
             float damage = knowledge ? 4.0F : 1.0F;
-            AABB area = new AABB(center, center).inflate(radius);
-            for (LivingEntity target : player.serverLevel().getEntitiesOfClass(
-                    LivingEntity.class, area, target -> target != player && TargetingUtil.isTargetableLiving(target))) {
-                target.invulnerableTime = 0;
-                SkillDamageHelper.hurt(target, player.damageSources().magic(), player, damage);
-                target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
-                        8 * 20, 0, false, true, true), player);
-                target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 8 * 20, 0,
-                        false, false, true), player);
-            }
-            player.serverLevel().sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                    center.x, center.y, center.z, Math.max(18, (int) (radius * 10.0D)),
-                    radius * 0.45D, radius * 0.25D, radius * 0.45D, 0.02D);
-            renderHorizontalRing(player, center, radius, ParticleTypes.ELECTRIC_SPARK, 28);
-            play(player, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.85F);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_EXPLORER_LANTERN);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_EXPLORER_LANTERN.impactTick(),
+                    delayedPlayer -> {
+                        AABB area = new AABB(center, center).inflate(radius);
+                        for (LivingEntity target : delayedPlayer.serverLevel().getEntitiesOfClass(
+                                LivingEntity.class, area,
+                                target -> target != delayedPlayer && TargetingUtil.isTargetableLiving(target))) {
+                            target.invulnerableTime = 0;
+                            SkillDamageHelper.hurt(target, delayedPlayer.damageSources().magic(), delayedPlayer, damage);
+                            target.addEffect(new MobEffectInstance(
+                                    ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
+                                    8 * 20, 0, false, true, true), delayedPlayer);
+                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 8 * 20, 0,
+                                    false, false, true), delayedPlayer);
+                        }
+                        delayedPlayer.serverLevel().sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                                center.x, center.y, center.z, Math.max(18, (int) (radius * 10.0D)),
+                                radius * 0.45D, radius * 0.25D, radius * 0.45D, 0.02D);
+                        renderHorizontalRing(delayedPlayer, center, radius, ParticleTypes.ELECTRIC_SPARK, 28);
+                        play(delayedPlayer, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 0.85F);
+                    });
             return true;
         }
         if (slot == SkillSlot.ACTIVE_2) {
@@ -308,11 +341,21 @@ public final class UndeadSkills {
                 return true;
             }
             LivingEntity victim = target.get();
-            victim.invulnerableTime = 0;
-            SkillDamageHelper.hurt(victim, player.damageSources().playerAttack(player), player, 1.0F);
-            victim.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5 * 20, 0,
-                    false, true, true), player);
-            particlesAt(player, victim, ParticleTypes.ELECTRIC_SPARK, 28, 0.45D);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_ROGUE_BATON);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_ROGUE_BATON.impactTick(),
+                    delayedPlayer -> {
+                        if (!victim.isAlive() || victim.level() != delayedPlayer.level()) {
+                            return;
+                        }
+                        victim.invulnerableTime = 0;
+                        SkillDamageHelper.hurt(victim, delayedPlayer.damageSources().playerAttack(delayedPlayer),
+                                delayedPlayer, 1.0F);
+                        victim.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5 * 20, 0,
+                                false, true, true), delayedPlayer);
+                        particlesAt(delayedPlayer, victim, ParticleTypes.ELECTRIC_SPARK, 28, 0.45D);
+                    });
             return true;
         }
         if (slot == SkillSlot.CORE) {
@@ -337,13 +380,24 @@ public final class UndeadSkills {
                 return true;
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.ROGUE, 40 * 20);
-            if (victim instanceof Player) {
-                SkillDamageHelper.hurt(victim, player.damageSources().playerAttack(player), player, 10.0F);
-                stealEquipment(player, (Player) victim);
-            } else {
-                UndeadStateManager.executeRogueNonPlayer(player, victim);
-            }
-            particlesAt(player, victim, ParticleTypes.TOTEM_OF_UNDYING, 30, 0.5D);
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_ROGUE_BATON);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_ROGUE_BATON.impactTick(),
+                    delayedPlayer -> {
+                        if (!victim.isAlive() || victim.level() != delayedPlayer.level()) {
+                            return;
+                        }
+                        if (victim instanceof Player victimPlayer) {
+                            SkillDamageHelper.hurt(victim,
+                                    delayedPlayer.damageSources().playerAttack(delayedPlayer),
+                                    delayedPlayer, 10.0F);
+                            stealEquipment(delayedPlayer, victimPlayer);
+                        } else {
+                            UndeadStateManager.executeRogueNonPlayer(delayedPlayer, victim);
+                        }
+                        particlesAt(delayedPlayer, victim, ParticleTypes.TOTEM_OF_UNDYING, 30, 0.5D);
+                    });
             return true;
         }
         return false;
@@ -362,21 +416,52 @@ public final class UndeadSkills {
                 return true;
             }
             LivingEntity target = selected.get();
-            target.heal(target.getMaxHealth() * 0.75F);
-            boolean selfProtected = target == player && UndeadUpgradeManager.has(
-                    player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED);
-            if (!selfProtected && player.getRandom().nextFloat() < 0.99F) {
-                UndeadStateManager.applyRupture(player, target);
-            }
-            particlesAt(player, target, ParticleTypes.HEART, 20, 0.45D);
-            play(player, SoundEvents.ZOMBIE_VILLAGER_CURE, 0.55F, 1.35F);
+            int ruptureVisualTicks = UndeadUpgradeManager.has(
+                    player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED)
+                    ? 8 * 20 + 1
+                    : 4 * 20 + 1;
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_SCHOLAR_STITCH);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_SCHOLAR_FIBERS.impactTick(),
+                    delayedPlayer -> {
+                        if (target.isAlive()
+                                && target.level() == delayedPlayer.level()) {
+                            SkillModelVisualSync.play(target, SkillModelVisual.UNDEAD_SCHOLAR_FIBERS,
+                                    ruptureVisualTicks);
+                        }
+                    });
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_SCHOLAR_STITCH.impactTick(),
+                    delayedPlayer -> {
+                        if (!target.isAlive() || target.level() != delayedPlayer.level()) {
+                            return;
+                        }
+                        target.heal(target.getMaxHealth() * 0.75F);
+                        boolean selfProtected = target == delayedPlayer && UndeadUpgradeManager.has(
+                                delayedPlayer,
+                                com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED);
+                        if (!selfProtected && delayedPlayer.getRandom().nextFloat() < 0.99F) {
+                            UndeadStateManager.applyRupture(delayedPlayer, target);
+                        }
+                        particlesAt(delayedPlayer, target, ParticleTypes.HEART, 20, 0.45D);
+                        play(delayedPlayer, SoundEvents.ZOMBIE_VILLAGER_CURE, 0.55F, 1.35F);
+                    });
             return true;
         }
         if (slot == SkillSlot.ACTIVE_2) {
             if (!UndeadStateManager.consumeEnergy(player, 20.0F)) {
                 return true;
             }
-            UndeadStateManager.startScholarRitual(player);
+            int ritualTicks = UndeadUpgradeManager.has(
+                    player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED) ? 100 : 50;
+            SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_SCHOLAR_RITUAL,
+                    SkillModelVisual.UNDEAD_SCHOLAR_RITUAL.impactTick() + ritualTicks);
+            SkillAnimationScheduler.schedule(
+                    player,
+                    SkillModelVisual.UNDEAD_SCHOLAR_RITUAL.impactTick(),
+                    UndeadStateManager::startScholarRitual);
             particles(player, ParticleTypes.ENCHANT, 32, 1.1D, 1.0D);
             play(player, SoundEvents.ENCHANTMENT_TABLE_USE, 0.8F, 0.75F);
             return true;

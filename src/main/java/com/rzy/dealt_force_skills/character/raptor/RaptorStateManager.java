@@ -12,6 +12,7 @@ import com.rzy.dealt_force_skills.network.S2C_SyncRaptorState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.ReconRevealThrottle;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -75,6 +76,7 @@ public final class RaptorStateManager {
     private static final Map<ResourceKey<Level>, List<FootprintState>> FOOTPRINTS = new HashMap<>();
     private static final Map<java.util.UUID, Integer> ACTIVE_HUMMINGBIRD_TARGETS = new HashMap<>();
     private static final java.util.Set<java.util.UUID> HUMMINGBIRD_VIEWERS = new java.util.HashSet<>();
+    private static final Map<java.util.UUID, java.util.Set<Integer>> SCANNED_FOOTPRINTS = new HashMap<>();
     private static int nextFootprintId = 1;
 
     private RaptorStateManager() {
@@ -160,6 +162,9 @@ public final class RaptorStateManager {
         if (owner == null || !owner.isAlive()) {
             return;
         }
+        if (!ReconRevealThrottle.tryStart(marked, HUMMINGBIRD_REVEAL_TICKS)) {
+            return;
+        }
         List<RaptorRevealMarker> markers = new ArrayList<>();
         markers.add(new RaptorRevealMarker(marked.getId(), marked.position(), HUMMINGBIRD_REVEAL_TICKS));
         Vec3 eye = marked.getEyePosition();
@@ -176,7 +181,8 @@ public final class RaptorStateManager {
                 continue;
             }
             HitResult result = level.clip(new ClipContext(eye, center, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, marked));
-            if (result.getType() == HitResult.Type.MISS || result.getLocation().distanceToSqr(center) < 0.6D) {
+            if ((result.getType() == HitResult.Type.MISS || result.getLocation().distanceToSqr(center) < 0.6D)
+                    && ReconRevealThrottle.tryStart(target, HUMMINGBIRD_REVEAL_TICKS)) {
                 markers.add(new RaptorRevealMarker(target.getId(), target.position(), HUMMINGBIRD_REVEAL_TICKS));
             }
         }
@@ -191,8 +197,12 @@ public final class RaptorStateManager {
         }
         List<RaptorRevealMarker> markers = targets.stream()
                 .filter(LivingEntity::isAlive)
+                .filter(target -> ReconRevealThrottle.tryStart(target, ticks))
                 .map(target -> new RaptorRevealMarker(target.getId(), target.position(), ticks))
                 .toList();
+        if (markers.isEmpty()) {
+            return;
+        }
         NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(markers), owner);
     }
 
@@ -350,8 +360,10 @@ public final class RaptorStateManager {
         target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_HUMMINGBIRD_MARKED.get(),
                 HUMMINGBIRD_DURATION_TICKS, 0, false, true, true), player);
         ACTIVE_HUMMINGBIRD_TARGETS.put(player.getUUID(), target.getId());
-        NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(List.of(
-                new RaptorRevealMarker(target.getId(), target.position(), HUMMINGBIRD_REVEAL_TICKS))), player);
+        if (ReconRevealThrottle.tryStart(target, HUMMINGBIRD_REVEAL_TICKS)) {
+            NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(List.of(
+                    new RaptorRevealMarker(target.getId(), target.position(), HUMMINGBIRD_REVEAL_TICKS))), player);
+        }
         player.level().playSound(null, target.blockPosition(), ModSounds.RAPTOR_HUMMINGBIRD_ATTACH.get(),
                 SoundSource.PLAYERS, 0.75f, 1.0f);
         tag.putInt(HUMMINGBIRD_PENDING_TARGET, -1);
@@ -434,6 +446,7 @@ public final class RaptorStateManager {
         int age = (int) Math.max(0, player.level().getGameTime() - footprint.gameTime);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.footprint_info",
                 footprint.ownerName, secondsText(age), footprint.equipmentSummary), true);
+        scannedFootprints(player).add(footprint.id);
         if (ticks == 20) {
             player.playNotifySound(ModSounds.RAPTOR_FOOTPRINT_INFO.get(), SoundSource.PLAYERS, 0.55f, 1.0f);
         }
@@ -443,16 +456,24 @@ public final class RaptorStateManager {
         List<FootprintState> list = FOOTPRINTS.getOrDefault(player.level().dimension(), List.of());
         long now = player.level().getGameTime();
         String viewerId = player.getUUID().toString();
+        java.util.Set<Integer> scanned = scannedFootprints(player);
+        scanned.removeIf(id -> list.stream()
+                .noneMatch(footprint -> footprint.id == id && now - footprint.gameTime <= FOOTPRINT_LIFE_TICKS));
         List<RaptorFootprintMarker> markers = list.stream()
                 .filter(footprint -> now - footprint.gameTime <= FOOTPRINT_LIFE_TICKS)
                 .filter(footprint -> !footprint.ownerUuid.equals(viewerId))
                 .filter(footprint -> footprint.position.distanceToSqr(player.position()) <= FOOTPRINT_SYNC_RANGE * FOOTPRINT_SYNC_RANGE)
                 .sorted(Comparator.comparingDouble(footprint -> footprint.position.distanceToSqr(player.position())))
                 .map(footprint -> new RaptorFootprintMarker(footprint.id, footprint.position,
-                        (int) (now - footprint.gameTime), footprint.ownerName, footprint.equipmentSummary))
+                        (int) (now - footprint.gameTime), footprint.ownerName, footprint.equipmentSummary,
+                        scanned.contains(footprint.id)))
                 .limit(FOOTPRINT_SYNC_LIMIT)
                 .toList();
         NetworkHandler.sendToPlayer(new S2C_RaptorFootprints(markers), player);
+    }
+
+    private static java.util.Set<Integer> scannedFootprints(ServerPlayer player) {
+        return SCANNED_FOOTPRINTS.computeIfAbsent(player.getUUID(), ignored -> new java.util.HashSet<>());
     }
 
     private static Optional<FootprintState> lookedFootprint(ServerPlayer player) {

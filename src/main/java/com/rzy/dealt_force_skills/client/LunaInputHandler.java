@@ -7,6 +7,8 @@ import com.rzy.dealt_force_skills.character.luna.LunaTool;
 import com.rzy.dealt_force_skills.character.luna.LunaToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientLunaHudState;
+import com.rzy.dealt_force_skills.client.character.ClientLunaBowVisualState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_LunaShockArrowPull;
 import com.rzy.dealt_force_skills.network.C2S_LunaToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -23,6 +25,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LunaInputHandler {
+    private static final int GRENADE_RELEASE_TICKS = 4;
     private static boolean chargingBow;
     private static int bowChargeTicks;
     private static LunaTool chargingTool = LunaTool.NONE;
@@ -108,6 +111,11 @@ public final class LunaInputHandler {
             chargingBow = true;
             chargingTool = tool;
             bowChargeTicks = 0;
+            ClientLunaBowVisualState.startLocal(
+                    Minecraft.getInstance().player,
+                    ClientLunaBowVisualState.PHASE_DRAW,
+                    tool,
+                    20 * 60);
             NetworkHandler.sendToServer(new C2S_LunaToolAction(LunaToolAction.START_BOW_CHARGE));
             return;
         }
@@ -115,6 +123,11 @@ public final class LunaInputHandler {
             LunaToolAction fireAction = chargingTool == LunaTool.RECON_BOW
                     ? LunaToolAction.FIRE_RECON_ARROW
                     : LunaToolAction.FIRE_SHOCK_ARROW;
+            ClientLunaBowVisualState.startLocal(
+                    Minecraft.getInstance().player,
+                    ClientLunaBowVisualState.PHASE_RELEASE,
+                    chargingTool,
+                    ClientLunaBowVisualState.RELEASE_TICKS);
             NetworkHandler.sendToServer(new C2S_LunaToolAction(fireAction, bowChargeTicks));
             resetLocalBowCharge();
             return;
@@ -126,8 +139,12 @@ public final class LunaInputHandler {
 
     private static void handleGrenadeMouse(int button, int action) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && action == GLFW.GLFW_PRESS) {
-            NetworkHandler.sendToServer(new C2S_LunaToolAction(LunaToolAction.THROW_GRENADE));
+            ClientToolReleaseAction.begin(
+                    ClientToolReleaseAction.Action.LUNA_GRENADE,
+                    GRENADE_RELEASE_TICKS,
+                    () -> NetworkHandler.sendToServer(new C2S_LunaToolAction(LunaToolAction.THROW_GRENADE)));
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && action == GLFW.GLFW_PRESS) {
+            ClientToolReleaseAction.play(ClientToolReleaseAction.Action.LUNA_GRENADE);
             NetworkHandler.sendToServer(new C2S_LunaToolAction(LunaToolAction.START_GRENADE_COOK));
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && action == GLFW.GLFW_RELEASE) {
             NetworkHandler.sendToServer(new C2S_LunaToolAction(LunaToolAction.THROW_GRENADE));

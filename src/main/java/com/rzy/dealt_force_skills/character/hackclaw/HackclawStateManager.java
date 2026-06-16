@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_HackclawPathLines;
+import com.rzy.dealt_force_skills.network.S2C_HackclawCoreVisualState;
 import com.rzy.dealt_force_skills.network.S2C_SyncHackclawState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -34,7 +35,7 @@ public final class HackclawStateManager {
     public static final int FLASH_DRONE_MAX_CHARGES = 2;
     public static final int FLASH_DRONE_RECHARGE_TICKS = 40 * 20;
     public static final int CORE_COOLDOWN_TICKS = 60 * 20;
-    private static final int CORE_CHANNEL_TICKS = 20;
+    private static final int CORE_CHANNEL_TICKS = 16;
     private static final int CORE_SCAN_ROUNDS = 4;
     private static final int CORE_SCAN_INTERVAL_TICKS = 80;
     private static final int PATH_LINE_TICKS = CORE_SCAN_INTERVAL_TICKS;
@@ -57,6 +58,7 @@ public final class HackclawStateManager {
     private static final String CORE_PHASE_UNTIL = "CorePhaseUntil";
     private static final String CORE_NEXT_SCAN = "CoreNextScan";
     private static final String CORE_ROUND = "CoreRound";
+    private static final String CORE_LAST_SCAN_FOUND = "CoreLastScanFound";
     private static final String CORE_CHANNEL_X = "CoreChannelX";
     private static final String CORE_CHANNEL_Y = "CoreChannelY";
     private static final String CORE_CHANNEL_Z = "CoreChannelZ";
@@ -88,6 +90,7 @@ public final class HackclawStateManager {
         tag.putLong(CORE_COOLDOWN_UNTIL, 0L);
         tag.putInt(CORE_PHASE, CORE_PHASE_NONE);
         tag.putInt(CORE_ROUND, 0);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, false);
     }
 
     public static void copyState(Player original, Player target) {
@@ -190,17 +193,17 @@ public final class HackclawStateManager {
         tag.putInt(CORE_PHASE, CORE_PHASE_CHANNEL);
         tag.putLong(CORE_PHASE_UNTIL, now + CORE_CHANNEL_TICKS);
         tag.putInt(CORE_ROUND, 0);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, false);
         Vec3 pos = player.position();
         tag.putDouble(CORE_CHANNEL_X, pos.x);
         tag.putDouble(CORE_CHANNEL_Y, pos.y);
         tag.putDouble(CORE_CHANNEL_Z, pos.z);
         stowTool(player);
-        player.displayClientMessage(Component.translatable(
-                "message.dealt_force_skills.hackclaw.advanced_hack_started"), true);
         RangedSoundHelper.playThrottled(player.serverLevel(), player.position(),
                 ModSounds.HACKCLAW_ADVANCED_HACK_CHANNEL_START.get(), SoundSource.PLAYERS,
                 0.8f, 1.0f, 16.0D, 5, 3.0D);
         syncToClient(player);
+        syncCoreVisualState(player);
         return true;
     }
 
@@ -248,6 +251,7 @@ public final class HackclawStateManager {
                 coreChannelRemainingTicks(player),
                 coreActiveRemainingTicks(player),
                 coreRound(player),
+                data(player).getBoolean(CORE_LAST_SCAN_FOUND),
                 equippedTool(player).ordinal()
         ), player);
     }
@@ -323,11 +327,11 @@ public final class HackclawStateManager {
         tag.putInt(CORE_PHASE, CORE_PHASE_SCAN);
         tag.putLong(CORE_NEXT_SCAN, now);
         tag.putInt(CORE_ROUND, 0);
-        player.displayClientMessage(Component.translatable(
-                "message.dealt_force_skills.hackclaw.advanced_hack_scanning"), true);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, false);
         RangedSoundHelper.playThrottled(player.serverLevel(), player.position(),
                 ModSounds.HACKCLAW_ADVANCED_HACK_SCAN_START.get(), SoundSource.PLAYERS,
                 0.75f, 1.0f, 18.0D, 5, 3.0D);
+        syncCoreVisualState(player);
     }
 
     private static void performCoreScan(ServerPlayer player, CompoundTag tag, long now) {
@@ -336,10 +340,11 @@ public final class HackclawStateManager {
         tag.putLong(CORE_NEXT_SCAN, now + CORE_SCAN_INTERVAL_TICKS);
 
         List<ServerPlayer> targets = scanTargets(player);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, !targets.isEmpty());
         if (targets.isEmpty()) {
             clearPathLines(player);
-            player.displayClientMessage(Component.translatable(
-                    "message.dealt_force_skills.hackclaw.advanced_hack_no_targets", round, CORE_SCAN_ROUNDS), true);
+            syncToClient(player);
+            syncCoreVisualState(player);
             return;
         }
 
@@ -362,6 +367,8 @@ public final class HackclawStateManager {
         RangedSoundHelper.playThrottled(player.serverLevel(), player.position(),
                 ModSounds.HACKCLAW_ADVANCED_HACK_SCAN_END.get(), SoundSource.PLAYERS,
                 0.65f, 1.0f, 18.0D, 5, 3.0D);
+        syncToClient(player);
+        syncCoreVisualState(player);
     }
 
     private static List<ServerPlayer> scanTargets(ServerPlayer player) {
@@ -422,10 +429,11 @@ public final class HackclawStateManager {
         tag.putLong(CORE_PHASE_UNTIL, 0L);
         tag.putLong(CORE_NEXT_SCAN, 0L);
         tag.putInt(CORE_ROUND, 0);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, false);
         tag.putLong(CORE_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, CORE_COOLDOWN_TICKS));
         clearPathLines(player);
-        player.displayClientMessage(Component.translatable(
-                "message.dealt_force_skills.hackclaw.advanced_hack_finished"), true);
+        syncToClient(player);
+        syncCoreVisualState(player);
     }
 
     private static void cancelCore(ServerPlayer player) {
@@ -434,9 +442,21 @@ public final class HackclawStateManager {
         tag.putLong(CORE_PHASE_UNTIL, 0L);
         tag.putLong(CORE_NEXT_SCAN, 0L);
         tag.putInt(CORE_ROUND, 0);
+        tag.putBoolean(CORE_LAST_SCAN_FOUND, false);
         clearPathLines(player);
-        player.displayClientMessage(Component.translatable(
-                "message.dealt_force_skills.hackclaw.advanced_hack_canceled"), true);
+        syncToClient(player);
+        syncCoreVisualState(player);
+    }
+
+    private static void syncCoreVisualState(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        int phase = tag.getInt(CORE_PHASE);
+        NetworkHandler.sendToTrackingAndSelf(new S2C_HackclawCoreVisualState(
+                player.getId(),
+                phase,
+                phase == CORE_PHASE_NONE ? 0 : coreActiveRemainingTicks(player),
+                coreRound(player)
+        ), player);
     }
 
     private static void clearPathLines(ServerPlayer player) {

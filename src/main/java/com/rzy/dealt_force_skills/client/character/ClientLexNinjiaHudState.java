@@ -18,6 +18,7 @@ public final class ClientLexNinjiaHudState {
     private static float deathFlameOverflow;
     private static int hamPowerTicks;
     private static int hamBerserkTicks;
+    private static int scientificToolLevel = -1;
     private static long lotusBoxes;
 
     private ClientLexNinjiaHudState() {
@@ -39,6 +40,7 @@ public final class ClientLexNinjiaHudState {
         deathFlameOverflow = 0.0F;
         hamPowerTicks = 0;
         hamBerserkTicks = 0;
+        scientificToolLevel = -1;
         lotusBoxes = 0L;
     }
 
@@ -56,7 +58,8 @@ public final class ClientLexNinjiaHudState {
             int deathFlameTicks,
             float deathFlameOverflow,
             int hamPowerTicks,
-            int hamBerserkTicks
+            int hamBerserkTicks,
+            int scientificToolLevel
     ) {
         synced = true;
         ClientLexNinjiaHudState.leicra = Math.max(0.0F, leicra);
@@ -73,6 +76,7 @@ public final class ClientLexNinjiaHudState {
         ClientLexNinjiaHudState.deathFlameOverflow = Math.max(0.0F, deathFlameOverflow);
         ClientLexNinjiaHudState.hamPowerTicks = Math.max(0, hamPowerTicks);
         ClientLexNinjiaHudState.hamBerserkTicks = Math.max(0, hamBerserkTicks);
+        ClientLexNinjiaHudState.scientificToolLevel = Math.max(-1, scientificToolLevel);
     }
 
     public static void tick() {
@@ -143,6 +147,14 @@ public final class ClientLexNinjiaHudState {
 
     public static int hamBerserkTicks() {
         return hamBerserkTicks;
+    }
+
+    public static int scientificToolLevel() {
+        return scientificToolLevel;
+    }
+
+    public static boolean hasScientificTool() {
+        return scientificToolLevel >= 0;
     }
 
     public static long lotusBoxes() {

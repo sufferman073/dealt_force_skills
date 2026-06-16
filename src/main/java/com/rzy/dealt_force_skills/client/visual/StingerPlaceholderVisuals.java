@@ -5,12 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.stinger.StingerTool;
 import com.rzy.dealt_force_skills.client.character.ClientStingerHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -20,12 +18,17 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class StingerPlaceholderVisuals {
+    private static final ResourceLocation SMOKE_GRENADE_MODEL = model("stinger_smoke_grenade");
+    private static final ResourceLocation SMOKE_DRONE_MODEL = model("stinger_smoke_drone");
+    private static final ResourceLocation STIM_GUN_MODEL = model("stinger_stim_gun");
+
     private StingerPlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientStingerHudState.hasEquippedTool()) {
+        ClientToolReleaseAction.Action action = activeAction();
+        if (!ClientStingerHudState.hasEquippedTool() && action == null) {
             return;
         }
         event.setCanceled(true);
@@ -35,12 +38,17 @@ public final class StingerPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        StingerTool tool = ClientStingerHudState.equippedTool();
+        StingerTool tool = action == ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE
+                ? StingerTool.SMOKE_GRENADE
+                : action == ClientToolReleaseAction.Action.STINGER_STIM_PRIME
+                || action == ClientToolReleaseAction.Action.STINGER_STIM_FIRE
+                ? StingerTool.STIM_GUN
+                : ClientStingerHudState.equippedTool();
         if (tool == StingerTool.STIM_GUN) {
-            poseStack.translate(0.48D, -0.18D, -0.66D);
-            poseStack.mulPose(Axis.YP.rotationDegrees(-22.0F));
-            poseStack.mulPose(Axis.XP.rotationDegrees(-10.0F));
-            poseStack.scale(1.05F, 1.05F, 1.05F);
+            poseStack.translate(0.32D, -0.20D, -0.82D);
+            poseStack.mulPose(Axis.YP.rotationDegrees(-6.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(-4.0F));
+            poseStack.scale(0.92F, 0.92F, 0.92F);
         } else if (tool == StingerTool.SMOKE_DRONE) {
             poseStack.translate(0.38D, -0.18D, -0.58D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-18.0F));
@@ -54,34 +62,43 @@ public final class StingerPlaceholderVisuals {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(tool),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = action == null
+                ? new ClientToolModelAnimationState.AnimationFrame("idle", seconds)
+                : ClientToolReleaseAction.frame(action, "idle", seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientStingerHudState.hasEquippedTool()) {
+        if (ClientStingerHudState.hasEquippedTool() || activeAction() != null) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack(StingerTool tool) {
+    private static ClientToolReleaseAction.Action activeAction() {
+        if (ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.STINGER_STIM_FIRE)) {
+            return ClientToolReleaseAction.Action.STINGER_STIM_FIRE;
+        }
+        if (ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.STINGER_STIM_PRIME)) {
+            return ClientToolReleaseAction.Action.STINGER_STIM_PRIME;
+        }
+        return ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE)
+                ? ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE
+                : null;
+    }
+
+    private static ResourceLocation modelFor(StingerTool tool) {
         return switch (tool) {
-            case SMOKE_GRENADE -> new ItemStack(Items.GRAY_DYE);
-            case SMOKE_DRONE -> new ItemStack(Items.BEEHIVE);
-            case STIM_GUN -> new ItemStack(Items.CROSSBOW);
-            case NONE -> ItemStack.EMPTY;
+            case SMOKE_GRENADE, NONE -> SMOKE_GRENADE_MODEL;
+            case SMOKE_DRONE -> SMOKE_DRONE_MODEL;
+            case STIM_GUN -> STIM_GUN_MODEL;
         };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

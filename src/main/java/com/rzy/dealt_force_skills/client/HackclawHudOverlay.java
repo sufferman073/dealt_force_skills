@@ -39,7 +39,11 @@ public final class HackclawHudOverlay {
         int x = 8;
         int y = Math.max(8, graphics.guiHeight() - 68);
 
-        drawStatus(graphics, font);
+        if (ClientHackclawHudState.coreChannelTicks() <= 0
+                && ClientHackclawHudState.coreActiveTicks() <= 0) {
+            drawStatus(graphics, font);
+        }
+        drawTerminalPanel(graphics, font);
 
         drawSlot(graphics, font, x, y, 0xFF58D8FF, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.hackclaw.skill.advanced_hack"),
@@ -63,24 +67,43 @@ public final class HackclawHudOverlay {
                         : ClientHackclawHudState.knifeCharges() + "/" + ClientHackclawHudState.knifeMaxCharges());
     }
 
+    private static void drawTerminalPanel(GuiGraphics graphics, Font font) {
+        if (ClientHackclawHudState.coreChannelTicks() <= 0
+                && ClientHackclawHudState.coreActiveTicks() <= 0) {
+            return;
+        }
+        int width = 152;
+        int height = 54;
+        int x = (graphics.guiWidth() - width) / 2;
+        int y = graphics.guiHeight() / 2 + 34;
+        graphics.fill(x, y, x + width, y + height, 0xD20A151B);
+        graphics.fill(x, y, x + width, y + 2, 0xFF54DFFF);
+        graphics.fill(x, y + height - 2, x + width, y + height, 0xFF247D91);
+        String title = Component.translatable(
+                "character.dealt_force_skills.hackclaw.skill.advanced_hack").getString();
+        graphics.drawCenteredString(font, title, graphics.guiWidth() / 2, y + 7, 0xFF8CEBFF);
+        String status = ClientHackclawHudState.coreChannelTicks() > 0
+                ? Component.translatable("hud.dealt_force_skills.hackclaw.channeling",
+                cooldownText(ClientHackclawHudState.coreChannelTicks())).getString()
+                : Component.translatable("hud.dealt_force_skills.hackclaw.scanning",
+                ClientHackclawHudState.coreRound(),
+                cooldownText(ClientHackclawHudState.coreActiveTicks())).getString();
+        graphics.drawCenteredString(font, status, graphics.guiWidth() / 2, y + 23, 0xFFE8FAFF);
+        graphics.drawCenteredString(font, coreScanResult(), graphics.guiWidth() / 2, y + 36, 0xFFB9F6FF);
+    }
+
+    private static String coreScanResult() {
+        if (ClientHackclawHudState.coreChannelTicks() > 0 || ClientHackclawHudState.coreRound() <= 0) {
+            return Component.translatable("hud.dealt_force_skills.hackclaw.searching").getString();
+        }
+        return ClientHackclawHudState.coreScanFound()
+                ? Component.translatable("hud.dealt_force_skills.hackclaw.targets_found").getString()
+                : Component.translatable("hud.dealt_force_skills.hackclaw.no_targets_ui").getString();
+    }
+
     private static void drawStatus(GuiGraphics graphics, Font font) {
         int width = graphics.guiWidth();
         int y = 24;
-        if (ClientHackclawHudState.coreChannelTicks() > 0) {
-            graphics.drawCenteredString(font,
-                    Component.translatable("hud.dealt_force_skills.hackclaw.channeling",
-                            cooldownText(ClientHackclawHudState.coreChannelTicks())).getString(),
-                    width / 2, y, 0xFFE5F7FF);
-            y += 14;
-        }
-        if (ClientHackclawHudState.coreActiveTicks() > 0) {
-            graphics.drawCenteredString(font,
-                    Component.translatable("hud.dealt_force_skills.hackclaw.scanning",
-                            ClientHackclawHudState.coreRound(),
-                            cooldownText(ClientHackclawHudState.coreActiveTicks())).getString(),
-                    width / 2, y, 0xFFFFE7A6);
-            y += 14;
-        }
         if (HackclawPathLineRenderer.highlightedTargetId() >= 0
                 && ClientHackclawHudState.equippedTool() == HackclawTool.FLASH_DRONE) {
             graphics.drawCenteredString(font,

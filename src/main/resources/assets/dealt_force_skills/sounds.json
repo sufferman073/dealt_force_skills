@@ -147,6 +147,22 @@
       }
     ]
   },
+  "sineva_shield_bash_control": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/shield_bash_control_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:sineva/shield_bash_control_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:sineva/shield_bash_control_3",
+        "stream": false
+      }
+    ]
+  },
   "sineva_shield_block": {
     "sounds": [
       {
@@ -168,6 +184,22 @@
       {
         "name": "minecraft:item/shield/block5",
         "volume": 0.85
+      }
+    ]
+  },
+  "sineva_projectile_reflect": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/projectile_reflect",
+        "stream": false
+      }
+    ]
+  },
+  "sineva_grapple_hit_caster": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:sineva/grapple_hit_caster",
+        "stream": false
       }
     ]
   },

@@ -11,6 +11,7 @@ import com.rzy.dealt_force_skills.network.S2C_SyncLunaState;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.ReconRevealThrottle;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
@@ -199,6 +200,9 @@ public final class LunaStateManager {
 
     public static void revealToOwner(ServerPlayer owner, LivingEntity target, int ticks, boolean voiceIfPlayer) {
         if (!isLuna(owner) || target == owner || ticks <= 0) {
+            return;
+        }
+        if (!ReconRevealThrottle.tryStart(target, ticks)) {
             return;
         }
 

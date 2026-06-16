@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.toxik.ToxikTool;
 import com.rzy.dealt_force_skills.character.toxik.ToxikToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientToxikHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_ToxikPullout;
 import com.rzy.dealt_force_skills.network.C2S_ToxikToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -23,6 +24,8 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ToxikInputHandler {
     private static final int TEAR_GAS_EQUIP_HOLD_TICKS = 8;
+    private static final int TEAR_GAS_RELEASE_TICKS = 4;
+    private static final int FIREFLY_RELEASE_TICKS = 4;
     private static final int CORE_LONG_HOLD_TICKS = 15;
 
     private static boolean active1WasDown;
@@ -78,15 +81,20 @@ public final class ToxikInputHandler {
 
         ToxikTool tool = ClientToxikHudState.equippedTool();
         if (tool == ToxikTool.TEAR_GAS) {
-            NetworkHandler.sendToServer(new C2S_ToxikToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? ToxikToolAction.THROW_TEAR_GAS
-                    : ToxikToolAction.STOW_TOOL));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginTearGasThrow(true);
+            } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.TOXIK_TEAR_GAS);
+                NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.STOW_TOOL));
+            }
             return;
         }
         if (tool == ToxikTool.FIREFLY_SWARM) {
-            NetworkHandler.sendToServer(new C2S_ToxikToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? ToxikToolAction.RELEASE_FIREFLY
-                    : ToxikToolAction.TOGGLE_FIREFLY_MODE));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginFireflyRelease();
+            } else {
+                NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.TOGGLE_FIREFLY_MODE));
+            }
         }
     }
 
@@ -104,14 +112,15 @@ public final class ToxikInputHandler {
         ToxikTool tool = ClientToxikHudState.equippedTool();
         if (event.isAttack()) {
             if (tool == ToxikTool.TEAR_GAS) {
-                NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.THROW_TEAR_GAS));
+                beginTearGasThrow(true);
             } else if (tool == ToxikTool.FIREFLY_SWARM) {
-                NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.RELEASE_FIREFLY));
+                beginFireflyRelease();
             }
         } else if (event.isUseItem()) {
             if (tool == ToxikTool.FIREFLY_SWARM) {
                 NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.TOGGLE_FIREFLY_MODE));
             } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.TOXIK_TEAR_GAS);
                 NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.STOW_TOOL));
             }
         }
@@ -159,9 +168,25 @@ public final class ToxikInputHandler {
             return;
         }
         if (active2WasDown && active2HeldTicks < TEAR_GAS_EQUIP_HOLD_TICKS) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+            beginTearGasThrow(false);
         }
         resetActive2();
+    }
+
+    private static void beginTearGasThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.TOXIK_TEAR_GAS,
+                TEAR_GAS_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.THROW_TEAR_GAS))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2));
+    }
+
+    private static void beginFireflyRelease() {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.TOXIK_FIREFLY,
+                FIREFLY_RELEASE_TICKS,
+                () -> NetworkHandler.sendToServer(new C2S_ToxikToolAction(ToxikToolAction.RELEASE_FIREFLY)));
     }
 
     private static void handleCoreKey() {

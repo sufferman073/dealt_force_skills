@@ -36,6 +36,8 @@ import com.rzy.dealt_force_skills.entity.StingerSmokeDroneEntity;
 import com.rzy.dealt_force_skills.entity.StingerSmokeGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.StingerStimProjectileEntity;
 import com.rzy.dealt_force_skills.entity.TempestWallDrillStingerEntity;
+import com.rzy.dealt_force_skills.entity.TempestRecallAnchorEntity;
+import com.rzy.dealt_force_skills.entity.ToxikFireflyEntity;
 import com.rzy.dealt_force_skills.entity.ToxikTearGasCloudEntity;
 import com.rzy.dealt_force_skills.entity.ToxikTearGasGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.UluruBombletEntity;
@@ -364,6 +366,14 @@ public class ModEntities {
                             .updateInterval(5)
                             .build("toxik_tear_gas_cloud"));
 
+    public static final RegistryObject<EntityType<ToxikFireflyEntity>> TOXIK_FIREFLY =
+            ENTITIES.register("toxik_firefly",
+                    () -> EntityType.Builder.<ToxikFireflyEntity>of(ToxikFireflyEntity::new, MobCategory.MISC)
+                            .sized(0.18f, 0.18f)
+                            .clientTrackingRange(96)
+                            .updateInterval(1)
+                            .build("toxik_firefly"));
+
     public static final RegistryObject<EntityType<RaptorPulseGrenadeEntity>> RAPTOR_PULSE_GRENADE =
             ENTITIES.register("raptor_pulse_grenade",
                     () -> EntityType.Builder.<RaptorPulseGrenadeEntity>of(RaptorPulseGrenadeEntity::new, MobCategory.MISC)
@@ -411,6 +421,14 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .updateInterval(1)
                             .build("tempest_wall_drill_stinger"));
+    public static final RegistryObject<EntityType<TempestRecallAnchorEntity>> TEMPEST_RECALL_ANCHOR =
+            ENTITIES.register("tempest_recall_anchor",
+                    () -> EntityType.Builder.<TempestRecallAnchorEntity>of(
+                                    TempestRecallAnchorEntity::new, MobCategory.MISC)
+                            .sized(0.7f, 0.25f)
+                            .clientTrackingRange(320)
+                            .updateInterval(1)
+                            .build("tempest_recall_anchor"));
     public static final RegistryObject<EntityType<CatDadRoadTruckEntity>> CATDAD_ROAD_TRUCK =
             ENTITIES.register("catdad_road_truck",
                     () -> EntityType.Builder.<CatDadRoadTruckEntity>of(CatDadRoadTruckEntity::new, MobCategory.MISC)

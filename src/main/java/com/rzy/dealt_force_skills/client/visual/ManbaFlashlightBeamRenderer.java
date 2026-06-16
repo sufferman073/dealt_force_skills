@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.client.visual;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.client.renderer.DfsRenderTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -53,6 +54,10 @@ public final class ManbaFlashlightBeamRenderer {
         }
     }
 
+    public static boolean isActive(Player player) {
+        return player != null && BEAMS.containsKey(player.getId());
+    }
+
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES || BEAMS.isEmpty()) {
@@ -65,7 +70,7 @@ public final class ManbaFlashlightBeamRenderer {
         }
 
         MultiBufferSource.BufferSource buffer = minecraft.renderBuffers().bufferSource();
-        VertexConsumer sheetConsumer = buffer.getBuffer(RenderType.debugQuads());
+        VertexConsumer sheetConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
         VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lines());
         PoseStack.Pose pose = event.getPoseStack().last();
         Matrix4f matrix = pose.pose();
@@ -78,7 +83,7 @@ public final class ManbaFlashlightBeamRenderer {
                         sheetConsumer, lineConsumer);
             }
         }
-        buffer.endBatch(RenderType.debugQuads());
+        buffer.endBatch(DfsRenderTypes.untexturedQuads());
         buffer.endBatch(RenderType.lines());
     }
 
@@ -90,16 +95,11 @@ public final class ManbaFlashlightBeamRenderer {
             return;
         }
 
-        Vec3 start = player.getEyePosition(partialTick).add(look.scale(0.45D));
-        Vec3 end = start.add(look.scale(beam.range));
         Vec3 up = new Vec3(0.0D, 1.0D, 0.0D);
-        Vec3 right = look.cross(up);
-        if (right.lengthSqr() < 1.0E-6D) {
-            right = new Vec3(1.0D, 0.0D, 0.0D);
-        } else {
-            right = right.normalize();
-        }
-        Vec3 vertical = right.cross(look).normalize();
+        Vec3 right = rightVector(look, up);
+        Vec3 vertical = look.cross(right).normalize();
+        Vec3 start = muzzle(player, partialTick);
+        Vec3 end = start.add(look.scale(beam.range));
         double radius = Math.tan(Math.toRadians(beam.halfAngleDegrees)) * beam.range;
         double nearRadius = Math.max(0.08D, radius * 0.035D);
 
@@ -121,6 +121,28 @@ public final class ManbaFlashlightBeamRenderer {
         renderLine(lineConsumer, pose, camera, start, end.add(right.scale(-radius)), 120);
         renderLine(lineConsumer, pose, camera, start, end.add(vertical.scale(radius)), 120);
         renderLine(lineConsumer, pose, camera, start, end.add(vertical.scale(-radius)), 120);
+    }
+
+    public static Vec3 muzzle(Player player, float partialTick) {
+        Vec3 look = player.getViewVector(partialTick).normalize();
+        if (look.lengthSqr() < 1.0E-6D) {
+            look = new Vec3(0.0D, 0.0D, 1.0D);
+        }
+        Vec3 up = new Vec3(0.0D, 1.0D, 0.0D);
+        Vec3 right = rightVector(look, up);
+        Vec3 vertical = look.cross(right).normalize();
+        return player.getEyePosition(partialTick)
+                .add(look.scale(0.66D))
+                .add(right.scale(0.74D))
+                .add(vertical.scale(-0.34D));
+    }
+
+    private static Vec3 rightVector(Vec3 look, Vec3 up) {
+        Vec3 right = up.cross(look);
+        if (right.lengthSqr() < 1.0E-6D) {
+            return new Vec3(1.0D, 0.0D, 0.0D);
+        }
+        return right.normalize();
     }
 
     private static Vec3 ringPoint(Vec3 center, Vec3 right, Vec3 vertical, double radius, double angle) {

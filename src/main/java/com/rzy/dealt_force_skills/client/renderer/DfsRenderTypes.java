@@ -5,6 +5,20 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.renderer.RenderType;
 
 public final class DfsRenderTypes extends RenderType {
+    private static final RenderType UNTEXTURED_QUADS = RenderType.create(
+            "dfs_untextured_quads",
+            DefaultVertexFormat.POSITION_COLOR,
+            VertexFormat.Mode.QUADS,
+            256,
+            false,
+            true,
+            RenderType.CompositeState.builder()
+                    .setShaderState(POSITION_COLOR_SHADER)
+                    .setTextureState(NO_TEXTURE)
+                    .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
+                    .createCompositeState(false)
+    );
     private static final RenderType EQUIPMENT_SOLID_QUADS = RenderType.create(
             "dfs_equipment_solid_quads",
             DefaultVertexFormat.POSITION_COLOR,
@@ -24,6 +38,10 @@ public final class DfsRenderTypes extends RenderType {
                            boolean affectsCrumbling, boolean sortOnUpload,
                            Runnable setupState, Runnable clearState) {
         super(name, format, mode, bufferSize, affectsCrumbling, sortOnUpload, setupState, clearState);
+    }
+
+    public static RenderType untexturedQuads() {
+        return UNTEXTURED_QUADS;
     }
 
     public static RenderType equipmentSolidQuads() {

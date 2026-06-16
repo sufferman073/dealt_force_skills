@@ -1,7 +1,7 @@
-# Asset License Notice
+# License
 
-Unless explicitly stated otherwise, all textures, models, sounds, character names, character settings, design documents, development notes, private archives, and other non-code creative assets are not licensed under the MIT License.
+This project is licensed under the GNU General Public License v3.0 or later.
 
-These assets are retained by their respective rights holders and may not be copied, redistributed, modified, or reused in other projects without explicit permission.
+You may use, modify, and distribute this mod under the terms of the GPLv3 or any later version published by the Free Software Foundation.
 
-The MIT License in `LICENSE-CODE.txt` applies only to source code files unless otherwise stated.
+Unless otherwise stated, source code, models, textures, sounds, and other project assets are covered by the same license.

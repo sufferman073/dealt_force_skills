@@ -21,6 +21,9 @@ import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
 import net.minecraft.network.protocol.game.ClientboundSetChunkCacheRadiusPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -52,7 +55,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-public class RaptorFalconDroneEntity extends Entity implements ItemSupplier {
+public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Float> DATA_DIRECTION_X =
+            SynchedEntityData.defineId(RaptorFalconDroneEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_DIRECTION_Y =
+            SynchedEntityData.defineId(RaptorFalconDroneEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_DIRECTION_Z =
+            SynchedEntityData.defineId(RaptorFalconDroneEntity.class, EntityDataSerializers.FLOAT);
     private static final int LIFE_TICKS = 30 * 20;
     private static final double CONTROLLED_HORIZONTAL_SPEED = 0.50D; // 10 blocks/sec at 20 TPS
     private static final double CONTROLLED_VERTICAL_SPEED = 0.25D; // 5 blocks/sec at 20 TPS
@@ -119,6 +128,9 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier {
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_DIRECTION_X, 0.0F);
+        entityData.define(DATA_DIRECTION_Y, 0.0F);
+        entityData.define(DATA_DIRECTION_Z, 1.0F);
     }
 
     @Override
@@ -176,6 +188,7 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier {
         directionX = tag.getDouble("DirectionX");
         directionY = tag.getDouble("DirectionY");
         directionZ = tag.getDouble("DirectionZ");
+        syncStoredDirection();
         boosting = tag.getBoolean("Boosting");
         selfDestructing = tag.getBoolean("SelfDestructing");
         falconPulseAvailable = !tag.contains("FalconPulseAvailable") || tag.getBoolean("FalconPulseAvailable");
@@ -242,6 +255,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier {
 
     public boolean isOwnedBy(ServerPlayer player) {
         return player != null && player.getUUID().equals(ownerId);
+    }
+
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        Vec3 direction = new Vec3(entityData.get(DATA_DIRECTION_X), entityData.get(DATA_DIRECTION_Y), entityData.get(DATA_DIRECTION_Z));
+        return direction.lengthSqr() < 0.0001D ? new Vec3(0.0D, 0.0D, 1.0D) : direction.normalize();
     }
 
     public void applyGuidance(float yaw, float pitch, boolean boosting) {
@@ -576,6 +595,13 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier {
         directionX = normalized.x;
         directionY = normalized.y;
         directionZ = normalized.z;
+        syncStoredDirection();
+    }
+
+    private void syncStoredDirection() {
+        entityData.set(DATA_DIRECTION_X, (float) directionX);
+        entityData.set(DATA_DIRECTION_Y, (float) directionY);
+        entityData.set(DATA_DIRECTION_Z, (float) directionZ);
     }
 
     private ServerPlayer owner(ServerLevel level) {

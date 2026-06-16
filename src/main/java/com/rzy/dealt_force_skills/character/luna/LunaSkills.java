@@ -6,6 +6,9 @@ import com.rzy.dealt_force_skills.entity.LunaReconArrowEntity;
 import com.rzy.dealt_force_skills.entity.LunaShockArrowEntity;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_LunaBowVisualState;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -14,6 +17,9 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 public final class LunaSkills {
+    private static final int BOW_RELEASE_TICKS = 3;
+    private static final int BOW_ARROW_SPAWN_TICK = 2;
+
     private LunaSkills() {
     }
 
@@ -41,6 +47,7 @@ public final class LunaSkills {
             case THROW_GRENADE -> throwCompositeGrenade(player);
             case FIRE_RECON_ARROW -> fireReconArrow(player, chargeTicks);
             case STOW_TOOL -> {
+                syncBowVisual(player, S2C_LunaBowVisualStatePhase.NONE, LunaStateManager.equippedTool(player), 0);
                 LunaStateManager.setEquippedTool(player, LunaTool.NONE);
                 yield true;
             }
@@ -54,11 +61,13 @@ public final class LunaSkills {
         }
         RangedSoundHelper.playThrottled(player.serverLevel(), player.position(), ModSounds.LUNA_BOW_CHARGE.get(),
                 SoundSource.PLAYERS, 0.65f, tool == LunaTool.RECON_BOW ? 0.94f : 1.0f, 12.0D, 8, 2.0D);
+        syncBowVisual(player, S2C_LunaBowVisualStatePhase.DRAW, tool, 20 * 60);
         return true;
     }
 
     private static boolean toggleShockBow(ServerPlayer player) {
         if (LunaStateManager.equippedTool(player) == LunaTool.SHOCK_BOW) {
+            syncBowVisual(player, S2C_LunaBowVisualStatePhase.NONE, LunaTool.SHOCK_BOW, 0);
             LunaStateManager.setEquippedTool(player, LunaTool.NONE);
             return true;
         }
@@ -91,6 +100,7 @@ public final class LunaSkills {
 
     private static boolean toggleReconBow(ServerPlayer player) {
         if (LunaStateManager.equippedTool(player) == LunaTool.RECON_BOW) {
+            syncBowVisual(player, S2C_LunaBowVisualStatePhase.NONE, LunaTool.RECON_BOW, 0);
             LunaStateManager.setEquippedTool(player, LunaTool.NONE);
             return true;
         }
@@ -126,21 +136,30 @@ public final class LunaSkills {
             return true;
         }
 
-        ServerLevel level = player.serverLevel();
         double power = bowPower(chargeTicks, 1.3D, 3.1D);
-        LunaShockArrowEntity arrow = new LunaShockArrowEntity(ModEntities.LUNA_SHOCK_ARROW.get(),
-                level, player, LunaStateManager.shockBounceEnabled(player));
         Vec3 look = player.getLookAngle().normalize();
+        boolean bounceEnabled = LunaStateManager.shockBounceEnabled(player);
+        syncBowVisual(player, S2C_LunaBowVisualStatePhase.RELEASE, LunaTool.SHOCK_BOW,
+                BOW_RELEASE_TICKS);
+        LunaStateManager.setEquippedTool(player, LunaTool.NONE);
+        SkillAnimationScheduler.schedule(player, BOW_ARROW_SPAWN_TICK,
+                delayedPlayer -> spawnShockArrow(delayedPlayer, look, power, bounceEnabled));
+        return true;
+    }
+
+    private static void spawnShockArrow(ServerPlayer player, Vec3 look, double power, boolean bounceEnabled) {
+        ServerLevel level = player.serverLevel();
+        LunaShockArrowEntity arrow = new LunaShockArrowEntity(ModEntities.LUNA_SHOCK_ARROW.get(),
+                level, player, bounceEnabled);
         Vec3 start = player.getEyePosition().add(look.scale(0.65D));
         arrow.setPos(start.x, start.y - 0.05D, start.z);
         arrow.setDeltaMovement(look.scale(power));
-        arrow.setYRot(player.getYRot());
-        arrow.setXRot(player.getXRot());
+        arrow.setYRot((float) (Math.atan2(look.x, look.z) * (180.0D / Math.PI)));
+        arrow.setXRot((float) (Math.atan2(look.y, Math.sqrt(look.x * look.x + look.z * look.z))
+                * -(180.0D / Math.PI)));
         level.addFreshEntity(arrow);
         RangedSoundHelper.playThrottled(level, player.position(), ModSounds.LUNA_ARROW_RELEASE.get(),
                 SoundSource.PLAYERS, 0.95f, power > 2.8D ? 1.16f : 1.0f, 18.0D, 4, 3.0D);
-        LunaStateManager.setEquippedTool(player, LunaTool.NONE);
-        return true;
     }
 
     private static boolean startGrenadeCook(ServerPlayer player) {
@@ -193,25 +212,51 @@ public final class LunaSkills {
             return true;
         }
 
-        ServerLevel level = player.serverLevel();
         double power = bowPower(chargeTicks, 1.5D, 3.3D);
-        LunaReconArrowEntity arrow = new LunaReconArrowEntity(ModEntities.LUNA_RECON_ARROW.get(), level, player);
         Vec3 look = player.getLookAngle().normalize();
+        syncBowVisual(player, S2C_LunaBowVisualStatePhase.RELEASE, LunaTool.RECON_BOW,
+                BOW_RELEASE_TICKS);
+        LunaStateManager.setCoreCooldown(player);
+        LunaStateManager.setEquippedTool(player, LunaTool.NONE);
+        SkillAnimationScheduler.schedule(player, BOW_ARROW_SPAWN_TICK,
+                delayedPlayer -> spawnReconArrow(delayedPlayer, look, power));
+        return true;
+    }
+
+    private static void spawnReconArrow(ServerPlayer player, Vec3 look, double power) {
+        ServerLevel level = player.serverLevel();
+        LunaReconArrowEntity arrow = new LunaReconArrowEntity(ModEntities.LUNA_RECON_ARROW.get(), level, player);
         Vec3 start = player.getEyePosition().add(look.scale(0.65D));
         arrow.setPos(start.x, start.y - 0.05D, start.z);
         arrow.setDeltaMovement(look.scale(power));
-        arrow.setYRot(player.getYRot());
-        arrow.setXRot(player.getXRot());
+        arrow.setYRot((float) (Math.atan2(look.x, look.z) * (180.0D / Math.PI)));
+        arrow.setXRot((float) (Math.atan2(look.y, Math.sqrt(look.x * look.x + look.z * look.z))
+                * -(180.0D / Math.PI)));
         level.addFreshEntity(arrow);
         RangedSoundHelper.playThrottled(level, player.position(), ModSounds.LUNA_ARROW_RELEASE.get(),
                 SoundSource.PLAYERS, 1.0f, 0.95f, 18.0D, 4, 3.0D);
-        LunaStateManager.setCoreCooldown(player);
-        LunaStateManager.setEquippedTool(player, LunaTool.NONE);
-        return true;
     }
 
     private static double bowPower(int chargeTicks, double min, double max) {
         float fraction = Math.min(1.0f, Math.max(0, chargeTicks) / (float) LunaStateManager.MAX_BOW_CHARGE_TICKS);
         return min + (max - min) * fraction;
+    }
+
+    private static void syncBowVisual(ServerPlayer player, int phase, LunaTool tool, int remainingTicks) {
+        NetworkHandler.sendToTrackingAndSelf(new S2C_LunaBowVisualState(
+                player.getId(),
+                phase,
+                tool.ordinal(),
+                remainingTicks
+        ), player);
+    }
+
+    private static final class S2C_LunaBowVisualStatePhase {
+        private static final int NONE = 0;
+        private static final int DRAW = 1;
+        private static final int RELEASE = 2;
+
+        private S2C_LunaBowVisualStatePhase() {
+        }
     }
 }

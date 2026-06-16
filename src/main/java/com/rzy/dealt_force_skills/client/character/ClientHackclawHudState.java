@@ -16,6 +16,7 @@ public final class ClientHackclawHudState {
     private static int coreChannelTicks;
     private static int coreActiveTicks;
     private static int coreRound;
+    private static boolean coreScanFound;
     private static HackclawTool equippedTool = HackclawTool.NONE;
 
     private ClientHackclawHudState() {
@@ -33,6 +34,7 @@ public final class ClientHackclawHudState {
         coreChannelTicks = 0;
         coreActiveTicks = 0;
         coreRound = 0;
+        coreScanFound = false;
         equippedTool = HackclawTool.NONE;
         HackclawPathLineRenderer.clear();
     }
@@ -48,6 +50,7 @@ public final class ClientHackclawHudState {
             int coreChannelTicks,
             int coreActiveTicks,
             int coreRound,
+            boolean coreScanFound,
             int equippedToolOrdinal
     ) {
         synced = true;
@@ -61,6 +64,7 @@ public final class ClientHackclawHudState {
         ClientHackclawHudState.coreChannelTicks = coreChannelTicks;
         ClientHackclawHudState.coreActiveTicks = coreActiveTicks;
         ClientHackclawHudState.coreRound = coreRound;
+        ClientHackclawHudState.coreScanFound = coreScanFound;
         HackclawTool[] tools = HackclawTool.values();
         ClientHackclawHudState.equippedTool = equippedToolOrdinal >= 0 && equippedToolOrdinal < tools.length
                 ? tools[equippedToolOrdinal]
@@ -131,6 +135,10 @@ public final class ClientHackclawHudState {
 
     public static int coreRound() {
         return coreRound;
+    }
+
+    public static boolean coreScanFound() {
+        return coreScanFound;
     }
 
     public static HackclawTool equippedTool() {

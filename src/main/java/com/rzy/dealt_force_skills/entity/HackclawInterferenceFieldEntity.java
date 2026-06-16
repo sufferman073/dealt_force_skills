@@ -3,11 +3,15 @@ package com.rzy.dealt_force_skills.entity;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -21,7 +25,9 @@ import net.minecraftforge.network.NetworkHooks;
 
 import java.util.UUID;
 
-public class HackclawInterferenceFieldEntity extends Entity implements ItemSupplier {
+public class HackclawInterferenceFieldEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Integer> ATTACHED_FACE =
+            SynchedEntityData.defineId(HackclawInterferenceFieldEntity.class, EntityDataSerializers.INT);
     public static final double RADIUS = 10.0D;
     private static final int DURATION_TICKS = 10 * 20;
     private static final int DEVICE_DISRUPT_INTERVAL_TICKS = 10;
@@ -37,10 +43,12 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
     public HackclawInterferenceFieldEntity(
             EntityType<? extends HackclawInterferenceFieldEntity> type,
             Level level,
-            UUID ownerId
+            UUID ownerId,
+            Direction attachedFace
     ) {
         super(type, level);
         this.ownerId = ownerId;
+        entityData.set(ATTACHED_FACE, attachedFace.get3DDataValue());
     }
 
     @Override
@@ -50,6 +58,7 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(ATTACHED_FACE, Direction.UP.get3DDataValue());
     }
 
     @Override
@@ -82,6 +91,7 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         age = tag.getInt("Age");
         feedbackTriggered = tag.getBoolean("FeedbackTriggered");
+        entityData.set(ATTACHED_FACE, tag.getInt("AttachedFace"));
     }
 
     @Override
@@ -91,11 +101,17 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
         }
         tag.putInt("Age", age);
         tag.putBoolean("FeedbackTriggered", feedbackTriggered);
+        tag.putInt("AttachedFace", entityData.get(ATTACHED_FACE));
     }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public Direction blockbenchAttachedFace() {
+        return Direction.from3DDataValue(entityData.get(ATTACHED_FACE));
     }
 
     public double radius() {

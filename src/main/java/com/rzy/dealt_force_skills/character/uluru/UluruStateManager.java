@@ -18,7 +18,7 @@ public final class UluruStateManager {
     public static final int INCENDIARY_RECHARGE_TICKS = 45 * 20;
     public static final int COVER_MAX_CHARGES = 2;
     public static final int COVER_RECHARGE_TICKS = 30 * 20;
-    public static final int MISSILE_COOLDOWN_TICKS = 120 * 20;
+    public static final int MISSILE_COOLDOWN_TICKS = 90 * 20;
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".uluru";
     private static final String INITIALIZED = "Initialized";

@@ -88,6 +88,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.DEK_FIELD_SURGICAL_PACK.get());
                         output.accept(ModItems.PROTOTYPE_MADNESS_COMPOUND.get());
                         output.accept(ModItems.SPECIAL_EQUIPMENT_SUPPLY.get());
+                        output.accept(ModItems.DRIFTWOOD.get());
                         output.accept(ModItems.RAVEN_SHADOW_EXTRACT.get());
                         output.accept(ModItems.DARK_ZONE_RAINBOW_INJECTION.get());
                         output.accept(ModItems.EXPERIMENTAL_IRON_CURTAIN_CATALYST.get());

@@ -5,12 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.toxik.ToxikTool;
 import com.rzy.dealt_force_skills.client.character.ClientToxikHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -20,12 +18,16 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ToxikPlaceholderVisuals {
+    private static final ResourceLocation TEAR_GAS_MODEL = model("toxik_tear_gas_grenade");
+    private static final ResourceLocation FIREFLY_SWARM_MODEL = model("toxik_firefly_swarm");
+
     private ToxikPlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientToxikHudState.hasEquippedTool()) {
+        ClientToolReleaseAction.Action action = activeAction();
+        if (!ClientToxikHudState.hasEquippedTool() && action == null) {
             return;
         }
         event.setCanceled(true);
@@ -35,7 +37,11 @@ public final class ToxikPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        ToxikTool tool = ClientToxikHudState.equippedTool();
+        ToxikTool tool = action == ClientToolReleaseAction.Action.TOXIK_TEAR_GAS
+                ? ToxikTool.TEAR_GAS
+                : action == ClientToolReleaseAction.Action.TOXIK_FIREFLY
+                ? ToxikTool.FIREFLY_SWARM
+                : ClientToxikHudState.equippedTool();
         if (tool == ToxikTool.TEAR_GAS) {
             poseStack.translate(0.42D, -0.16D, -0.56D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-16.0F));
@@ -49,33 +55,46 @@ public final class ToxikPlaceholderVisuals {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(tool),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = action == null
+                ? new ClientToolModelAnimationState.AnimationFrame(animationFor(tool), seconds)
+                : ClientToolReleaseAction.frame(action, animationFor(tool), seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientToxikHudState.hasEquippedTool()) {
+        if (ClientToxikHudState.hasEquippedTool() || activeAction() != null) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack(ToxikTool tool) {
+    private static ClientToolReleaseAction.Action activeAction() {
+        if (ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.TOXIK_FIREFLY)) {
+            return ClientToolReleaseAction.Action.TOXIK_FIREFLY;
+        }
+        return ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.TOXIK_TEAR_GAS)
+                ? ClientToolReleaseAction.Action.TOXIK_TEAR_GAS
+                : null;
+    }
+
+    private static ResourceLocation modelFor(ToxikTool tool) {
         return switch (tool) {
-            case TEAR_GAS -> new ItemStack(Items.CYAN_DYE);
-            case FIREFLY_SWARM -> new ItemStack(Items.GLOWSTONE_DUST);
-            case NONE -> ItemStack.EMPTY;
+            case TEAR_GAS, NONE -> TEAR_GAS_MODEL;
+            case FIREFLY_SWARM -> FIREFLY_SWARM_MODEL;
         };
+    }
+
+    private static String animationFor(ToxikTool tool) {
+        return switch (tool) {
+            case TEAR_GAS, NONE -> "idle";
+            case FIREFLY_SWARM -> "idle_hover";
+        };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

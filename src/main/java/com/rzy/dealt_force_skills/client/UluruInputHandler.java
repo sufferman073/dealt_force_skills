@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.client;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.uluru.UluruTool;
 import com.rzy.dealt_force_skills.client.character.ClientUluruHudState;
+import com.rzy.dealt_force_skills.client.visual.UluruPlaceholderVisuals;
 import com.rzy.dealt_force_skills.network.C2S_UluruToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
@@ -18,6 +19,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class UluruInputHandler {
+    private static int pendingUseTicks;
+    private static UluruTool pendingTool = UluruTool.NONE;
+    private static boolean pendingGuidedLaunch;
+
     private UluruInputHandler() {
     }
 
@@ -38,13 +43,16 @@ public final class UluruInputHandler {
             ClientUluruHudState.setMissileAiming(event.getAction() != GLFW.GLFW_RELEASE);
             return;
         }
+        if (pendingUseTicks > 0) {
+            return;
+        }
 
         if (event.getAction() != GLFW.GLFW_PRESS) {
             return;
         }
 
         if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            NetworkHandler.sendToServer(new C2S_UluruToolAction(false, ClientUluruHudState.missileAiming()));
+            beginPrimaryUse();
         } else if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
             NetworkHandler.sendToServer(new C2S_UluruToolAction(true, false));
         }
@@ -60,8 +68,11 @@ public final class UluruInputHandler {
         if (event.getHand() != InteractionHand.MAIN_HAND) {
             return;
         }
+        if (pendingUseTicks > 0) {
+            return;
+        }
         if (event.isAttack()) {
-            NetworkHandler.sendToServer(new C2S_UluruToolAction(false, ClientUluruHudState.missileAiming()));
+            beginPrimaryUse();
         } else if (event.isUseItem()) {
             NetworkHandler.sendToServer(new C2S_UluruToolAction(true, false));
         }
@@ -85,7 +96,14 @@ public final class UluruInputHandler {
     }
 
     public static void tick(Minecraft minecraft) {
-        if (minecraft.player == null || !ClientUluruHudState.hasEquippedTool()) {
+        if (minecraft.player == null || !ClientUluruHudState.shouldRender()) {
+            resetPendingUse();
+            ClientUluruHudState.setMissileAiming(false);
+            return;
+        }
+
+        handlePendingUse();
+        if (!ClientUluruHudState.hasEquippedTool() && pendingUseTicks <= 0) {
             ClientUluruHudState.setMissileAiming(false);
             return;
         }
@@ -93,6 +111,39 @@ public final class UluruInputHandler {
         releaseBlockedKey(minecraft.options.keyAttack);
         releaseBlockedKey(minecraft.options.keyUse);
         releaseBlockedKey(minecraft.options.keyPickItem);
+    }
+
+    private static void beginPrimaryUse() {
+        UluruTool tool = ClientUluruHudState.equippedTool();
+        if (tool == UluruTool.NONE || pendingUseTicks > 0) {
+            return;
+        }
+        pendingTool = tool;
+        pendingGuidedLaunch = tool == UluruTool.MISSILE && ClientUluruHudState.missileAiming();
+        pendingUseTicks = UluruPlaceholderVisuals.useAnimationTicks(tool);
+        UluruPlaceholderVisuals.startUseAnimation(tool);
+    }
+
+    private static void handlePendingUse() {
+        if (pendingUseTicks <= 0) {
+            return;
+        }
+        if (ClientUluruHudState.equippedTool() != pendingTool) {
+            resetPendingUse();
+            return;
+        }
+        pendingUseTicks--;
+        if (pendingUseTicks > 0) {
+            return;
+        }
+        NetworkHandler.sendToServer(new C2S_UluruToolAction(false, pendingGuidedLaunch));
+        resetPendingUse();
+    }
+
+    private static void resetPendingUse() {
+        pendingUseTicks = 0;
+        pendingTool = UluruTool.NONE;
+        pendingGuidedLaunch = false;
     }
 
     private static boolean shouldReplaceMouse() {

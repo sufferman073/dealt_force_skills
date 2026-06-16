@@ -7,6 +7,7 @@ import com.rzy.dealt_force_skills.character.hackclaw.HackclawToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientHackclawHudState;
 import com.rzy.dealt_force_skills.client.visual.HackclawPathLineRenderer;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_HackclawToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
@@ -22,6 +23,8 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawInputHandler {
     private static final int EQUIP_HOLD_TICKS = 8;
+    private static final int KNIFE_RELEASE_TICKS = 4;
+    private static final int FLASH_DRONE_RELEASE_TICKS = 5;
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean sentKnifeEquip;
@@ -111,12 +114,12 @@ public final class HackclawInputHandler {
 
         if (active1WasDown) {
             if (sentKnifeEquip && !suppressKnifeReleaseThrow) {
-                NetworkHandler.sendToServer(new C2S_HackclawToolAction(HackclawToolAction.THROW_HACKING_KNIFE));
+                beginKnifeThrow(true);
             } else if (!sentKnifeEquip) {
                 if (ClientHackclawHudState.hasEquippedTool()) {
                     NetworkHandler.sendToServer(new C2S_HackclawToolAction(HackclawToolAction.STOW_TOOL));
                 } else {
-                    ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1);
+                    beginKnifeThrow(false);
                 }
             }
         }
@@ -143,14 +146,12 @@ public final class HackclawInputHandler {
 
         if (active2WasDown) {
             if (sentFlashDroneEquip && !suppressFlashDroneReleaseThrow) {
-                NetworkHandler.sendToServer(new C2S_HackclawToolAction(
-                        HackclawToolAction.THROW_FLASH_DRONE,
-                        HackclawPathLineRenderer.highlightedTargetId()));
+                beginFlashDroneThrow(true);
             } else if (!sentFlashDroneEquip) {
                 if (ClientHackclawHudState.hasEquippedTool()) {
                     NetworkHandler.sendToServer(new C2S_HackclawToolAction(HackclawToolAction.STOW_TOOL));
                 } else {
-                    ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+                    beginFlashDroneThrow(false);
                 }
             }
         }
@@ -159,6 +160,8 @@ public final class HackclawInputHandler {
 
     private static void sendEquippedToolAction(int button) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+            ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.HACKCLAW_KNIFE);
+            ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.HACKCLAW_FLASH_DRONE);
             NetworkHandler.sendToServer(new C2S_HackclawToolAction(HackclawToolAction.STOW_TOOL));
             suppressKnifeReleaseThrow = true;
             suppressFlashDroneReleaseThrow = true;
@@ -168,13 +171,32 @@ public final class HackclawInputHandler {
         HackclawTool tool = ClientHackclawHudState.equippedTool();
         if (tool == HackclawTool.HACKING_KNIFE) {
             suppressKnifeReleaseThrow = true;
-            NetworkHandler.sendToServer(new C2S_HackclawToolAction(HackclawToolAction.THROW_HACKING_KNIFE));
+            beginKnifeThrow(true);
         } else if (tool == HackclawTool.FLASH_DRONE) {
             suppressFlashDroneReleaseThrow = true;
-            NetworkHandler.sendToServer(new C2S_HackclawToolAction(
-                    HackclawToolAction.THROW_FLASH_DRONE,
-                    HackclawPathLineRenderer.highlightedTargetId()));
+            beginFlashDroneThrow(true);
         }
+    }
+
+    private static void beginKnifeThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.HACKCLAW_KNIFE,
+                KNIFE_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_HackclawToolAction(
+                                HackclawToolAction.THROW_HACKING_KNIFE))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1));
+    }
+
+    private static void beginFlashDroneThrow(boolean equipped) {
+        int targetId = HackclawPathLineRenderer.highlightedTargetId();
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.HACKCLAW_FLASH_DRONE,
+                FLASH_DRONE_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_HackclawToolAction(
+                                HackclawToolAction.THROW_FLASH_DRONE, targetId))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2));
     }
 
     private static void resetActive1() {

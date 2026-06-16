@@ -9,6 +9,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
@@ -32,8 +35,15 @@ import java.util.UUID;
 
 public class VyronMagneticBombEntity extends Projectile implements ItemSupplier {
     private static final double RADIUS = 7.0D;
+    private static final EntityDataAccessor<Boolean> DATA_STUCK =
+            SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<Float> DATA_NORMAL_X =
+            SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_NORMAL_Y =
+            SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_NORMAL_Z =
+            SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.FLOAT);
 
-    private boolean stuck;
     private int fuseRemaining = -1;
     private UUID stuckEntityId;
 
@@ -53,13 +63,17 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_STUCK, false);
+        entityData.define(DATA_NORMAL_X, 0.0F);
+        entityData.define(DATA_NORMAL_Y, 1.0F);
+        entityData.define(DATA_NORMAL_Z, 0.0F);
     }
 
     @Override
     public void tick() {
         super.tick();
 
-        if (stuck) {
+        if (isStuckForRender()) {
             tickStuck();
             spawnClientTrail();
             return;
@@ -102,7 +116,11 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
-        stuck = tag.getBoolean("Stuck");
+        setStuck(tag.getBoolean("Stuck"));
+        setAttachmentNormal(new Vec3(
+                tag.getFloat("AttachmentNormalX"),
+                tag.getFloat("AttachmentNormalY"),
+                tag.getFloat("AttachmentNormalZ")));
         fuseRemaining = tag.getInt("FuseRemaining");
         if (tag.hasUUID("StuckEntity")) {
             stuckEntityId = tag.getUUID("StuckEntity");
@@ -111,7 +129,11 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
-        tag.putBoolean("Stuck", stuck);
+        tag.putBoolean("Stuck", isStuckForRender());
+        Vec3 normal = attachmentNormal();
+        tag.putFloat("AttachmentNormalX", (float) normal.x);
+        tag.putFloat("AttachmentNormalY", (float) normal.y);
+        tag.putFloat("AttachmentNormalZ", (float) normal.z);
         tag.putInt("FuseRemaining", fuseRemaining);
         if (stuckEntityId != null) {
             tag.putUUID("StuckEntity", stuckEntityId);
@@ -125,19 +147,22 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
 
     private void stickToEntity(EntityHitResult hit) {
         Entity entity = hit.getEntity();
-        stuck = true;
+        setStuck(true);
         fuseRemaining = VyronStateManager.MAGNETIC_BOMB_FUSE_TICKS;
         stuckEntityId = entity.getUUID();
+        setAttachmentNormal(hit.getLocation().subtract(
+                entity.position().add(0.0D, entity.getBbHeight() * 0.5D, 0.0D)));
         setPos(hit.getLocation().x, hit.getLocation().y, hit.getLocation().z);
         setDeltaMovement(Vec3.ZERO);
         playReadySound();
     }
 
     private void stickToBlock(BlockHitResult hit) {
-        stuck = true;
+        setStuck(true);
         fuseRemaining = VyronStateManager.MAGNETIC_BOMB_FUSE_TICKS;
         Direction direction = hit.getDirection();
         Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
+        setAttachmentNormal(normal);
         setPos(hit.getLocation().x + normal.x * 0.04D,
                 hit.getLocation().y + normal.y * 0.04D,
                 hit.getLocation().z + normal.z * 0.04D);
@@ -211,5 +236,30 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
         if (level().isClientSide && tickCount % 3 == 0) {
             level().addParticle(ParticleTypes.ENCHANT, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
         }
+    }
+
+    public boolean isStuckForRender() {
+        return entityData.get(DATA_STUCK);
+    }
+
+    public Vec3 attachmentNormal() {
+        Vec3 normal = new Vec3(
+                entityData.get(DATA_NORMAL_X),
+                entityData.get(DATA_NORMAL_Y),
+                entityData.get(DATA_NORMAL_Z));
+        return normal.lengthSqr() < 0.0001D ? new Vec3(0.0D, 1.0D, 0.0D) : normal.normalize();
+    }
+
+    private void setStuck(boolean stuck) {
+        entityData.set(DATA_STUCK, stuck);
+    }
+
+    private void setAttachmentNormal(Vec3 normal) {
+        Vec3 normalized = normal.lengthSqr() < 0.0001D
+                ? new Vec3(0.0D, 1.0D, 0.0D)
+                : normal.normalize();
+        entityData.set(DATA_NORMAL_X, (float) normalized.x);
+        entityData.set(DATA_NORMAL_Y, (float) normalized.y);
+        entityData.set(DATA_NORMAL_Z, (float) normalized.z);
     }
 }

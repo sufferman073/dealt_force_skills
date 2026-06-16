@@ -46,7 +46,8 @@ public class C2S_SelectCharacter {
             }
 
             if (currentCharacterId.isPresent()) {
-                if (!player.getAbilities().instabuild) {
+                if (!player.getAbilities().instabuild
+                        && !CharacterSelectionManager.hasCharacterReselection(player)) {
                     NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(currentCharacterId.get()), player);
                     player.displayClientMessage(Component.translatable("message.dealt_force_skills.selection_locked"), false);
                     return;
@@ -54,6 +55,7 @@ public class C2S_SelectCharacter {
 
                 CharacterSelectionManager.replaceCharacter(player, msg.characterId).ifPresentOrElse(
                         character -> {
+                            CharacterSelectionManager.consumeCharacterReselection(player);
                             SkillDispatcher.onCharacterSelected(player, character);
                             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(character.id()), player);
                         },

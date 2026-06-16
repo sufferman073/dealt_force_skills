@@ -7,6 +7,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
@@ -33,7 +36,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
+public class LunaShockArrowEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Float> DATA_FORWARD_X =
+            SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_FORWARD_Y =
+            SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_FORWARD_Z =
+            SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
     private static final int MAX_PULSE_TICKS = 5 * 20;
     private static final int PULSE_INTERVAL_TICKS = 10;
     private static final double PULSE_RADIUS = 4.0D;
@@ -44,6 +53,7 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
     private boolean stuck;
     private int pulseTicksRemaining = MAX_PULSE_TICKS;
     private UUID stuckEntityId;
+    private Vec3 lastForward = new Vec3(0.0D, 0.0D, 1.0D);
 
     public LunaShockArrowEntity(EntityType<? extends LunaShockArrowEntity> type, Level level) {
         super(type, level);
@@ -62,6 +72,9 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_FORWARD_X, 0.0F);
+        entityData.define(DATA_FORWARD_Y, 0.0F);
+        entityData.define(DATA_FORWARD_Z, 1.0F);
     }
 
     @Override
@@ -75,6 +88,7 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
         }
 
         Vec3 motion = getDeltaMovement();
+        rememberForward(motion);
         Vec3 start = position();
         Vec3 next = start.add(motion);
         HitResult blockHit = level().clip(new ClipContext(start, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
@@ -121,6 +135,11 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
         if (tag.hasUUID("StuckEntity")) {
             stuckEntityId = tag.getUUID("StuckEntity");
         }
+        lastForward = new Vec3(tag.getDouble("ForwardX"), tag.getDouble("ForwardY"), tag.getDouble("ForwardZ"));
+        if (lastForward.lengthSqr() < 0.0001D) {
+            lastForward = new Vec3(0.0D, 0.0D, 1.0D);
+        }
+        syncForward(lastForward);
     }
 
     @Override
@@ -132,11 +151,30 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
         if (stuckEntityId != null) {
             tag.putUUID("StuckEntity", stuckEntityId);
         }
+        tag.putDouble("ForwardX", lastForward.x);
+        tag.putDouble("ForwardY", lastForward.y);
+        tag.putDouble("ForwardZ", lastForward.z);
     }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        Vec3 motion = getDeltaMovement();
+        if (motion.lengthSqr() >= 0.0001D) {
+            rememberForward(motion);
+        } else {
+            lastForward = syncedForward();
+        }
+        return lastForward;
+    }
+
+    @Override
+    public float blockbenchYawOffsetDegrees() {
+        return 180.0F;
     }
 
     public static void reportPullHold(ServerPlayer player, boolean holding) {
@@ -255,6 +293,31 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier {
             case Y -> new Vec3(motion.x * 0.65D, -motion.y * 0.55D, motion.z * 0.65D);
             case Z -> new Vec3(motion.x * 0.65D, motion.y * 0.85D, -motion.z * 0.65D);
         };
+    }
+
+    private void rememberForward(Vec3 direction) {
+        if (direction.lengthSqr() >= 0.0001D) {
+            lastForward = direction.normalize();
+            if (!level().isClientSide) {
+                syncForward(lastForward);
+            }
+        }
+    }
+
+    private void syncForward(Vec3 direction) {
+        entityData.set(DATA_FORWARD_X, (float) direction.x);
+        entityData.set(DATA_FORWARD_Y, (float) direction.y);
+        entityData.set(DATA_FORWARD_Z, (float) direction.z);
+    }
+
+    private Vec3 syncedForward() {
+        Vec3 direction = new Vec3(
+                entityData.get(DATA_FORWARD_X),
+                entityData.get(DATA_FORWARD_Y),
+                entityData.get(DATA_FORWARD_Z));
+        return direction.lengthSqr() < 0.0001D
+                ? new Vec3(0.0D, 0.0D, 1.0D)
+                : direction.normalize();
     }
 
     private void spawnClientTrail() {

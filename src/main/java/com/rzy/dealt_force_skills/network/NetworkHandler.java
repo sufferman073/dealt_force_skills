@@ -10,7 +10,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public class NetworkHandler {
-    private static final String PROTOCOL = "1";
+    private static final String PROTOCOL = "8";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(DealtForceSkillsMod.MODID, "main"),
@@ -45,6 +45,11 @@ public class NetworkHandler {
                     .encoder(C2S_LexNinjiaShopAction::encode)
                     .decoder(C2S_LexNinjiaShopAction::decode)
                     .consumerMainThread(C2S_LexNinjiaShopAction::handle).add();
+
+            CHANNEL.messageBuilder(C2S_LexNinjiaPresetAction.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_LexNinjiaPresetAction::encode)
+                    .decoder(C2S_LexNinjiaPresetAction::decode)
+                    .consumerMainThread(C2S_LexNinjiaPresetAction::handle).add();
 
             CHANNEL.messageBuilder(C2S_UseCharacterSkill.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
                     .encoder(C2S_UseCharacterSkill::encode)
@@ -211,6 +216,11 @@ public class NetworkHandler {
                     .decoder(S2C_SyncSelectedCharacter::decode)
                     .consumerMainThread(S2C_SyncSelectedCharacter::handle).add();
 
+            CHANNEL.messageBuilder(S2C_SyncPlayerCharacterSkin.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SyncPlayerCharacterSkin::encode)
+                    .decoder(S2C_SyncPlayerCharacterSkin::decode)
+                    .consumerMainThread(S2C_SyncPlayerCharacterSkin::handle).add();
+
             CHANNEL.messageBuilder(S2C_OpenCharacterSelection.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_OpenCharacterSelection::encode)
                     .decoder(S2C_OpenCharacterSelection::decode)
@@ -230,6 +240,11 @@ public class NetworkHandler {
                     .encoder(S2C_OpenLexNinjiaShop::encode)
                     .decoder(S2C_OpenLexNinjiaShop::decode)
                     .consumerMainThread(S2C_OpenLexNinjiaShop::handle).add();
+
+            CHANNEL.messageBuilder(S2C_OpenLexNinjiaPresets.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_OpenLexNinjiaPresets::encode)
+                    .decoder(S2C_OpenLexNinjiaPresets::decode)
+                    .consumerMainThread(S2C_OpenLexNinjiaPresets::handle).add();
 
             CHANNEL.messageBuilder(S2C_SyncLexNinjiaCurrency.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_SyncLexNinjiaCurrency::encode)
@@ -316,6 +331,21 @@ public class NetworkHandler {
                     .decoder(S2C_LunaRevealEntities::decode)
                     .consumerMainThread(S2C_LunaRevealEntities::handle).add();
 
+            CHANNEL.messageBuilder(S2C_LunaBowVisualState.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_LunaBowVisualState::encode)
+                    .decoder(S2C_LunaBowVisualState::decode)
+                    .consumerMainThread(S2C_LunaBowVisualState::handle).add();
+
+            CHANNEL.messageBuilder(S2C_SkillModelVisual.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SkillModelVisual::encode)
+                    .decoder(S2C_SkillModelVisual::decode)
+                    .consumerMainThread(S2C_SkillModelVisual::handle).add();
+
+            CHANNEL.messageBuilder(S2C_SyncHeldToolVisual.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SyncHeldToolVisual::encode)
+                    .decoder(S2C_SyncHeldToolVisual::decode)
+                    .consumerMainThread(S2C_SyncHeldToolVisual::handle).add();
+
             CHANNEL.messageBuilder(S2C_SyncVyronState.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_SyncVyronState::encode)
                     .decoder(S2C_SyncVyronState::decode)
@@ -340,6 +370,11 @@ public class NetworkHandler {
                     .encoder(S2C_HackclawPathLines::encode)
                     .decoder(S2C_HackclawPathLines::decode)
                     .consumerMainThread(S2C_HackclawPathLines::handle).add();
+
+            CHANNEL.messageBuilder(S2C_HackclawCoreVisualState.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_HackclawCoreVisualState::encode)
+                    .decoder(S2C_HackclawCoreVisualState::decode)
+                    .consumerMainThread(S2C_HackclawCoreVisualState::handle).add();
 
             CHANNEL.messageBuilder(S2C_NoxRevealPosition.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_NoxRevealPosition::encode)

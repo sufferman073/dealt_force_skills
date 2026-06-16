@@ -87,7 +87,7 @@ public final class ModCharacters {
                     new SkillDefinition(SkillSlot.CORE,
                             "character.dealt_force_skills.uluru.skill.loitering_missile",
                             "character.dealt_force_skills.uluru.skill.loitering_missile.desc",
-                            120 * 20,
+                            90 * 20,
                             true)
             )
     ));

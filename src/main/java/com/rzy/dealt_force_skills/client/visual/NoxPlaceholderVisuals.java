@@ -5,8 +5,10 @@ import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.nox.NoxTool;
 import com.rzy.dealt_force_skills.client.character.ClientNoxHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -20,12 +22,19 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxPlaceholderVisuals {
+    private static final ResourceLocation ROTOR_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "nox_rotor");
+    private static final ResourceLocation FLASH_GRENADE_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "nox_flash_grenade");
+
     private NoxPlaceholderVisuals() {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderHand(RenderHandEvent event) {
-        if (!ClientNoxHudState.hasEquippedTool()) {
+        boolean flashAction = ClientToolReleaseAction.isActive(
+                ClientToolReleaseAction.Action.NOX_FLASH_GRENADE);
+        if (!ClientNoxHudState.hasEquippedTool() && !flashAction) {
             return;
         }
         event.setCanceled(true);
@@ -35,7 +44,7 @@ public final class NoxPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        NoxTool tool = ClientNoxHudState.equippedTool();
+        NoxTool tool = flashAction ? NoxTool.FLASH_GRENADE : ClientNoxHudState.equippedTool();
         if (tool == NoxTool.ROTOR) {
             poseStack.translate(0.42D, -0.16D, -0.62D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-20.0F));
@@ -49,24 +58,44 @@ public final class NoxPlaceholderVisuals {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(tool),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
+        ClientToolModelAnimationState.AnimationFrame frame = flashAction
+                ? ClientToolReleaseAction.frame(
+                        ClientToolReleaseAction.Action.NOX_FLASH_GRENADE,
+                        animationFor(tool),
+                        (minecraft.level.getGameTime() + event.getPartialTick()) / 20.0F)
+                : new ClientToolModelAnimationState.AnimationFrame(
+                        animationFor(tool),
+                        (minecraft.level.getGameTime() + event.getPartialTick()) / 20.0F
+                                * ClientToolModelAnimationState.FAST_PLAYBACK_SPEED);
+        boolean rendered = tool != NoxTool.NONE && BlockbenchAnimatedModelRenderer.render(
+                modelFor(tool),
+                frame.animation(),
+                frame.seconds(),
                 poseStack,
                 event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
+                event.getPackedLight()
         );
+        if (!rendered) {
+            minecraft.getItemRenderer().renderStatic(
+                    minecraft.player,
+                    placeholderStack(tool),
+                    ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
+                    false,
+                    poseStack,
+                    event.getMultiBufferSource(),
+                    minecraft.level,
+                    event.getPackedLight(),
+                    OverlayTexture.NO_OVERLAY,
+                    0
+            );
+        }
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (ClientNoxHudState.hasEquippedTool()) {
+        if (ClientNoxHudState.hasEquippedTool()
+                || ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.NOX_FLASH_GRENADE)) {
             event.setCanceled(true);
         }
     }
@@ -77,5 +106,16 @@ public final class NoxPlaceholderVisuals {
             case FLASH_GRENADE -> new ItemStack(Items.GLOWSTONE_DUST);
             case NONE -> ItemStack.EMPTY;
         };
+    }
+
+    private static ResourceLocation modelFor(NoxTool tool) {
+        return switch (tool) {
+            case ROTOR -> ROTOR_MODEL;
+            case FLASH_GRENADE, NONE -> FLASH_GRENADE_MODEL;
+        };
+    }
+
+    private static String animationFor(NoxTool tool) {
+        return tool == NoxTool.ROTOR ? "idle" : "idle";
     }
 }

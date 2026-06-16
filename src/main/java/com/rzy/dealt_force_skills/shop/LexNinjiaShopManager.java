@@ -2,14 +2,20 @@ package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaArt;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
+import com.rzy.dealt_force_skills.network.C2S_LexNinjiaPresetAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_OpenLexNinjiaShop;
+import com.rzy.dealt_force_skills.network.S2C_OpenLexNinjiaPresets;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class LexNinjiaShopManager {
-    private static final long MIND_EXPANSION_PRICE = 5000L;
+    private static final long MIND_EXPANSION_BASE_PRICE = 1500L;
+    private static final long MIND_EXPANSION_PRICE_STEP = 650L;
+    private static final long SCIENTIFIC_TOOL_PURCHASE_PRICE = 6000L;
+    private static final long SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE = 3000L;
+    private static final long SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP = 1500L;
 
     private LexNinjiaShopManager() {
     }
@@ -34,6 +40,18 @@ public final class LexNinjiaShopManager {
             return;
         }
         if (action == LexNinjiaShopAction.EXPAND_MIND) {
+            expandMind(player);
+            return;
+        }
+        if (action == LexNinjiaShopAction.BUY_SCIENTIFIC_TOOL) {
+            buyScientificTool(player);
+            return;
+        }
+        if (action == LexNinjiaShopAction.UPGRADE_SCIENTIFIC_TOOL) {
+            upgradeScientificTool(player);
+            return;
+        }
+        if (artId == null || artId.isBlank()) {
             syncAndReopen(player);
             return;
         }
@@ -89,7 +107,7 @@ public final class LexNinjiaShopManager {
             syncAndReopen(player);
             return;
         }
-        long price = MIND_EXPANSION_PRICE * (expansions + 1L);
+        long price = mindExpansionPrice(expansions);
         if (!LexNinjiaCurrencyManager.trySpend(player, price)) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia_shop.not_enough_lotus"), true);
             syncAndReopen(player);
@@ -97,6 +115,78 @@ public final class LexNinjiaShopManager {
         }
         LexNinjiaStateManager.expandMind(player);
         syncAndReopen(player);
+    }
+
+    private static void buyScientificTool(ServerPlayer player) {
+        if (LexNinjiaStateManager.hasScientificTool(player)) {
+            syncAndReopen(player);
+            return;
+        }
+        if (!LexNinjiaCurrencyManager.trySpend(player, SCIENTIFIC_TOOL_PURCHASE_PRICE)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia_shop.not_enough_lotus"), true);
+            syncAndReopen(player);
+            return;
+        }
+        LexNinjiaStateManager.buyScientificTool(player);
+        syncAndReopen(player);
+    }
+
+    private static void upgradeScientificTool(ServerPlayer player) {
+        int level = LexNinjiaStateManager.scientificToolLevel(player);
+        if (level < 0 || level >= LexNinjiaStateManager.SCIENTIFIC_TOOL_MAX_LEVEL) {
+            syncAndReopen(player);
+            return;
+        }
+        long price = scientificToolUpgradePrice(level);
+        if (!LexNinjiaCurrencyManager.trySpend(player, price)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia_shop.not_enough_lotus"), true);
+            syncAndReopen(player);
+            return;
+        }
+        LexNinjiaStateManager.upgradeScientificTool(player);
+        syncAndReopen(player);
+    }
+
+    public static long mindExpansionPrice(int currentLevel) {
+        return MIND_EXPANSION_BASE_PRICE + Math.max(0, currentLevel) * MIND_EXPANSION_PRICE_STEP;
+    }
+
+    public static long scientificToolPurchasePrice() {
+        return SCIENTIFIC_TOOL_PURCHASE_PRICE;
+    }
+
+    public static long scientificToolUpgradePrice(int currentLevel) {
+        return SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE
+                + Math.max(0, currentLevel) * SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP;
+    }
+
+    public static void handlePresetAction(ServerPlayer player, C2S_LexNinjiaPresetAction action) {
+        if (!shouldOpen(player)) {
+            return;
+        }
+        switch (action.action()) {
+            case OPEN_MENU -> openPresets(player, false);
+            case OPEN_CONFIG -> openPresets(player, true);
+            case SAVE -> {
+                LexNinjiaStateManager.saveScientificPreset(player, action.slot(), action.name(), action.inputs());
+                openPresets(player, true);
+            }
+            case EXECUTE -> {
+                LexNinjiaStateManager.executeScientificPreset(player, action.slot());
+                LexNinjiaCurrencyManager.sync(player);
+            }
+        }
+    }
+
+    private static void openPresets(ServerPlayer player, boolean configure) {
+        if (!LexNinjiaStateManager.hasScientificTool(player)
+                || (!configure && player.isCreative())) {
+            return;
+        }
+        NetworkHandler.sendToPlayer(new S2C_OpenLexNinjiaPresets(
+                configure,
+                LexNinjiaStateManager.shopData(player)
+        ), player);
     }
 
     private static void syncAndReopen(ServerPlayer player) {

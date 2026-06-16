@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.stinger.StingerTool;
 import com.rzy.dealt_force_skills.character.stinger.StingerToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientStingerHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_StingerToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
@@ -24,6 +25,8 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class StingerInputHandler {
     private static final int SMOKE_EQUIP_HOLD_TICKS = 8;
+    private static final int SMOKE_RELEASE_TICKS = 3;
+    private static final int STIM_PRIME_TICKS = 4;
     private static final int DRONE_GUIDED_HOLD_TICKS = 8;
     private static final int CORE_LONG_HOLD_TICKS = 15;
     private static final DustParticleOptions DOWNED_MARKER = new DustParticleOptions(new Vector3f(0.28f, 0.86f, 1.0f), 1.25f);
@@ -83,9 +86,12 @@ public final class StingerInputHandler {
             if (event.getAction() != GLFW.GLFW_PRESS) {
                 return;
             }
-            NetworkHandler.sendToServer(new C2S_StingerToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? StingerToolAction.THROW_SMOKE_GRENADE
-                    : StingerToolAction.STOW_TOOL));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginSmokeThrow(true);
+            } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE);
+                NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.STOW_TOOL));
+            }
             return;
         }
 
@@ -106,9 +112,11 @@ public final class StingerInputHandler {
         }
 
         if (tool == StingerTool.STIM_GUN && event.getAction() == GLFW.GLFW_PRESS) {
-            NetworkHandler.sendToServer(new C2S_StingerToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? StingerToolAction.FIRE_STIM_GUN
-                    : StingerToolAction.TOGGLE_STIM_MODE));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginStimFire();
+            } else {
+                NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.TOGGLE_STIM_MODE));
+            }
         }
     }
 
@@ -126,16 +134,17 @@ public final class StingerInputHandler {
         StingerTool tool = ClientStingerHudState.equippedTool();
         if (event.isAttack()) {
             if (tool == StingerTool.SMOKE_GRENADE) {
-                NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.THROW_SMOKE_GRENADE));
+                beginSmokeThrow(true);
             } else if (tool == StingerTool.SMOKE_DRONE) {
                 NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.LAUNCH_SMOKE_DRONE, false));
             } else if (tool == StingerTool.STIM_GUN) {
-                NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.FIRE_STIM_GUN));
+                beginStimFire();
             }
         } else if (event.isUseItem()) {
             if (tool == StingerTool.STIM_GUN) {
                 NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.TOGGLE_STIM_MODE));
             } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE);
                 NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.STOW_TOOL));
             }
         }
@@ -167,9 +176,29 @@ public final class StingerInputHandler {
         }
 
         if (active1WasDown && active1HeldTicks < SMOKE_EQUIP_HOLD_TICKS) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1);
+            beginSmokeThrow(false);
         }
         resetActive1();
+    }
+
+    private static void beginSmokeThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.STINGER_SMOKE_GRENADE,
+                SMOKE_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_StingerToolAction(
+                                StingerToolAction.THROW_SMOKE_GRENADE))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1));
+    }
+
+    private static void beginStimFire() {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.STINGER_STIM_PRIME,
+                STIM_PRIME_TICKS,
+                () -> {
+                    ClientToolReleaseAction.play(ClientToolReleaseAction.Action.STINGER_STIM_FIRE);
+                    NetworkHandler.sendToServer(new C2S_StingerToolAction(StingerToolAction.FIRE_STIM_GUN));
+                });
     }
 
     private static void handleActive2Key() {

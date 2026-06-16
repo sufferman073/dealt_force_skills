@@ -7,6 +7,7 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_MorseMarkers;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.util.ReconRevealThrottle;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -14,6 +15,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -37,7 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
+public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Float> DATA_FACING_X =
+            SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_FACING_Z =
+            SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
     public static final double RANGE = 75.0D;
     private static final double HALF_ANGLE_COS = Math.cos(Math.toRadians(55.0D));
     private static final int SCAN_TICKS = 4 * 20;
@@ -62,7 +70,7 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
     public MorseSonarDetectorEntity(EntityType<? extends MorseSonarDetectorEntity> type, Level level, LivingEntity owner, Vec3 facing) {
         this(type, level);
         ownerId = owner.getUUID();
-        this.facing = horizontalFacing(facing);
+        setFacing(facing);
     }
 
     @Override
@@ -72,6 +80,8 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_FACING_X, 0.0F);
+        entityData.define(DATA_FACING_Z, 1.0F);
     }
 
     @Override
@@ -131,7 +141,7 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        facing = horizontalFacing(new Vec3(tag.getDouble("FacingX"), 0.0D, tag.getDouble("FacingZ")));
+        setFacing(new Vec3(tag.getDouble("FacingX"), 0.0D, tag.getDouble("FacingZ")));
         elapsedTicks = tag.getInt("ElapsedTicks");
     }
 
@@ -172,6 +182,11 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
         return Math.max(0, TOTAL_TICKS - elapsedTicks);
     }
 
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        return horizontalFacing(new Vec3(entityData.get(DATA_FACING_X), 0.0D, entityData.get(DATA_FACING_Z)));
+    }
+
     public static MorseSonarDetectorEntity activeFor(ServerPlayer owner) {
         MorseSonarDetectorEntity detector = ACTIVE.get(owner.getUUID());
         if (detector == null || detector.isRemoved()) {
@@ -198,6 +213,9 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
             }
             ServerPlayer owner = detector.owner(level);
             if (owner == null || owner == actor || !detector.inCone(actor)) {
+                continue;
+            }
+            if (!ReconRevealThrottle.tryStart(actor, REVEAL_TICKS)) {
                 continue;
             }
             NetworkHandler.sendToPlayer(new S2C_MorseMarkers(List.of(
@@ -235,6 +253,7 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
         List<MorseWorldMarker> markers = level.getEntitiesOfClass(LivingEntity.class, box,
                         target -> !(target instanceof Player) && TargetingUtil.isTargetableLiving(target) && inCone(target))
                 .stream()
+                .filter(target -> ReconRevealThrottle.tryStart(target, REVEAL_TICKS))
                 .map(target -> new MorseWorldMarker(MorseMarkerType.SONAR_REVEAL, target.getId(), target.position(), REVEAL_TICKS))
                 .toList();
         if (!markers.isEmpty()) {
@@ -321,5 +340,11 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier {
     private static Vec3 horizontalFacing(Vec3 input) {
         Vec3 horizontal = new Vec3(input.x, 0.0D, input.z);
         return horizontal.lengthSqr() < 0.0001D ? new Vec3(0.0D, 0.0D, 1.0D) : horizontal.normalize();
+    }
+
+    private void setFacing(Vec3 input) {
+        facing = horizontalFacing(input);
+        entityData.set(DATA_FACING_X, (float) facing.x);
+        entityData.set(DATA_FACING_Z, (float) facing.z);
     }
 }

@@ -10,6 +10,9 @@ import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
+import com.rzy.dealt_force_skills.skill.SkillModelVisual;
+import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -159,6 +162,7 @@ public final class CatDadStateManager {
         CompoundTag tag = data(player);
         tag.putLong(BLOCK_UNTIL, player.level().getGameTime() + BLOCK_WINDOW_TICKS);
         tag.putBoolean(BLOCK_USED, false);
+        SkillModelVisualSync.play(player, SkillModelVisual.CATDAD_GUARD, BLOCK_WINDOW_TICKS);
         play(player, ModSounds.CATDAD_BLOCK_START.get(), 0.8F, 1.0F);
         return true;
     }
@@ -329,6 +333,7 @@ public final class CatDadStateManager {
     }
 
     private static boolean performHiss(ServerPlayer player, int stage) {
+        SkillModelVisualSync.play(player, SkillModelVisual.CATDAD_GUARD, 12);
         LivingEntity target = findLookTarget(player, HISS_RANGE, 0.85D);
         if (target == null) {
             play(player, ModSounds.CATDAD_HISS.get(), 0.65F, 0.85F);
@@ -360,6 +365,16 @@ public final class CatDadStateManager {
     }
 
     private static boolean performEmpoweredStrike(ServerPlayer player) {
+        SkillModelVisualSync.play(player, SkillModelVisual.CATDAD_CLAW);
+        enterHissCooldown(player);
+        SkillAnimationScheduler.schedule(
+                player,
+                SkillModelVisual.CATDAD_CLAW.impactTick(),
+                CatDadStateManager::performEmpoweredStrikeImpact);
+        return true;
+    }
+
+    private static void performEmpoweredStrikeImpact(ServerPlayer player) {
         Vec3 look = horizontalLook(player);
         AABB search = player.getBoundingBox().expandTowards(look.scale(EMPOWERED_STRIKE_RANGE)).inflate(1.0D, 1.2D, 1.0D);
         double attack = Math.max(1.0D, player.getAttributeValue(Attributes.ATTACK_DAMAGE));
@@ -386,8 +401,6 @@ public final class CatDadStateManager {
             hits++;
         }
         play(player, hits > 0 ? ModSounds.CATDAD_POWER_STRIKE.get() : ModSounds.CATDAD_HISS.get(), 0.95F, 1.0F);
-        enterHissCooldown(player);
-        return true;
     }
 
     private static void enterHissCooldown(ServerPlayer player) {

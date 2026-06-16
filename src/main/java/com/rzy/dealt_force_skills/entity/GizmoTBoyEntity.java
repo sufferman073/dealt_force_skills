@@ -9,6 +9,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -32,7 +35,11 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 
-public class GizmoTBoyEntity extends Entity implements ItemSupplier {
+public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Float> DATA_DIR_X =
+            SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DATA_DIR_Z =
+            SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
     private static final int LIFE_TICKS = 30 * 20;
     private static final int AIM_TICKS = 6;
     private static final int CRAWL_SOUND_INTERVAL_TICKS = 7;
@@ -67,6 +74,8 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier {
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_DIR_X, 0.0F);
+        entityData.define(DATA_DIR_Z, 1.0F);
     }
 
     @Override
@@ -131,6 +140,7 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier {
         health = tag.contains("Health") ? tag.getFloat("Health") : 20.0f;
         dirX = tag.getDouble("DirX");
         dirZ = tag.contains("DirZ") ? tag.getDouble("DirZ") : 1.0D;
+        syncDirection();
         aimTicks = tag.getInt("AimTicks");
         aimTargetId = tag.contains("AimTarget") ? tag.getInt("AimTarget") : -1;
     }
@@ -160,7 +170,19 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier {
         horizontal = horizontal.normalize();
         dirX = horizontal.x;
         dirZ = horizontal.z;
+        syncDirection();
         setDeltaMovement(dirX * SPEED, 0.0D, dirZ * SPEED);
+    }
+
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        Vec3 direction = new Vec3(entityData.get(DATA_DIR_X), 0.0D, entityData.get(DATA_DIR_Z));
+        return direction.lengthSqr() < 0.0001D ? new Vec3(0.0D, 0.0D, 1.0D) : direction.normalize();
+    }
+
+    @Override
+    public float blockbenchYawOffsetDegrees() {
+        return 180.0F;
     }
 
     public boolean isOwnedBy(UUID owner) {
@@ -236,6 +258,12 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier {
             dirX = -dirX;
             dirZ = -dirZ;
         }
+        syncDirection();
+    }
+
+    private void syncDirection() {
+        entityData.set(DATA_DIR_X, (float) dirX);
+        entityData.set(DATA_DIR_Z, (float) dirZ);
     }
 
     private void sprayWeb(ServerLevel level) {

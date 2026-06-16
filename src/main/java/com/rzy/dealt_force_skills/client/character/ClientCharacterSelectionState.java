@@ -34,6 +34,7 @@ public final class ClientCharacterSelectionState {
         selectedCharacterId = null;
         receivedServerState = false;
         promptedForCurrentWorld = false;
+        ClientCharacterSkinState.clear();
         ClientSinevaHudState.reset();
         ClientUluruHudState.reset();
         ClientDWolfHudState.reset();
@@ -60,6 +61,7 @@ public final class ClientCharacterSelectionState {
     public static void syncSelectedCharacter(String characterId) {
         receivedServerState = true;
         selectedCharacterId = characterId == null || characterId.isBlank() ? null : characterId;
+        ClientCharacterSkinState.syncLocalSelectedCharacter(selectedCharacterId);
         if (!isSelectedCharacter(ModCharacters.SINEVA_ID)) {
             ClientSinevaHudState.reset();
         }
@@ -141,11 +143,20 @@ public final class ClientCharacterSelectionState {
     }
 
     public static void openSelectionScreen() {
+        openSelectionScreen(false);
+    }
+
+    public static void openReselectionScreen() {
+        openSelectionScreen(true);
+    }
+
+    private static void openSelectionScreen(boolean allowReselection) {
         if (UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
             return;
         }
 
-        if (!receivedServerState || (hasSelectedCharacter() && !canReselectInCurrentMode())) {
+        if (!receivedServerState
+                || (hasSelectedCharacter() && !allowReselection && !canReselectInCurrentMode())) {
             return;
         }
 

@@ -6,12 +6,10 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
 import com.rzy.dealt_force_skills.client.RaptorFalconController;
 import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -21,6 +19,9 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class RaptorPlaceholderVisuals {
+    private static final ResourceLocation FALCON_DRONE_MODEL = model("raptor_falcon_drone");
+    private static final ResourceLocation PULSE_GRENADE_MODEL = model("raptor_pulse_grenade");
+
     private RaptorPlaceholderVisuals() {
     }
 
@@ -36,7 +37,9 @@ public final class RaptorPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        RaptorTool tool = ClientRaptorHudState.equippedTool();
+        boolean pulseAction = ClientToolReleaseAction.isActive(
+                ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE);
+        RaptorTool tool = pulseAction ? RaptorTool.PULSE_GRENADE : ClientRaptorHudState.equippedTool();
         if (tool == RaptorTool.FALCON_DRONE) {
             poseStack.translate(0.40D, -0.20D, -0.66D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-18.0F));
@@ -50,18 +53,15 @@ public final class RaptorPlaceholderVisuals {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(tool),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        ClientToolModelAnimationState.AnimationFrame frame = pulseAction
+                ? ClientToolReleaseAction.frame(
+                        ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE,
+                        animationFor(tool),
+                        seconds)
+                : new ClientToolModelAnimationState.AnimationFrame(animationFor(tool), seconds);
+        BlockbenchAnimatedModelRenderer.render(modelFor(tool), frame.animation(), frame.seconds(),
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
@@ -73,14 +73,26 @@ public final class RaptorPlaceholderVisuals {
     }
 
     private static boolean shouldRenderPlaceholder() {
-        return ClientRaptorHudState.hasEquippedTool() || RaptorFalconController.isControlling();
+        return ClientRaptorHudState.hasEquippedTool()
+                || RaptorFalconController.isControlling()
+                || ClientToolReleaseAction.isActive(ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE);
     }
 
-    private static ItemStack placeholderStack(RaptorTool tool) {
+    private static ResourceLocation modelFor(RaptorTool tool) {
         return switch (tool) {
-            case FALCON_DRONE -> new ItemStack(Items.OBSERVER);
-            case PULSE_GRENADE -> new ItemStack(Items.PRISMARINE_CRYSTALS);
-            case NONE -> ItemStack.EMPTY;
+            case FALCON_DRONE -> FALCON_DRONE_MODEL;
+            case PULSE_GRENADE, NONE -> PULSE_GRENADE_MODEL;
         };
+    }
+
+    private static String animationFor(RaptorTool tool) {
+        return switch (tool) {
+            case FALCON_DRONE -> "idle_flight";
+            case PULSE_GRENADE, NONE -> "idle_hold";
+        };
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }

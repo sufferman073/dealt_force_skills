@@ -62,16 +62,27 @@ logs/
 crash-reports/
 out/
 bin/
+/test_environment/
+/.forge_src_check/
 
 .idea/
 .vscode/
+/.claude/
+/.kilo/
 *.iml
 
+/forge-1.19.2-43.5.2-mdk/
 other_compact_mods/
 characters_records/
 items_records/
 knowledge/
 port_backups/
+/com/
+/net/
+/docs/
+/scripts/
+/崩溃日志/
+/问题图片/
 旧版本/
 备份/
 设计稿/
@@ -81,10 +92,17 @@ port_backups/
 Codex任务记录/
 
 教导日志.md
+/AGENTS.md
 task_plan.md
 progress.md
 findings.md
 存在的问题.txt
+/需要测试的点.txt
+/FIX_SUMMARY.txt
+/changelog.txt
+/CREDITS.txt
+/LICENSE.txt
+/README.txt
 
 .env
 *.env
@@ -94,3 +112,26 @@ secrets.*
 *token*
 *password*
 *secret*
+
+# Source-tree hardening. `src/main/**` is public, so block accidental
+# generated files, editor backups, OS metadata, and archives inside it.
+/src/**/.DS_Store
+/src/**/Thumbs.db
+/src/**/desktop.ini
+/src/**/__pycache__/
+/src/**/.cache/
+/src/**/*.class
+/src/**/*.jar
+/src/**/*.zip
+/src/**/*.7z
+/src/**/*.rar
+/src/**/*.log
+/src/**/*.tmp
+/src/**/*.temp
+/src/**/*.bak
+/src/**/*.old
+/src/**/*.orig
+/src/**/*.rej
+/src/**/*.swp
+/src/**/*.swo
+/src/**/*~

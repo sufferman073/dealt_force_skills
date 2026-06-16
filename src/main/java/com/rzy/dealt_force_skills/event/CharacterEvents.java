@@ -2,6 +2,7 @@ package com.rzy.dealt_force_skills.event;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.CharacterSkinSync;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
@@ -28,6 +29,7 @@ import com.rzy.dealt_force_skills.network.S2C_SyncSelectedCharacter;
 import com.rzy.dealt_force_skills.shop.HaffCoinManager;
 import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
 import com.rzy.dealt_force_skills.shop.UndeadSoulManager;
+import com.rzy.dealt_force_skills.skill.HeldToolVisualSync;
 import com.rzy.dealt_force_skills.skill.SkillDispatcher;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
@@ -64,6 +66,9 @@ public class CharacterEvents {
         HaffCoinManager.copy(event.getOriginal(), event.getEntity());
         UndeadSoulManager.copy(event.getOriginal(), event.getEntity());
         LexNinjiaCurrencyManager.copy(event.getOriginal(), event.getEntity());
+        if (event.getEntity() instanceof ServerPlayer player) {
+            CharacterSkinSync.syncToTracking(player);
+        }
     }
 
     @SubscribeEvent
@@ -71,12 +76,23 @@ public class CharacterEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             String selectedCharacterId = CharacterSelectionManager.getSelectedCharacterId(player).orElse("");
             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(selectedCharacterId), player);
+            CharacterSkinSync.syncAllTo(player);
+            CharacterSkinSync.syncToTracking(player);
             HaffCoinManager.sync(player);
             UndeadSoulManager.sync(player);
             LexNinjiaCurrencyManager.sync(player);
 
             CharacterSelectionManager.getSelectedCharacter(player)
                     .ifPresent(character -> SkillDispatcher.onCharacterSelected(player, character));
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerStartTracking(PlayerEvent.StartTracking event) {
+        if (event.getEntity() instanceof ServerPlayer watcher
+                && event.getTarget() instanceof ServerPlayer target) {
+            CharacterSkinSync.syncOneTo(target, watcher);
+            HeldToolVisualSync.syncOneTo(target, watcher);
         }
     }
 
@@ -111,6 +127,7 @@ public class CharacterEvents {
             VlinderStateManager.syncToClient(player);
             TempestStateManager.syncToClient(player);
             LexNinjiaStateManager.syncToClient(player);
+            HeldToolVisualSync.sync(player);
         }
     }
 }

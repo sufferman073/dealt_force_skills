@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -10,6 +11,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
@@ -28,10 +30,13 @@ import net.minecraft.world.scores.Scoreboard;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,10 +45,12 @@ import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HelmetVisionClient {
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final double THERMAL_HIGHLIGHT_RANGE = 96.0D;
     private static final int HEARING_REVEAL_COLOR = 0xFF7EE8FF;
     private static final String THERMAL_TEAM_NAME = "dfs_thermal";
     private static final Map<Integer, ThermalHighlightState> THERMAL_RESTORE = new HashMap<>();
+    private static ClientLevel thermalLevel;
 
     private HelmetVisionClient() {
     }
@@ -70,7 +77,26 @@ public final class HelmetVisionClient {
         if (event.phase != TickEvent.Phase.END) {
             return;
         }
-        tickThermalHighlights(Minecraft.getInstance());
+        Minecraft minecraft = Minecraft.getInstance();
+        if (thermalLevel != minecraft.level) {
+            clearThermalHighlightCache();
+            thermalLevel = minecraft.level;
+        }
+        tickThermalHighlights(minecraft);
+    }
+
+    @SubscribeEvent
+    public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
+        clearThermalHighlightCache();
+        thermalLevel = null;
+    }
+
+    @SubscribeEvent
+    public static void onClientLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ClientLevel) {
+            clearThermalHighlightCache();
+            thermalLevel = null;
+        }
     }
 
     @SubscribeEvent
@@ -214,7 +240,11 @@ public final class HelmetVisionClient {
     }
 
     private static void tickThermalHighlights(Minecraft minecraft) {
-        if (minecraft.player == null || minecraft.level == null || !isThermalVisionActive()) {
+        if (minecraft.player == null || minecraft.level == null) {
+            clearThermalHighlightCache();
+            return;
+        }
+        if (!isThermalVisionActive()) {
             restoreThermalHighlights();
             return;
         }
@@ -247,10 +277,15 @@ public final class HelmetVisionClient {
 
     private static void restoreThermalHighlights() {
         Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.level != thermalLevel) {
+            clearThermalHighlightCache();
+            thermalLevel = minecraft.level;
+            return;
+        }
         for (Map.Entry<Integer, ThermalHighlightState> entry : THERMAL_RESTORE.entrySet()) {
             restoreThermalHighlight(minecraft, entry.getKey(), entry.getValue());
         }
-        THERMAL_RESTORE.clear();
+        clearThermalHighlightCache();
     }
 
     private static ThermalHighlightState captureThermalState(Entity entity) {
@@ -260,42 +295,62 @@ public final class HelmetVisionClient {
     }
 
     private static void applyThermalTeam(Entity entity) {
-        Scoreboard scoreboard = entity.level().getScoreboard();
-        PlayerTeam thermalTeam = scoreboard.getPlayerTeam(THERMAL_TEAM_NAME);
-        if (thermalTeam == null) {
-            thermalTeam = scoreboard.addPlayerTeam(THERMAL_TEAM_NAME);
-            thermalTeam.setColor(ChatFormatting.WHITE);
+        try {
+            Scoreboard scoreboard = entity.level().getScoreboard();
+            PlayerTeam thermalTeam = scoreboard.getPlayerTeam(THERMAL_TEAM_NAME);
+            if (thermalTeam == null) {
+                thermalTeam = scoreboard.addPlayerTeam(THERMAL_TEAM_NAME);
+                thermalTeam.setColor(ChatFormatting.WHITE);
+            }
+            String scoreboardName = entity.getScoreboardName();
+            PlayerTeam current = scoreboard.getPlayersTeam(scoreboardName);
+            if (current == thermalTeam) {
+                return;
+            }
+            removeFromTeamIfCurrent(scoreboard, scoreboardName, current);
+            if (scoreboard.getPlayersTeam(scoreboardName) == null) {
+                scoreboard.addPlayerToTeam(scoreboardName, thermalTeam);
+            }
+        } catch (RuntimeException exception) {
+            LOGGER.debug("Failed to apply thermal highlight team to entity {}", entity.getId(), exception);
         }
-        String scoreboardName = entity.getScoreboardName();
-        PlayerTeam current = scoreboard.getPlayersTeam(scoreboardName);
-        if (current == thermalTeam) {
-            return;
-        }
-        if (current != null) {
-            scoreboard.removePlayerFromTeam(scoreboardName, current);
-        }
-        scoreboard.addPlayerToTeam(scoreboardName, thermalTeam);
     }
 
     private static void restoreThermalHighlight(Minecraft minecraft, int entityId, ThermalHighlightState state) {
-        if (minecraft.level == null) {
-            return;
-        }
-        Entity entity = minecraft.level.getEntity(entityId);
-        if (entity != null) {
-            entity.setGlowingTag(state.glowing());
-        }
-        Scoreboard scoreboard = minecraft.level.getScoreboard();
-        PlayerTeam thermalTeam = scoreboard.getPlayerTeam(THERMAL_TEAM_NAME);
-        if (thermalTeam != null) {
-            scoreboard.removePlayerFromTeam(state.scoreboardName(), thermalTeam);
-        }
-        if (!state.teamName().isBlank()) {
-            PlayerTeam originalTeam = scoreboard.getPlayerTeam(state.teamName());
-            if (originalTeam != null) {
-                scoreboard.addPlayerToTeam(state.scoreboardName(), originalTeam);
+        try {
+            if (minecraft.level == null || minecraft.level != thermalLevel) {
+                return;
             }
+            Entity entity = minecraft.level.getEntity(entityId);
+            if (entity != null && entity.getScoreboardName().equals(state.scoreboardName())) {
+                entity.setGlowingTag(state.glowing());
+            }
+            Scoreboard scoreboard = minecraft.level.getScoreboard();
+            String scoreboardName = state.scoreboardName();
+            PlayerTeam thermalTeam = scoreboard.getPlayerTeam(THERMAL_TEAM_NAME);
+            removeFromTeamIfCurrent(scoreboard, scoreboardName, thermalTeam);
+
+            PlayerTeam current = scoreboard.getPlayersTeam(scoreboardName);
+            if (!state.teamName().isBlank() && (current == null || current == thermalTeam)) {
+                PlayerTeam originalTeam = scoreboard.getPlayerTeam(state.teamName());
+                if (originalTeam != null && scoreboard.getPlayersTeam(scoreboardName) == current) {
+                    scoreboard.addPlayerToTeam(scoreboardName, originalTeam);
+                }
+            }
+        } catch (RuntimeException exception) {
+            LOGGER.debug("Failed to restore thermal highlight for entity {} ({})",
+                    entityId, state.scoreboardName(), exception);
         }
+    }
+
+    private static void removeFromTeamIfCurrent(Scoreboard scoreboard, String entry, PlayerTeam targetTeam) {
+        if (targetTeam != null && scoreboard.getPlayersTeam(entry) == targetTeam) {
+            scoreboard.removePlayerFromTeam(entry, targetTeam);
+        }
+    }
+
+    private static void clearThermalHighlightCache() {
+        THERMAL_RESTORE.clear();
     }
 
     private record ThermalHighlightState(boolean glowing, String scoreboardName, String teamName) {

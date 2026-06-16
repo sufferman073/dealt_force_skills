@@ -1,0 +1,92 @@
+package com.rzy.dealt_force_skills.shop;
+
+import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
+import com.rzy.dealt_force_skills.character.undead.UndeadStateManager;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Predicate;
+
+public final class DealtCurrencyRegistry {
+    private static final List<DealtCurrencyProvider> PROVIDERS = new ArrayList<>();
+
+    static {
+        registerBuiltin(new SimpleProvider(
+                "lex_ninjia_lotus_boxes",
+                "currency.dealt_force_skills.lotus_boxes",
+                LexNinjiaStateManager::isLexNinjia,
+                LexNinjiaCurrencyManager::grant
+        ));
+        registerBuiltin(new SimpleProvider(
+                "undead_souls",
+                "currency.dealt_force_skills.souls",
+                UndeadStateManager::isUndead,
+                UndeadSoulManager::grant
+        ));
+        registerBuiltin(new SimpleProvider(
+                "haff_coins",
+                "currency.dealt_force_skills.haff_coins",
+                player -> !LexNinjiaStateManager.isLexNinjia(player)
+                        && !UndeadStateManager.isUndead(player),
+                HaffCoinManager::grant
+        ));
+    }
+
+    private DealtCurrencyRegistry() {
+    }
+
+    public static synchronized void register(DealtCurrencyProvider provider) {
+        DealtCurrencyProvider safe = Objects.requireNonNull(provider, "provider");
+        ensureUniqueId(safe.id());
+        PROVIDERS.add(0, safe);
+    }
+
+    public static synchronized Optional<DealtCurrencyProvider> find(ServerPlayer player) {
+        return PROVIDERS.stream().filter(provider -> provider.supports(player)).findFirst();
+    }
+
+    public static synchronized List<DealtCurrencyProvider> providers() {
+        return List.copyOf(PROVIDERS);
+    }
+
+    private static void registerBuiltin(DealtCurrencyProvider provider) {
+        ensureUniqueId(provider.id());
+        PROVIDERS.add(provider);
+    }
+
+    private static void ensureUniqueId(String id) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("Currency provider ID cannot be blank");
+        }
+        if (PROVIDERS.stream().anyMatch(provider -> provider.id().equals(id))) {
+            throw new IllegalArgumentException("Duplicate currency provider ID: " + id);
+        }
+    }
+
+    private record SimpleProvider(
+            String id,
+            String nameKey,
+            Predicate<ServerPlayer> supports,
+            BiFunction<ServerPlayer, Long, Long> grant
+    ) implements DealtCurrencyProvider {
+        @Override
+        public Component displayName() {
+            return Component.translatable(nameKey);
+        }
+
+        @Override
+        public boolean supports(ServerPlayer player) {
+            return supports.test(player);
+        }
+
+        @Override
+        public long grant(ServerPlayer player, long amount) {
+            return grant.apply(player, amount);
+        }
+    }
+}

@@ -2,9 +2,12 @@ package com.rzy.dealt_force_skills.client.screen;
 
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaArt;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaSchool;
+import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.network.C2S_LexNinjiaShopAction;
+import com.rzy.dealt_force_skills.network.C2S_LexNinjiaPresetAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.shop.LexNinjiaShopAction;
+import com.rzy.dealt_force_skills.shop.LexNinjiaShopManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -22,7 +25,7 @@ public final class LexNinjiaShopScreen extends Screen {
     private static final int MAX_PANEL_HEIGHT = 300;
     private static final int SCREEN_MARGIN = 12;
     private static final int CONTENT_TOP = 58;
-    private static final int CONTENT_BOTTOM_PADDING = 32;
+    private static final int CONTENT_BOTTOM_PADDING = 58;
     private static final int ENTRY_GAP = 3;
     private static final int MIN_ROW_HEIGHT = 42;
     private static final int BUTTON_WIDTH = 62;
@@ -74,11 +77,52 @@ public final class LexNinjiaShopScreen extends Screen {
         for (EntryLayout layout : visibleLayouts()) {
             addEntryButton(layout, left, panelWidth);
         }
-        int closeWidth = Math.max(1, Math.min(64, panelWidth - 12));
-        int closeHeight = Math.max(1, Math.min(18, panelHeight - 4));
+        addServiceButtons(left, top, panelWidth, panelHeight);
+        int closeWidth = Math.max(1, Math.min(60, panelWidth - 12));
+        int closeHeight = Math.max(1, Math.min(20, panelHeight - 4));
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
-                .bounds(left + Math.max(0, panelWidth - closeWidth - 6), top + Math.max(0, panelHeight - closeHeight - 6), closeWidth, closeHeight)
+                .bounds(left + Math.max(0, panelWidth - closeWidth - 8),
+                        top + Math.max(0, panelHeight - closeHeight - 30), closeWidth, closeHeight)
                 .build());
+    }
+
+    private void addServiceButtons(int left, int top, int panelWidth, int panelHeight) {
+        int y = top + panelHeight - 50;
+        int mindLevel = data.getInt("MindExpansions");
+        Button mindButton = Button.builder(
+                        Component.translatable("screen.dealt_force_skills.lex_ninjia_shop.expand_mind",
+                                LexNinjiaShopManager.mindExpansionPrice(mindLevel)),
+                        button -> NetworkHandler.sendToServer(new C2S_LexNinjiaShopAction(
+                                "", LexNinjiaShopAction.EXPAND_MIND)))
+                .bounds(left + 8, y, 112, 20)
+                .build();
+        mindButton.active = mindLevel < data.getInt("MindExpansionMax");
+        addRenderableWidget(mindButton);
+
+        int toolLevel = data.getInt("ScientificToolLevel");
+        LexNinjiaShopAction toolAction = toolLevel < 0
+                ? LexNinjiaShopAction.BUY_SCIENTIFIC_TOOL
+                : LexNinjiaShopAction.UPGRADE_SCIENTIFIC_TOOL;
+        long toolPrice = toolLevel < 0
+                ? LexNinjiaShopManager.scientificToolPurchasePrice()
+                : LexNinjiaShopManager.scientificToolUpgradePrice(toolLevel);
+        Component toolText = Component.translatable(toolLevel < 0
+                ? "screen.dealt_force_skills.lex_ninjia_shop.buy_scientific_tool"
+                : "screen.dealt_force_skills.lex_ninjia_shop.upgrade_scientific_tool", toolPrice);
+        Button toolButton = Button.builder(toolText, button -> NetworkHandler.sendToServer(
+                        new C2S_LexNinjiaShopAction("", toolAction)))
+                .bounds(left + 124, y, 156, 20)
+                .build();
+        toolButton.active = toolLevel < LexNinjiaStateManager.SCIENTIFIC_TOOL_MAX_LEVEL;
+        addRenderableWidget(toolButton);
+
+        Button configureButton = Button.builder(
+                        Component.translatable("screen.dealt_force_skills.lex_ninjia_shop.configure_scientific_tool"),
+                        button -> NetworkHandler.sendToServer(C2S_LexNinjiaPresetAction.openConfig()))
+                .bounds(left + 284, y, Math.max(1, panelWidth - 356), 20)
+                .build();
+        configureButton.active = toolLevel >= 0;
+        addRenderableWidget(configureButton);
     }
 
     private void addEntryButton(EntryLayout layout, int panelLeft, int panelWidth) {

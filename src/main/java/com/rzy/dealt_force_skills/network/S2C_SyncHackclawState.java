@@ -19,6 +19,7 @@ public class S2C_SyncHackclawState {
     private final int coreChannelTicks;
     private final int coreActiveTicks;
     private final int coreRound;
+    private final boolean coreScanFound;
     private final int equippedToolOrdinal;
 
     public S2C_SyncHackclawState(
@@ -32,6 +33,7 @@ public class S2C_SyncHackclawState {
             int coreChannelTicks,
             int coreActiveTicks,
             int coreRound,
+            boolean coreScanFound,
             int equippedToolOrdinal
     ) {
         this.knifeCharges = knifeCharges;
@@ -44,6 +46,7 @@ public class S2C_SyncHackclawState {
         this.coreChannelTicks = coreChannelTicks;
         this.coreActiveTicks = coreActiveTicks;
         this.coreRound = coreRound;
+        this.coreScanFound = coreScanFound;
         this.equippedToolOrdinal = equippedToolOrdinal;
     }
 
@@ -58,6 +61,7 @@ public class S2C_SyncHackclawState {
         buf.writeVarInt(msg.coreChannelTicks);
         buf.writeVarInt(msg.coreActiveTicks);
         buf.writeVarInt(msg.coreRound);
+        buf.writeBoolean(msg.coreScanFound);
         buf.writeVarInt(msg.equippedToolOrdinal);
     }
 
@@ -73,6 +77,7 @@ public class S2C_SyncHackclawState {
                 buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt(),
+                buf.readBoolean(),
                 buf.readVarInt()
         );
     }
@@ -91,6 +96,7 @@ public class S2C_SyncHackclawState {
                         msg.coreChannelTicks,
                         msg.coreActiveTicks,
                         msg.coreRound,
+                        msg.coreScanFound,
                         msg.equippedToolOrdinal
                 )
         ));

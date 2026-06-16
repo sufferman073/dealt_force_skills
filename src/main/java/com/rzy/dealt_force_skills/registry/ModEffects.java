@@ -208,7 +208,7 @@ public class ModEffects {
     public static final RegistryObject<MobEffect> CATDAD_DOWNED =
             EFFECTS.register("catdad_downed", CatDadDownedEffect::new);
     public static final RegistryObject<MobEffect> DEPARTMENT_CALIBRATION =
-            EFFECTS.register("department_calibration", () -> new PlannedStatusEffect(MobEffectCategory.HARMFUL, 0xFFD84A));
+            EFFECTS.register("department_calibration", () -> new PlannedStatusEffect(MobEffectCategory.NEUTRAL, 0xFFD84A));
     public static final RegistryObject<MobEffect> DEPARTMENT_VULNERABLE =
             EFFECTS.register("department_vulnerable", () -> new PlannedStatusEffect(MobEffectCategory.HARMFUL, 0xFF6A34));
     public static final RegistryObject<MobEffect> DEPARTMENT_CONCEALMENT =

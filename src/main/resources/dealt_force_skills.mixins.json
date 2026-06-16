@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.rzy.dealt_force_skills.mixin",
+  "refmap": "dealt_force_skills.refmap.json",
+  "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
+  "client": [
+    "client.AbstractClientPlayerSkinMixin",
+    "client.PlayerRendererSkinMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

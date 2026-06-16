@@ -7,7 +7,10 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncLexNinjiaState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillModelVisual;
+import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -63,8 +66,12 @@ import java.util.UUID;
 
 public final class LexNinjiaStateManager {
     public static final int BASE_MIND_CAPACITY = 25;
-    public static final int MAX_FORCED_MIND_EXPANSIONS = 10;
     public static final int MAX_OVERLOAD_MIND = 10;
+    public static final int SCIENTIFIC_TOOL_MAX_LEVEL = 7;
+    public static final int SCIENTIFIC_TOOL_BASE_INPUTS = 5;
+    public static final int SCIENTIFIC_TOOL_BASE_PRESETS = 3;
+    public static final int MAX_FORCED_MIND_EXPANSIONS = Math.max(0,
+            totalEquippableMindCost() - BASE_MIND_CAPACITY - MAX_OVERLOAD_MIND);
     private static final int INPUT_EXPIRY_TICKS = 30 * 20;
     private static final int MAX_STORED_COMBO_INPUTS = 12;
     private static final int STACK_DURATION_TICKS = 10 * 20;
@@ -76,6 +83,8 @@ public final class LexNinjiaStateManager {
     private static final String KNOWN = ROOT + ".known";
     private static final String EQUIPPED = ROOT + ".equipped";
     private static final String MIND_EXPANSIONS = ROOT + ".mind_expansions";
+    private static final String SCIENTIFIC_TOOL_LEVEL = ROOT + ".scientific_tool_level";
+    private static final String SCIENTIFIC_PRESETS = ROOT + ".scientific_presets";
     private static final String FOOD_ART = ROOT + ".food_art";
     private static final String FOOD_LEICRA_REGEN_UNTIL = ROOT + ".food_leicra_regen_until";
     private static final String REVIVE_DISABLED_UNTIL = ROOT + ".revive_disabled_until";
@@ -91,6 +100,16 @@ public final class LexNinjiaStateManager {
     private static final Map<UUID, RuntimeState> RUNTIME = new HashMap<>();
 
     private LexNinjiaStateManager() {
+    }
+
+    private static int totalEquippableMindCost() {
+        int total = 0;
+        for (LexNinjiaArt art : LexNinjiaArt.values()) {
+            if (!art.defaultKnown() && !art.cookRecipe()) {
+                total += art.mindCost();
+            }
+        }
+        return total;
     }
 
     public static boolean isLexNinjia(Player player) {
@@ -133,7 +152,14 @@ public final class LexNinjiaStateManager {
         if (from.contains(EQUIPPED, Tag.TAG_COMPOUND)) {
             to.put(EQUIPPED, from.getCompound(EQUIPPED).copy());
         }
-        to.putInt(MIND_EXPANSIONS, Math.max(0, from.getInt(MIND_EXPANSIONS)));
+        to.putInt(MIND_EXPANSIONS, Mth.clamp(from.getInt(MIND_EXPANSIONS), 0, MAX_FORCED_MIND_EXPANSIONS));
+        if (from.contains(SCIENTIFIC_TOOL_LEVEL, Tag.TAG_INT)) {
+            to.putInt(SCIENTIFIC_TOOL_LEVEL,
+                    Mth.clamp(from.getInt(SCIENTIFIC_TOOL_LEVEL), 0, SCIENTIFIC_TOOL_MAX_LEVEL));
+        }
+        if (from.contains(SCIENTIFIC_PRESETS, Tag.TAG_COMPOUND)) {
+            to.put(SCIENTIFIC_PRESETS, from.getCompound(SCIENTIFIC_PRESETS).copy());
+        }
         to.putFloat(LEICRA, Math.max(0.0F, from.getFloat(LEICRA)));
         RUNTIME.remove(original.getUUID());
     }
@@ -162,8 +188,52 @@ public final class LexNinjiaStateManager {
         regenerateLeicra(player, state, now);
         tickFoundationStacks(player, state, now);
         tickPersistentEffects(player, state, now);
+        if (now % 10L == 0L && (state.hamPowerUntil > now
+                || state.hamBerserkUntil > now
+                || state.hamShadowKickUntil > now
+                || state.hamKillReleaseTick > 0L)) {
+            SkillModelVisualSync.play(player, SkillModelVisual.LEX_HAM_PRESENCE, 14);
+        }
         state.prepared = matchPrepared(player, state, now).orElse(null);
         syncToClient(player);
+    }
+
+    public static void onKill(ServerPlayer player) {
+        if (!isLexNinjia(player)) {
+            return;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        if (state.hamBerserkUntil > now) {
+            state.hamBerserkUntil += 5L * 20L;
+            state.hamBerserkStacks = Math.min(8, state.hamBerserkStacks + 1);
+        }
+    }
+
+    public static void onHamBeastKill(ServerPlayer owner, Wolf wolf) {
+        if (!isLexNinjia(owner)) {
+            return;
+        }
+        RuntimeState state = state(owner);
+        if (state.hamBeastId == null || !state.hamBeastId.equals(wolf.getUUID())) {
+            return;
+        }
+        state.hamBeastStacks = Math.min(8, state.hamBeastStacks + 1);
+        int damageTicks = effectTicks(wolf, MobEffects.DAMAGE_BOOST) + 10 * 20;
+        int speedTicks = effectTicks(wolf, MobEffects.MOVEMENT_SPEED) + 10 * 20;
+        wolf.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, damageTicks,
+                Math.min(127, 99 + state.hamBeastStacks), true, true));
+        wolf.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, speedTicks,
+                2 + state.hamBeastStacks / 2, true, true));
+        if (wolf.getAttribute(Attributes.ATTACK_DAMAGE) != null) {
+            wolf.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(
+                    wolf.getAttributeBaseValue(Attributes.ATTACK_DAMAGE) + 2.0D);
+        }
+    }
+
+    private static int effectTicks(LivingEntity entity, net.minecraft.world.effect.MobEffect effect) {
+        MobEffectInstance instance = entity.getEffect(effect);
+        return instance == null ? 0 : instance.getDuration();
     }
 
     public static boolean useFoundationSkill(ServerPlayer player, LexNinjiaComboInput input, int cost) {
@@ -171,13 +241,22 @@ public final class LexNinjiaStateManager {
         if (isSleeping(player)) {
             return true;
         }
-        if (!spendLeicra(player, cost)) {
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        if (!applyFoundationInput(player, state, input, cost, now)) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia.not_enough_leicra"), true);
             syncToClient(player);
             return true;
         }
-        RuntimeState state = state(player);
-        long now = player.level().getGameTime();
+        syncToClient(player);
+        return true;
+    }
+
+    private static boolean applyFoundationInput(ServerPlayer player, RuntimeState state,
+                                                LexNinjiaComboInput input, int cost, long now) {
+        if (!spendLeicra(player, cost)) {
+            return false;
+        }
         if (input == LexNinjiaComboInput.HAND) {
             state.handStacks = Math.min(MAX_FOUNDATION_STACKS, state.handStacks + 1);
             state.handLastTick = now;
@@ -191,7 +270,6 @@ public final class LexNinjiaStateManager {
         }
         addInput(player, state, input, now);
         state.prepared = matchPrepared(player, state, now).orElse(null);
-        syncToClient(player);
         return true;
     }
 
@@ -347,20 +425,24 @@ public final class LexNinjiaStateManager {
     }
 
     public static int forcedMindExpansions(Player player) {
-        return 0;
+        return Mth.clamp(player.getPersistentData().getInt(MIND_EXPANSIONS),
+                0, MAX_FORCED_MIND_EXPANSIONS);
     }
 
     public static void expandMind(ServerPlayer player) {
-        player.getPersistentData().putInt(MIND_EXPANSIONS, 0);
+        int current = forcedMindExpansions(player);
+        if (current < MAX_FORCED_MIND_EXPANSIONS) {
+            player.getPersistentData().putInt(MIND_EXPANSIONS, current + 1);
+        }
         syncToClient(player);
     }
 
     public static int mindCapacity(Player player) {
-        return BASE_MIND_CAPACITY;
+        return BASE_MIND_CAPACITY + forcedMindExpansions(player);
     }
 
     public static int maxMindLoad(Player player) {
-        return BASE_MIND_CAPACITY + MAX_OVERLOAD_MIND;
+        return mindCapacity(player) + MAX_OVERLOAD_MIND;
     }
 
     public static int mindOverload(Player player) {
@@ -386,9 +468,14 @@ public final class LexNinjiaStateManager {
         data.put("Known", player.getPersistentData().getCompound(KNOWN).copy());
         data.put("Equipped", player.getPersistentData().getCompound(EQUIPPED).copy());
         data.putInt("MindExpansions", forcedMindExpansions(player));
+        data.putInt("MindExpansionMax", MAX_FORCED_MIND_EXPANSIONS);
         data.putInt("MindCapacity", mindCapacity(player));
         data.putInt("MindUsed", mindUsed(player));
         data.putBoolean("HamVisible", allNonHamArtsKnown(player));
+        data.putInt("ScientificToolLevel", scientificToolLevel(player));
+        data.putInt("ScientificMaxInputs", scientificMaxInputs(player));
+        data.putInt("ScientificMaxPresets", scientificMaxPresets(player));
+        data.put("ScientificPresets", scientificPresets(player).copy());
         return data;
     }
 
@@ -412,8 +499,152 @@ public final class LexNinjiaStateManager {
                 Math.max(0, (int) (state.deathFlameUntil - now)),
                 state.deathFlameOverflow,
                 Math.max(0, (int) (state.hamPowerUntil - now)),
-                Math.max(0, (int) (state.hamBerserkUntil - now))
+                Math.max(0, (int) (state.hamBerserkUntil - now)),
+                scientificToolLevel(player)
         ), player);
+    }
+
+    public static int scientificToolLevel(Player player) {
+        CompoundTag tag = player.getPersistentData();
+        return tag.contains(SCIENTIFIC_TOOL_LEVEL, Tag.TAG_INT)
+                ? Mth.clamp(tag.getInt(SCIENTIFIC_TOOL_LEVEL), 0, SCIENTIFIC_TOOL_MAX_LEVEL)
+                : -1;
+    }
+
+    public static boolean hasScientificTool(Player player) {
+        return scientificToolLevel(player) >= 0;
+    }
+
+    public static void buyScientificTool(ServerPlayer player) {
+        if (!hasScientificTool(player)) {
+            player.getPersistentData().putInt(SCIENTIFIC_TOOL_LEVEL, 0);
+        }
+        syncToClient(player);
+    }
+
+    public static void upgradeScientificTool(ServerPlayer player) {
+        int level = scientificToolLevel(player);
+        if (level >= 0 && level < SCIENTIFIC_TOOL_MAX_LEVEL) {
+            player.getPersistentData().putInt(SCIENTIFIC_TOOL_LEVEL, level + 1);
+        }
+        syncToClient(player);
+    }
+
+    public static int scientificMaxInputs(Player player) {
+        return hasScientificTool(player)
+                ? SCIENTIFIC_TOOL_BASE_INPUTS + scientificToolLevel(player)
+                : 0;
+    }
+
+    public static int scientificMaxPresets(Player player) {
+        return hasScientificTool(player)
+                ? SCIENTIFIC_TOOL_BASE_PRESETS + scientificToolLevel(player)
+                : 0;
+    }
+
+    public static CompoundTag scientificPresets(Player player) {
+        return player.getPersistentData().getCompound(SCIENTIFIC_PRESETS);
+    }
+
+    public static void saveScientificPreset(ServerPlayer player, int slot, String name,
+                                            List<LexNinjiaComboInput> inputs) {
+        if (!hasScientificTool(player) || slot < 0 || slot >= scientificMaxPresets(player)) {
+            return;
+        }
+        int maxInputs = scientificMaxInputs(player);
+        List<LexNinjiaComboInput> sanitizedInputs = new ArrayList<>();
+        for (LexNinjiaComboInput input : inputs) {
+            if (input == null || sanitizedInputs.size() >= maxInputs) {
+                break;
+            }
+            sanitizedInputs.add(input);
+            if (input == LexNinjiaComboInput.LEFT_CLICK || input == LexNinjiaComboInput.RIGHT_RELEASE) {
+                break;
+            }
+        }
+        CompoundTag presets = scientificPresets(player);
+        LexNinjiaPreset.write(presets, slot, new LexNinjiaPreset(name, sanitizedInputs), maxInputs);
+        player.getPersistentData().put(SCIENTIFIC_PRESETS, presets);
+    }
+
+    public static boolean executeScientificPreset(ServerPlayer player, int slot) {
+        if (!isLexNinjia(player) || player.isCreative() || !hasScientificTool(player)
+                || slot < 0 || slot >= scientificMaxPresets(player)) {
+            return false;
+        }
+        LexNinjiaPreset preset = LexNinjiaPreset.read(scientificPresets(player), slot, scientificMaxInputs(player));
+        if (preset.inputs().isEmpty()) {
+            return false;
+        }
+        RuntimeState state = state(player);
+        long now = player.level().getGameTime();
+        state.inputs.clear();
+        state.prepared = null;
+        for (LexNinjiaComboInput input : preset.inputs()) {
+            if (!applyPresetInput(player, state, input, now)) {
+                syncToClient(player);
+                return false;
+            }
+        }
+        state.prepared = matchPrepared(player, state, now).orElse(null);
+        if (state.prepared != null && state.prepared.releaseTrigger() == LexNinjiaReleaseTrigger.MANUAL) {
+            releasePrepared(player, state, state.prepared, null, now);
+        }
+        state.presetDisplayText = preset.inputs().stream()
+                .map(input -> input.name().toLowerCase(java.util.Locale.ROOT))
+                .collect(java.util.stream.Collectors.joining(" + "));
+        state.presetDisplayUntil = now + 60L;
+        syncToClient(player);
+        return true;
+    }
+
+    private static boolean applyPresetInput(ServerPlayer player, RuntimeState state,
+                                            LexNinjiaComboInput input, long now) {
+        return switch (input) {
+            case HAND -> applyFoundationInput(player, state, input, 3, now);
+            case BLADE -> applyFoundationInput(player, state, input, 3, now);
+            case HARMONY -> applyFoundationInput(player, state, input, 5, now);
+            case SNEAK, JUMP -> {
+                addInput(player, state, input, now);
+                yield true;
+            }
+            case RIGHT_RELEASE -> {
+                state.prepared = matchPrepared(player, state, now).orElse(null);
+                if (state.prepared == null
+                        || state.prepared.releaseTrigger() != LexNinjiaReleaseTrigger.RIGHT_RELEASE) {
+                    yield false;
+                }
+                releasePrepared(player, state, state.prepared, null, now);
+                yield true;
+            }
+            case LEFT_CLICK -> {
+                state.prepared = matchPrepared(player, state, now).orElse(null);
+                LivingEntity target = findPresetTarget(player);
+                if (state.prepared == null
+                        || state.prepared.releaseTrigger() != LexNinjiaReleaseTrigger.LEFT_CLICK
+                        || target == null) {
+                    yield false;
+                }
+                releasePrepared(player, state, state.prepared, target, now);
+                yield true;
+            }
+        };
+    }
+
+    private static LivingEntity findPresetTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        return player.level().getEntitiesOfClass(LivingEntity.class,
+                        player.getBoundingBox().inflate(6.0D),
+                        target -> target != player && target.isAlive() && player.hasLineOfSight(target))
+                .stream()
+                .filter(target -> {
+                    Vec3 direction = target.getEyePosition().subtract(eye);
+                    return direction.lengthSqr() > 0.0001D
+                            && direction.normalize().dot(look) >= 0.90D;
+                })
+                .min(Comparator.comparingDouble(target -> target.distanceToSqr(player)))
+                .orElse(null);
     }
 
     public static float leicra(ServerPlayer player) {
@@ -541,8 +772,10 @@ public final class LexNinjiaStateManager {
             tickHamShadowKick(player, state, now);
         }
         if (state.hamBerserkUntil > now) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 30, 1, true, false));
-            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 30, 2, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 30,
+                    1 + state.hamBerserkStacks / 3, true, false));
+            player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 30,
+                    2 + state.hamBerserkStacks, true, false));
         }
         if (state.shadowCloneUntil > now && now % 10L == 0L) {
             spawnShadowCloneVisuals(player, false);
@@ -648,12 +881,48 @@ public final class LexNinjiaStateManager {
         }
         playArtSound(player, art);
         playArtVisuals(player, art, target);
-        applyArt(player, state, art, target, now);
-        if (art.hamForbidden()) {
-            playHamEcho(player);
+        SkillModelVisual visual = modelVisualFor(art);
+        if (visual != null) {
+            SkillModelVisualSync.play(player, visual);
+        }
+        int delayTicks = visual == null ? 0 : visual.impactTick();
+        if (delayTicks > 0) {
+            LivingEntity releaseTarget = target;
+            SkillAnimationScheduler.schedule(player, delayTicks, delayedPlayer -> {
+                LivingEntity resolvedTarget = releaseTarget != null
+                        && releaseTarget.isAlive()
+                        && releaseTarget.level() == delayedPlayer.level()
+                        ? releaseTarget
+                        : null;
+                if (art.releaseTrigger() == LexNinjiaReleaseTrigger.LEFT_CLICK && resolvedTarget == null) {
+                    return;
+                }
+                applyArt(delayedPlayer, state, art, resolvedTarget, delayedPlayer.level().getGameTime());
+                if (art.hamForbidden()) {
+                    playHamEcho(delayedPlayer);
+                }
+            });
+        } else {
+            applyArt(player, state, art, target, now);
+            if (art.hamForbidden()) {
+                playHamEcho(player);
+            }
         }
         state.inputs.clear();
         state.prepared = null;
+    }
+
+    private static SkillModelVisual modelVisualFor(LexNinjiaArt art) {
+        if (art == LexNinjiaArt.HAM_FRIEND) {
+            return SkillModelVisual.LEX_HAM_MANIFEST;
+        }
+        if (art.school() == LexNinjiaSchool.HAM) {
+            return SkillModelVisual.LEX_HAM_SURGE;
+        }
+        if (art.school() == LexNinjiaSchool.HAND) {
+            return SkillModelVisual.LEX_HAND_REACH;
+        }
+        return null;
     }
 
     private static boolean canRelease(ServerPlayer player, RuntimeState state, LexNinjiaArt art, LivingEntity target) {
@@ -788,12 +1057,15 @@ public final class LexNinjiaStateManager {
                 state.hamPowerUntil = now + 600L * 20L;
                 state.hamFriendPact = true;
             }
-            case HAM_BERSERK -> state.hamBerserkUntil = now + 30L * 20L;
+            case HAM_BERSERK -> {
+                state.hamBerserkUntil = now + 30L * 20L;
+                state.hamBerserkStacks = 0;
+            }
             case HAM_KILL_ALL -> {
                 state.hamKillReleaseTick = now + 5L * 20L;
                 player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 10 * 20, 4, true, false));
             }
-            case HAM_BEAST -> summonHamBeast(player);
+            case HAM_BEAST -> summonHamBeast(player, state);
             case HAM_SHADOW_KICK -> state.hamShadowKickUntil = now + 15L * 20L;
             default -> {
             }
@@ -1338,7 +1610,7 @@ public final class LexNinjiaStateManager {
         level.addFreshEntity(skeleton);
     }
 
-    private static void summonHamBeast(ServerPlayer player) {
+    private static void summonHamBeast(ServerPlayer player, RuntimeState state) {
         ServerLevel level = player.serverLevel();
         Wolf wolf = EntityType.WOLF.create(level);
         if (wolf == null) {
@@ -1351,6 +1623,8 @@ public final class LexNinjiaStateManager {
         wolf.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 75 * 20, 99));
         wolf.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 75 * 20, 2));
         level.addFreshEntity(wolf);
+        state.hamBeastId = wolf.getUUID();
+        state.hamBeastStacks = 0;
     }
 
     private static void tickHamKillAll(ServerPlayer player, RuntimeState state, long now) {
@@ -1648,6 +1922,9 @@ public final class LexNinjiaStateManager {
     }
 
     private static String comboText(RuntimeState state, long now) {
+        if (state.inputs.isEmpty() && state.presetDisplayUntil > now && !state.presetDisplayText.isBlank()) {
+            return state.presetDisplayText;
+        }
         state.pruneInputs(now);
         StringBuilder builder = new StringBuilder();
         for (InputEntry entry : state.inputs) {
@@ -1817,8 +2094,13 @@ public final class LexNinjiaStateManager {
         private boolean hamFriendPact;
         private long hamPowerUntil;
         private long hamBerserkUntil;
+        private int hamBerserkStacks;
         private long hamKillReleaseTick;
         private long hamShadowKickUntil;
+        private UUID hamBeastId;
+        private int hamBeastStacks;
+        private String presetDisplayText = "";
+        private long presetDisplayUntil;
 
         private void pruneInputs(long now) {
             inputs.removeIf(entry -> now - entry.tick() > INPUT_EXPIRY_TICKS);
@@ -1834,6 +2116,8 @@ public final class LexNinjiaStateManager {
         private void clearCombatRuntime(long now) {
             inputs.clear();
             prepared = null;
+            presetDisplayText = "";
+            presetDisplayUntil = 0L;
             burningBladeUntil = now;
             arashiUntil = now;
             deathFlameUntil = now;
@@ -1854,8 +2138,11 @@ public final class LexNinjiaStateManager {
             snakePoisonUntil = now;
             tenMeterReleaseTick = 0L;
             hamBerserkUntil = now;
+            hamBerserkStacks = 0;
             hamKillReleaseTick = 0L;
             hamShadowKickUntil = now;
+            hamBeastId = null;
+            hamBeastStacks = 0;
             slashQueue.clear();
         }
 
@@ -1864,6 +2151,8 @@ public final class LexNinjiaStateManager {
             wallBlocks.clear();
             slashQueue.clear();
             prepared = null;
+            presetDisplayText = "";
+            presetDisplayUntil = 0L;
             handStacks = 0;
             bladeStacks = 0;
             harmonyStacks = 0;

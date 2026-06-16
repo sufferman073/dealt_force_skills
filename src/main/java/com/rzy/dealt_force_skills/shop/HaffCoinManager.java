@@ -53,6 +53,13 @@ public final class HaffCoinManager {
         set(player, safeAdd(get(player), amount));
     }
 
+    public static long grant(ServerPlayer player, long amount) {
+        if (amount > 0L) {
+            set(player, safeAdd(get(player), amount));
+        }
+        return get(player);
+    }
+
     public static boolean trySpend(ServerPlayer player, long amount) {
         if (amount <= 0L) {
             return true;

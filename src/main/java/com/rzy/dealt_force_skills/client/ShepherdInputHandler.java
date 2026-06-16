@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.shepherd.ShepherdTool;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdToolAction;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdTrapMarker;
 import com.rzy.dealt_force_skills.client.character.ClientShepherdHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_ShepherdToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.registry.ModEffects;
@@ -37,6 +38,7 @@ import java.util.Optional;
 public final class ShepherdInputHandler {
     private static final DustParticleOptions TRAP_PREVIEW = new DustParticleOptions(new Vector3f(1.0f, 0.82f, 0.18f), 1.0f);
     private static final int TOOL_ACTION_DEDUP_TICKS = 3;
+    private static final int GRENADE_RELEASE_TICKS = 4;
     private static final String TACZ_CLIENT_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
 
     private static ShepherdToolAction lastSentToolAction;
@@ -285,8 +287,12 @@ public final class ShepherdInputHandler {
             return;
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && action == GLFW.GLFW_PRESS) {
-            sendToolActionOnce(ShepherdToolAction.THROW_GRENADE);
+            ClientToolReleaseAction.begin(
+                    ClientToolReleaseAction.Action.SHEPHERD_GRENADE,
+                    GRENADE_RELEASE_TICKS,
+                    () -> sendToolActionOnce(ShepherdToolAction.THROW_GRENADE));
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && action == GLFW.GLFW_PRESS) {
+            ClientToolReleaseAction.play(ClientToolReleaseAction.Action.SHEPHERD_GRENADE);
             sendToolActionOnce(ShepherdToolAction.START_GRENADE_COOK);
         } else if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && action == GLFW.GLFW_RELEASE) {
             sendToolActionOnce(ShepherdToolAction.THROW_GRENADE);

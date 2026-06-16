@@ -1,1 +1,36 @@
-{"type":"minecraft:crafting_shapeless","ingredients":[{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"},{"tag":"minecraft:planks"}],"result":{"item":"dealt_force_skills:raw_wood_plank"}}
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    },
+    {
+      "tag": "minecraft:planks"
+    }
+  ],
+  "result": {
+    "item": "dealt_force_skills:raw_wood_plank",
+    "count": 4
+  }
+}

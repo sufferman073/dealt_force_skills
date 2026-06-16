@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientDWolfHudState;
+import com.rzy.dealt_force_skills.client.visual.DWolfPlaceholderVisuals;
 import com.rzy.dealt_force_skills.compat.ParcoolStaminaBridge;
 import com.rzy.dealt_force_skills.network.C2S_DWolfSlide;
 import com.rzy.dealt_force_skills.network.C2S_DWolfToolAction;
@@ -27,6 +28,8 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class DWolfInputHandler {
     private static final int SMOKE_HIGH_THROW_HOLD_TICKS = 8;
+    private static final int SMOKE_TRIGGER_TICKS = 5;
+    private static final int CANNON_SHOT_INTERVAL_TICKS = 5;
     private static final int SLIDE_LOCAL_COOLDOWN_TICKS = 8;
 
     private static boolean active2WasDown;
@@ -36,6 +39,10 @@ public final class DWolfInputHandler {
     private static int localSlideCooldownTicks;
     private static int pendingSlideRequestTicks;
     private static int overloadRewardHoldTicks;
+    private static int pendingSmokeThrowTicks;
+    private static boolean pendingSmokeHighThrow;
+    private static int pendingHandCannonAnimations;
+    private static int nextHandCannonAnimationTicks;
 
     private DWolfInputHandler() {
     }
@@ -49,9 +56,15 @@ public final class DWolfInputHandler {
             localSlideCooldownTicks = 0;
             pendingSlideRequestTicks = 0;
             overloadRewardHoldTicks = 0;
+            pendingSmokeThrowTicks = 0;
+            pendingSmokeHighThrow = false;
+            pendingHandCannonAnimations = 0;
+            nextHandCannonAnimationTicks = 0;
             return;
         }
 
+        handlePendingHandCannonAnimations();
+        handlePendingSmokeThrow();
         handleSkillKeys();
         handleSlide(minecraft);
         handleOverloadSelfReward(minecraft);
@@ -92,7 +105,7 @@ public final class DWolfInputHandler {
     }
 
     public static boolean isSmokeHeldForVisual() {
-        return ClientDWolfHudState.shouldRender() && active2WasDown;
+        return ClientDWolfHudState.shouldRender() && (active2WasDown || pendingSmokeThrowTicks > 0);
     }
 
     public static boolean isSmokeHighThrowPreview() {
@@ -121,7 +134,9 @@ public final class DWolfInputHandler {
         }
 
         if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.FIRE_HAND_CANNON));
+            if (startHandCannonBurstAnimation()) {
+                NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.FIRE_HAND_CANNON));
+            }
         } else {
             NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.STOW_TOOL));
         }
@@ -139,7 +154,9 @@ public final class DWolfInputHandler {
             return;
         }
         if (event.isAttack()) {
-            NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.FIRE_HAND_CANNON));
+            if (startHandCannonBurstAnimation()) {
+                NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.FIRE_HAND_CANNON));
+            }
         } else if (event.isUseItem()) {
             NetworkHandler.sendToServer(new C2S_DWolfToolAction(DWolfToolAction.STOW_TOOL));
         }
@@ -175,6 +192,13 @@ public final class DWolfInputHandler {
         if (KeybindRegister.ACTIVE_SKILL_2 == null) {
             return;
         }
+        if (pendingSmokeThrowTicks > 0) {
+            while (KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
+            }
+            active2WasDown = false;
+            active2HeldTicks = 0;
+            return;
+        }
 
         boolean active2Down = KeybindRegister.ACTIVE_SKILL_2.isDown();
         if (active2Down) {
@@ -187,11 +211,50 @@ public final class DWolfInputHandler {
         }
 
         if (active2WasDown) {
-            boolean highThrow = active2HeldTicks >= SMOKE_HIGH_THROW_HOLD_TICKS;
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2, highThrow);
+            pendingSmokeHighThrow = active2HeldTicks >= SMOKE_HIGH_THROW_HOLD_TICKS;
+            pendingSmokeThrowTicks = SMOKE_TRIGGER_TICKS;
+            DWolfPlaceholderVisuals.startSmokeQuickTrigger();
         }
         active2WasDown = false;
         active2HeldTicks = 0;
+    }
+
+    private static void handlePendingSmokeThrow() {
+        if (pendingSmokeThrowTicks <= 0) {
+            return;
+        }
+        pendingSmokeThrowTicks--;
+        if (pendingSmokeThrowTicks == 0) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2, pendingSmokeHighThrow);
+            pendingSmokeHighThrow = false;
+        }
+    }
+
+    private static boolean startHandCannonBurstAnimation() {
+        if (pendingHandCannonAnimations > 0
+                || ClientDWolfHudState.cannonBurstShots() > 0
+                || ClientDWolfHudState.handCannonCharges() <= 0) {
+            return false;
+        }
+        DWolfPlaceholderVisuals.startHandCannonFire();
+        pendingHandCannonAnimations = 2;
+        nextHandCannonAnimationTicks = CANNON_SHOT_INTERVAL_TICKS;
+        return true;
+    }
+
+    private static void handlePendingHandCannonAnimations() {
+        if (pendingHandCannonAnimations <= 0 || nextHandCannonAnimationTicks <= 0) {
+            return;
+        }
+        nextHandCannonAnimationTicks--;
+        if (nextHandCannonAnimationTicks > 0) {
+            return;
+        }
+        DWolfPlaceholderVisuals.startHandCannonFire();
+        pendingHandCannonAnimations--;
+        nextHandCannonAnimationTicks = pendingHandCannonAnimations > 0
+                ? CANNON_SHOT_INTERVAL_TICKS
+                : 0;
     }
 
     private static void handleSlide(Minecraft minecraft) {

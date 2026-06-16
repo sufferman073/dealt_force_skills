@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public class LunaReconArrowEntity extends Projectile implements ItemSupplier {
+public class LunaReconArrowEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
     private static final int MAX_BOUNCES = 8;
     private static final int MAX_LIFE_TICKS = 20 * 20;
     private static final int MOVE_SCAN_DELAY_TICKS = 2 * 20;
@@ -41,6 +41,7 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier {
     private static final double MOVE_THRESHOLD_SQR = 0.025D;
 
     private int bounces;
+    private Vec3 lastForward = new Vec3(0.0D, 0.0D, 1.0D);
     private final Set<UUID> scanned = new HashSet<>();
     private final Map<UUID, PendingScan> pendingMoveScans = new HashMap<>();
 
@@ -76,6 +77,7 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier {
         }
 
         Vec3 motion = getDeltaMovement();
+        rememberForward(motion);
         Vec3 next = position().add(motion);
         HitResult hit = level().clip(new ClipContext(position(), next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
         if (hit.getType() == HitResult.Type.BLOCK) {
@@ -100,16 +102,34 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         bounces = tag.getInt("Bounces");
+        lastForward = new Vec3(tag.getDouble("ForwardX"), tag.getDouble("ForwardY"), tag.getDouble("ForwardZ"));
+        if (lastForward.lengthSqr() < 0.0001D) {
+            lastForward = new Vec3(0.0D, 0.0D, 1.0D);
+        }
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("Bounces", bounces);
+        tag.putDouble("ForwardX", lastForward.x);
+        tag.putDouble("ForwardY", lastForward.y);
+        tag.putDouble("ForwardZ", lastForward.z);
     }
 
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    @Override
+    public Vec3 blockbenchModelForward(float partialTick) {
+        rememberForward(getDeltaMovement());
+        return lastForward;
+    }
+
+    @Override
+    public float blockbenchYawOffsetDegrees() {
+        return 180.0F;
     }
 
     private void hitBlock(BlockHitResult hit) {
@@ -134,6 +154,12 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier {
             case Y -> new Vec3(motion.x * 0.9D, -motion.y * 0.75D, motion.z * 0.9D);
             case Z -> new Vec3(motion.x * 0.9D, motion.y * 0.95D, -motion.z * 0.9D);
         };
+    }
+
+    private void rememberForward(Vec3 direction) {
+        if (direction.lengthSqr() >= 0.0001D) {
+            lastForward = direction.normalize();
+        }
     }
 
     private void scanNearby() {

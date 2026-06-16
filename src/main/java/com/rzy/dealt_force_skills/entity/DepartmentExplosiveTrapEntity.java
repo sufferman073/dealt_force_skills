@@ -13,6 +13,9 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializers;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -38,7 +41,9 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.UUID;
 
-public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplier {
+public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
+    private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
+            SynchedEntityData.defineId(DepartmentExplosiveTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 45;
     private static final int AUTO_DETONATION_DELAY_TICKS = 20;
     private static final double AUTO_TRIGGER_RADIUS = 4.0D;
@@ -69,7 +74,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     ) {
         this(type, level);
         ownerId = owner.getUUID();
-        this.attachedFace = attachedFace;
+        setAttachedFace(attachedFace);
         this.chargeSlot = chargeSlot;
         this.chargeReadyAt = chargeReadyAt;
     }
@@ -81,6 +86,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
 
     @Override
     protected void defineSynchedData() {
+        entityData.define(DATA_ATTACHED_FACE, Direction.UP.get3DDataValue());
     }
 
     @Override
@@ -135,7 +141,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        attachedFace = Direction.from3DDataValue(tag.getInt("AttachedFace"));
+        setAttachedFace(Direction.from3DDataValue(tag.getInt("AttachedFace")));
         chargeSlot = tag.contains("ChargeSlot") ? tag.getInt("ChargeSlot") : -1;
         chargeReadyAt = tag.getLong("ChargeReadyAt");
         triggerDelayTicks = tag.getInt("TriggerDelay");
@@ -159,6 +165,11 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
 
     public boolean isOwnedBy(UUID owner) {
         return ownerId != null && ownerId.equals(owner);
+    }
+
+    @Override
+    public Direction blockbenchAttachedFace() {
+        return Direction.from3DDataValue(entityData.get(DATA_ATTACHED_FACE));
     }
 
     public int chargeSlot() {
@@ -300,6 +311,11 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
 
     private Entity owner(ServerLevel level) {
         return ownerId == null ? null : level.getEntity(ownerId);
+    }
+
+    private void setAttachedFace(Direction face) {
+        attachedFace = face == null ? Direction.UP : face;
+        entityData.set(DATA_ATTACHED_FACE, attachedFace.get3DDataValue());
     }
 
     private void spawnClientIdleParticles() {

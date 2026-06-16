@@ -1,10 +1,15 @@
 package com.rzy.dealt_force_skills.client;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.client.character.ClientLexNinjiaHudState;
+import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaInputAction;
 import com.rzy.dealt_force_skills.network.C2S_LexNinjiaInput;
+import com.rzy.dealt_force_skills.network.C2S_LexNinjiaPresetAction;
+import com.rzy.dealt_force_skills.network.C2S_OpenSelectionOrShop;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -14,11 +19,19 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LexNinjiaInputHandler {
+    private static final int LONG_HOLD_TICKS = 10;
     private static boolean sneakWasDown;
     private static boolean useWasDown;
     private static boolean jumpWasDown;
+    private static boolean shopWasDown;
+    private static boolean shopLongTriggered;
+    private static int shopHeldTicks;
 
     private LexNinjiaInputHandler() {
+    }
+
+    public static boolean ownsSelectionKey() {
+        return ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.LEX_NINJIA_ID);
     }
 
     public static void tick(Minecraft minecraft) {
@@ -47,6 +60,39 @@ public final class LexNinjiaInputHandler {
             send(LexNinjiaInputAction.JUMP);
         }
         jumpWasDown = jumpDown;
+        tickShopKey(minecraft);
+    }
+
+    private static void tickShopKey(Minecraft minecraft) {
+        KeyMapping key = KeybindRegister.CHARACTER_SELECT;
+        if (!ownsSelectionKey() || key == null || minecraft.player == null) {
+            resetShopKey();
+            return;
+        }
+        while (key.consumeClick()) {
+            // Lex Ninjia distinguishes short press from hold on release.
+        }
+        boolean down = key.isDown();
+        if (down) {
+            if (!shopWasDown) {
+                shopHeldTicks = 0;
+                shopLongTriggered = false;
+            }
+            shopHeldTicks++;
+            if (!shopLongTriggered
+                    && shopHeldTicks >= LONG_HOLD_TICKS
+                    && !minecraft.player.isCreative()
+                    && ClientLexNinjiaHudState.hasScientificTool()) {
+                shopLongTriggered = true;
+                NetworkHandler.sendToServer(C2S_LexNinjiaPresetAction.openMenu());
+            }
+        } else if (shopWasDown) {
+            if (!shopLongTriggered) {
+                NetworkHandler.sendToServer(new C2S_OpenSelectionOrShop());
+            }
+            resetShopKey();
+        }
+        shopWasDown = down;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -66,6 +112,13 @@ public final class LexNinjiaInputHandler {
         sneakWasDown = false;
         useWasDown = false;
         jumpWasDown = false;
+        resetShopKey();
+    }
+
+    private static void resetShopKey() {
+        shopWasDown = false;
+        shopLongTriggered = false;
+        shopHeldTicks = 0;
     }
 
     private static void send(LexNinjiaInputAction action) {

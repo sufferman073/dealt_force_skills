@@ -6,8 +6,10 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.uluru.UluruTool;
 import com.rzy.dealt_force_skills.client.UluruMissileController;
 import com.rzy.dealt_force_skills.client.character.ClientUluruHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +23,14 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class UluruPlaceholderVisuals {
+    private static final ResourceLocation INCENDIARY_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_incendiary_grenade");
+    private static final ResourceLocation COVER_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_quick_cover_package");
+    private static final ResourceLocation MISSILE_MODEL =
+            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_missile_launcher");
+    private static UluruTool lastAnimatedTool = UluruTool.NONE;
+
     private UluruPlaceholderVisuals() {
     }
 
@@ -30,7 +40,7 @@ public final class UluruPlaceholderVisuals {
             event.setCanceled(true);
             return;
         }
-        if (!ClientUluruHudState.hasEquippedTool()) {
+        if (!shouldRenderTool()) {
             return;
         }
         event.setCanceled(true);
@@ -40,36 +50,101 @@ public final class UluruPlaceholderVisuals {
 
         PoseStack poseStack = event.getPoseStack();
         poseStack.pushPose();
-        poseStack.translate(0.42d, -0.22d, -0.62d);
-        poseStack.mulPose(Axis.YP.rotationDegrees(-25.0f));
-        poseStack.mulPose(Axis.XP.rotationDegrees(-12.0f));
-        poseStack.scale(1.0f, 1.0f, 1.0f);
+        UluruTool tool = displayedTool();
+        applyTransform(poseStack, tool);
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                placeholderStack(),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        ResourceLocation model = modelFor(tool);
+        ClientToolModelAnimationState.AnimationFrame frame = ClientToolModelAnimationState.frame(
+                keyFor(tool), model, null, 0.0F);
+        boolean rendered = BlockbenchAnimatedModelRenderer.render(
+                model, frame.animation(), frame.seconds(), poseStack,
+                event.getMultiBufferSource(), event.getPackedLight());
+        if (!rendered) {
+            minecraft.getItemRenderer().renderStatic(
+                    minecraft.player,
+                    placeholderStack(tool),
+                    ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
+                    false,
+                    poseStack,
+                    event.getMultiBufferSource(),
+                    minecraft.level,
+                    event.getPackedLight(),
+                    OverlayTexture.NO_OVERLAY,
+                    0
+            );
+        }
         poseStack.popPose();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderArm(RenderArmEvent event) {
-        if (UluruMissileController.isControlling() || ClientUluruHudState.hasEquippedTool()) {
+        if (UluruMissileController.isControlling() || shouldRenderTool()) {
             event.setCanceled(true);
         }
     }
 
-    private static ItemStack placeholderStack() {
-        return switch (ClientUluruHudState.equippedTool()) {
+    public static void startUseAnimation(UluruTool tool) {
+        if (tool == UluruTool.NONE) {
+            return;
+        }
+        lastAnimatedTool = tool;
+        ClientToolModelAnimationState.start(keyFor(tool), modelFor(tool),
+                tool == UluruTool.MISSILE ? "fire" : "arm",
+                switch (tool) {
+                    case INCENDIARY -> 0.6F;
+                    case COVER -> 0.8F;
+                    case MISSILE -> 0.65F;
+                    case NONE -> 0.5F;
+                },
+                ClientToolModelAnimationState.FAST_PLAYBACK_SPEED);
+    }
+
+    public static int useAnimationTicks(UluruTool tool) {
+        return switch (tool) {
+            case INCENDIARY -> 4;
+            case COVER -> 6;
+            case MISSILE -> 5;
+            case NONE -> 0;
+        };
+    }
+
+    private static boolean shouldRenderTool() {
+        return ClientUluruHudState.hasEquippedTool()
+                || lastAnimatedTool != UluruTool.NONE
+                && ClientToolModelAnimationState.isActive(keyFor(lastAnimatedTool));
+    }
+
+    private static UluruTool displayedTool() {
+        return ClientUluruHudState.hasEquippedTool()
+                ? ClientUluruHudState.equippedTool()
+                : lastAnimatedTool;
+    }
+
+    private static void applyTransform(PoseStack poseStack, UluruTool tool) {
+        poseStack.translate(0.42D, tool == UluruTool.COVER ? -0.38D : -0.24D,
+                tool == UluruTool.MISSILE ? -0.76D : -0.62D);
+        poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+        poseStack.mulPose(Axis.XP.rotationDegrees(tool == UluruTool.COVER ? -18.0F : -10.0F));
+        float scale = tool == UluruTool.MISSILE ? 0.55F : 0.75F;
+        poseStack.scale(scale, scale, scale);
+    }
+
+    private static ResourceLocation modelFor(UluruTool tool) {
+        return switch (tool) {
+            case INCENDIARY -> INCENDIARY_MODEL;
+            case COVER -> COVER_MODEL;
+            case MISSILE -> MISSILE_MODEL;
+            case NONE -> INCENDIARY_MODEL;
+        };
+    }
+
+    private static String keyFor(UluruTool tool) {
+        return "uluru_" + tool.name().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private static ItemStack placeholderStack(UluruTool tool) {
+        return switch (tool) {
             case INCENDIARY -> new ItemStack(Items.FIRE_CHARGE);
             case COVER -> new ItemStack(Items.SCAFFOLDING);
             case MISSILE -> new ItemStack(Items.CROSSBOW);

@@ -8,6 +8,7 @@ import java.util.Optional;
 
 public final class CharacterSelectionManager {
     private static final String SELECTED_CHARACTER_TAG = DealtForceSkillsMod.MODID + ".selected_character";
+    private static final String CHARACTER_RESELECTION_TAG = DealtForceSkillsMod.MODID + ".character_reselection";
 
     private CharacterSelectionManager() {
     }
@@ -28,6 +29,18 @@ public final class CharacterSelectionManager {
         return Optional.of(id);
     }
 
+    public static boolean hasCharacterReselection(Player player) {
+        return player.getPersistentData().getBoolean(CHARACTER_RESELECTION_TAG);
+    }
+
+    public static void grantCharacterReselection(ServerPlayer player) {
+        player.getPersistentData().putBoolean(CHARACTER_RESELECTION_TAG, true);
+    }
+
+    public static void consumeCharacterReselection(ServerPlayer player) {
+        player.getPersistentData().remove(CHARACTER_RESELECTION_TAG);
+    }
+
     public static Optional<CharacterDefinition> selectCharacter(ServerPlayer player, String characterId) {
         if (hasSelectedCharacter(player)) {
             return Optional.empty();
@@ -35,6 +48,7 @@ public final class CharacterSelectionManager {
 
         return ModCharacters.get(characterId).map(character -> {
             player.getPersistentData().putString(SELECTED_CHARACTER_TAG, character.id());
+            CharacterSkinSync.syncToTracking(player);
             return character;
         });
     }
@@ -44,6 +58,7 @@ public final class CharacterSelectionManager {
             getSelectedCharacter(player).ifPresent(oldCharacter ->
                     CharacterEffectHooks.onCharacterDeselected(player, oldCharacter));
             player.getPersistentData().putString(SELECTED_CHARACTER_TAG, character.id());
+            CharacterSkinSync.syncToTracking(player);
             return character;
         });
     }
@@ -53,5 +68,10 @@ public final class CharacterSelectionManager {
                 id -> target.getPersistentData().putString(SELECTED_CHARACTER_TAG, id),
                 () -> target.getPersistentData().remove(SELECTED_CHARACTER_TAG)
         );
+        if (hasCharacterReselection(original)) {
+            target.getPersistentData().putBoolean(CHARACTER_RESELECTION_TAG, true);
+        } else {
+            target.getPersistentData().remove(CHARACTER_RESELECTION_TAG);
+        }
     }
 }

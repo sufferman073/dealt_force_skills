@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.network;
 
+import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.shop.HaffShopManager;
 import com.rzy.dealt_force_skills.shop.LexNinjiaShopManager;
 import com.rzy.dealt_force_skills.shop.UndeadShopManager;
@@ -23,7 +24,9 @@ public class C2S_OpenSelectionOrShop {
             if (player == null) {
                 return;
             }
-            if (LexNinjiaShopManager.shouldOpen(player)) {
+            if (CharacterSelectionManager.hasCharacterReselection(player)) {
+                NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(true), player);
+            } else if (LexNinjiaShopManager.shouldOpen(player)) {
                 LexNinjiaShopManager.open(player);
             } else if (UndeadShopManager.shouldOpen(player)) {
                 UndeadShopManager.open(player);

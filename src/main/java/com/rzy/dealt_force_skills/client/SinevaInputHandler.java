@@ -4,6 +4,7 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
 import net.minecraftforge.api.distmarker.Dist;
@@ -16,6 +17,7 @@ import org.lwjgl.glfw.GLFW;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaInputHandler {
     private static final int BLADE_WIRE_HOLD_TICKS = 10;
+    private static final int GRAPPLE_RELEASE_TICKS = 3;
 
     private static boolean active1WasDown;
     private static int active1HeldTicks;
@@ -127,6 +129,18 @@ public final class SinevaInputHandler {
         active1HeldTicks = 0;
         bladeWireHeld = false;
         bladeWireCancelled = false;
+    }
+
+    public static void startGrappleUse() {
+        if (!ClientSinevaHudState.shouldRender()) {
+            return;
+        }
+        if (ClientToolReleaseAction.schedule(
+                "sineva.grapple.fire",
+                GRAPPLE_RELEASE_TICKS,
+                () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2))) {
+            com.rzy.dealt_force_skills.client.visual.SinevaPlaceholderVisuals.startGrappleFire();
+        }
     }
 
     /** Whether the player is currently holding the blade wire ready to throw. */

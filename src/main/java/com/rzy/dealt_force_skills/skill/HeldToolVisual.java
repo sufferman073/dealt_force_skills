@@ -1,0 +1,41 @@
+package com.rzy.dealt_force_skills.skill;
+
+public enum HeldToolVisual {
+    NONE,
+    MANBA_FLASHLIGHT,
+    NIKAIDOU_HOT_IRON,
+    NIKAIDOU_RITUAL_SWORD,
+    GIZMO_SMOKE_TRAP,
+    GIZMO_SPIDER_NEST,
+    GIZMO_T_BOY,
+    MORSE_SHOCK_ORB,
+    MORSE_FLASH_GRENADE,
+    MORSE_SONAR_DETECTOR,
+    SHEPHERD_SONIC_TRAP,
+    SHEPHERD_GRENADE,
+    RAPTOR_FALCON_DRONE,
+    RAPTOR_PULSE_GRENADE,
+    NOX_ROTOR,
+    NOX_FLASH_GRENADE,
+    TOXIK_TEAR_GAS,
+    TOXIK_FIREFLY_SWARM,
+    STINGER_SMOKE_GRENADE,
+    STINGER_SMOKE_DRONE,
+    STINGER_STIM_GUN,
+    HACKCLAW_HACKING_KNIFE,
+    HACKCLAW_FLASH_DRONE,
+    TEMPEST_WALL_DRILL_STINGER,
+    LUNA_COMPOSITE_GRENADE,
+    ULURU_INCENDIARY,
+    ULURU_COVER,
+    ULURU_MISSILE,
+    VLINDER_MEDICAL_DRONE,
+    VYRON_MAGNETIC_BOMB,
+    VYRON_TIGER_CANNON,
+    DEPARTMENT_EXPLOSIVE_TRAP;
+
+    public static HeldToolVisual byId(int id) {
+        HeldToolVisual[] values = values();
+        return id >= 0 && id < values.length ? values[id] : NONE;
+    }
+}

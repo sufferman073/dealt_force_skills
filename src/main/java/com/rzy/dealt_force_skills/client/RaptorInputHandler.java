@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
 import com.rzy.dealt_force_skills.character.raptor.RaptorToolAction;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
 import com.rzy.dealt_force_skills.network.C2S_RaptorToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
@@ -22,6 +23,7 @@ import org.lwjgl.glfw.GLFW;
 public final class RaptorInputHandler {
     private static final int ACTIVE_LONG_HOLD_TICKS = 15;
     private static final int PULSE_EQUIP_HOLD_TICKS = 8;
+    private static final int PULSE_RELEASE_TICKS = 3;
 
     private static boolean active1WasDown;
     private static int active1HeldTicks;
@@ -84,9 +86,12 @@ public final class RaptorInputHandler {
             return;
         }
         if (tool == RaptorTool.PULSE_GRENADE) {
-            NetworkHandler.sendToServer(new C2S_RaptorToolAction(event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT
-                    ? RaptorToolAction.THROW_PULSE_GRENADE
-                    : RaptorToolAction.STOW_TOOL));
+            if (event.getButton() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                beginPulseThrow(true);
+            } else {
+                ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE);
+                NetworkHandler.sendToServer(new C2S_RaptorToolAction(RaptorToolAction.STOW_TOOL));
+            }
         }
     }
 
@@ -102,10 +107,13 @@ public final class RaptorInputHandler {
         }
         RaptorTool tool = ClientRaptorHudState.equippedTool();
         if (event.isAttack()) {
-            NetworkHandler.sendToServer(new C2S_RaptorToolAction(tool == RaptorTool.FALCON_DRONE
-                    ? RaptorToolAction.LAUNCH_FALCON
-                    : RaptorToolAction.THROW_PULSE_GRENADE));
+            if (tool == RaptorTool.FALCON_DRONE) {
+                NetworkHandler.sendToServer(new C2S_RaptorToolAction(RaptorToolAction.LAUNCH_FALCON));
+            } else {
+                beginPulseThrow(true);
+            }
         } else if (event.isUseItem()) {
+            ClientToolReleaseAction.cancel(ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE);
             NetworkHandler.sendToServer(new C2S_RaptorToolAction(RaptorToolAction.STOW_TOOL));
         }
     }
@@ -158,9 +166,23 @@ public final class RaptorInputHandler {
             return;
         }
         if (active2WasDown && !sentActive2HoldAction) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+            if (ClientRaptorHudState.falconActiveTicks() > 0) {
+                ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+            } else {
+                beginPulseThrow(false);
+            }
         }
         resetActive2();
+    }
+
+    private static void beginPulseThrow(boolean equipped) {
+        ClientToolReleaseAction.begin(
+                ClientToolReleaseAction.Action.RAPTOR_PULSE_GRENADE,
+                PULSE_RELEASE_TICKS,
+                equipped
+                        ? () -> NetworkHandler.sendToServer(new C2S_RaptorToolAction(
+                                RaptorToolAction.THROW_PULSE_GRENADE))
+                        : () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2));
     }
 
     private static void handleCoreKey() {

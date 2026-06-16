@@ -29,6 +29,7 @@ public class S2C_RaptorFootprints {
             buf.writeVarInt(marker.ageTicks());
             buf.writeUtf(marker.ownerName(), 64);
             buf.writeUtf(marker.equipmentSummary(), 160);
+            buf.writeBoolean(marker.scanned());
         }
     }
 
@@ -41,7 +42,8 @@ public class S2C_RaptorFootprints {
                     new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()),
                     buf.readVarInt(),
                     buf.readUtf(64),
-                    buf.readUtf(160)
+                    buf.readUtf(160),
+                    buf.readBoolean()
             ));
         }
         return new S2C_RaptorFootprints(markers);

@@ -1122,6 +1122,10 @@ public class CommonEvents {
         }
 
         Entity attacker = event.getSource().getEntity();
+        if (attacker instanceof net.minecraft.world.entity.animal.Wolf wolf
+                && wolf.getOwner() instanceof ServerPlayer owner) {
+            LexNinjiaStateManager.onHamBeastKill(owner, wolf);
+        }
         if (!(attacker instanceof ServerPlayer player) || attacker == event.getEntity()) {
             return;
         }
@@ -1142,6 +1146,7 @@ public class CommonEvents {
         if (NikaidouHiroStateManager.isNikaidouHiro(player)) {
             NikaidouHiroStateManager.onKill(player);
         }
+        LexNinjiaStateManager.onKill(player);
         if (DepartmentOfTransportationStateManager.isDepartment(player)) {
             DepartmentOfTransportationStateManager.revealFromOffense(player);
         }
@@ -1176,6 +1181,7 @@ public class CommonEvents {
                 extraCopies += 4;
             }
             duplicateLivingDrops(event, extraCopies);
+            tryDropHumanoidEquipment(event, entity);
         }
         if (entity.getType() != EntityType.VINDICATOR) {
             return;
@@ -1193,6 +1199,86 @@ public class CommonEvents {
             event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(),
                     new ItemStack(ModItems.DARK_ZONE_RAINBOW_INJECTION.get(), count)));
         }
+    }
+
+    @SubscribeEvent
+    public static void onDfsItemCrafted(PlayerEvent.ItemCraftedEvent event) {
+        grantBonusOutput(event.getEntity(), event.getCrafting(), durableConsumableMultiplier(event.getCrafting().getItem()));
+    }
+
+    @SubscribeEvent
+    public static void onDfsItemSmelted(PlayerEvent.ItemSmeltedEvent event) {
+        Item item = event.getSmelting().getItem();
+        int multiplier = item == ModItems.STERILE_WATER.get() || item == ModItems.POLYETHYLENE_FIBER.get()
+                ? 4
+                : 1;
+        grantBonusOutput(event.getEntity(), event.getSmelting(), multiplier);
+    }
+
+    private static int durableConsumableMultiplier(Item item) {
+        if (item == ModItems.SELF_MADE_ARMOR_REPAIR_KIT.get()
+                || item == ModItems.SELF_MADE_HELMET_REPAIR_KIT.get()
+                || item == ModItems.ELASTIC_BANDAGE.get()
+                || item == ModItems.SIMPLE_SURGICAL_PACK.get()
+                || item == ModItems.SUSTAINED_RELEASE_PAINKILLER.get()
+                || item == ModItems.CAR_FIRST_AID_KIT.get()
+                || item == ModItems.SIMPLE_INJECTOR.get()) {
+            return 4;
+        }
+        if (item == ModItems.STANDARD_ARMOR_REPAIR_KIT.get()
+                || item == ModItems.STANDARD_HELMET_REPAIR_KIT.get()
+                || item == ModItems.CAT_TOURNIQUET.get()
+                || item == ModItems.TACTICAL_QUICK_SURGICAL_PACK.get()
+                || item == ModItems.BOTTLED_ANTIBIOTICS.get()
+                || item == ModItems.FIELD_FIRST_AID_KIT.get()
+                || item == ModItems.STRONG_INJECTOR.get()) {
+            return 3;
+        }
+        if (item == ModItems.PRECISION_ARMOR_REPAIR_KIT.get()
+                || item == ModItems.ADVANCED_ARMOR_REPAIR_KIT.get()
+                || item == ModItems.PRECISION_HELMET_REPAIR_KIT.get()
+                || item == ModItems.ADVANCED_HELMET_REPAIR_KIT.get()
+                || item == ModItems.DEK_FIELD_SURGICAL_PACK.get()
+                || item == ModItems.DVE_PAINKILLER.get()
+                || item == ModItems.OUTDOOR_MEDICAL_KIT.get()
+                || item == ModItems.BATTLEFIELD_MEDICAL_KIT.get()) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private static void grantBonusOutput(Player player, ItemStack crafted, int multiplier) {
+        if (player.level().isClientSide || crafted.isEmpty() || multiplier <= 1) {
+            return;
+        }
+        int remaining = crafted.getCount() * (multiplier - 1);
+        int maxStack = Math.max(1, crafted.getMaxStackSize());
+        while (remaining > 0) {
+            ItemStack bonus = crafted.copy();
+            int count = Math.min(maxStack, remaining);
+            bonus.setCount(count);
+            remaining -= count;
+            if (!player.getInventory().add(bonus)) {
+                player.drop(bonus, false);
+            }
+        }
+    }
+
+    private static void tryDropHumanoidEquipment(LivingDropsEvent event, LivingEntity entity) {
+        EntityType<?> type = entity.getType();
+        boolean humanoid = type == EntityType.VILLAGER
+                || type == EntityType.VINDICATOR
+                || type == EntityType.PILLAGER
+                || type == EntityType.WITCH
+                || type == EntityType.EVOKER
+                || type == EntityType.ILLUSIONER;
+        if (!humanoid || entity.getRandom().nextFloat() >= 0.02F) {
+            return;
+        }
+        ItemStack drop = new ItemStack(entity.getRandom().nextBoolean()
+                ? ModItems.D6_TACTICAL_HELMET.get()
+                : ModItems.SAMURAI_BALLISTIC_VEST.get());
+        event.getDrops().add(new ItemEntity(entity.level(), entity.getX(), entity.getY(), entity.getZ(), drop));
     }
 
     @SubscribeEvent

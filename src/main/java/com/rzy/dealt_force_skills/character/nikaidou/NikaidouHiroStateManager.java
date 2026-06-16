@@ -10,6 +10,9 @@ import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
+import com.rzy.dealt_force_skills.skill.SkillModelVisual;
+import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -66,6 +69,7 @@ public final class NikaidouHiroStateManager {
     private static final String DOOMED_UNTIL = "DoomedUntil";
     private static final String EQUIPPED_TOOL = "EquippedTool";
     private static final String ATTACK_COOLDOWN_UNTIL = "AttackCooldownUntil";
+    private static final String ATTACK_SEQUENCE = "AttackSequence";
     private static final String SPAWNED_SKELETON = "SpawnedSkeleton";
     private static final DustParticleOptions CORE_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.82F, 0.22F), 1.55F);
     private static final DustParticleOptions HOT_IRON_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.22F, 0.06F), 1.25F);
@@ -89,6 +93,7 @@ public final class NikaidouHiroStateManager {
         }
         tag.putBoolean(INITIALIZED, true);
         tag.putInt(EQUIPPED_TOOL, NikaidouHiroTool.NONE.ordinal());
+        tag.putInt(ATTACK_SEQUENCE, 0);
         tag.putLong(ACTIVE1_COOLDOWN_UNTIL, 0L);
         tag.putLong(CORE_COOLDOWN_UNTIL, 0L);
     }
@@ -335,17 +340,41 @@ public final class NikaidouHiroStateManager {
         if (attackCooldownRemainingTicks(player) > 0) {
             return true;
         }
+        SkillModelVisual visual = nextAttackVisual(player, tool);
+        SkillModelVisualSync.play(player, visual);
         if (tool == NikaidouHiroTool.HOT_IRON) {
-            attackSingle(player, HOT_IRON_ATTACK_RANGE, 15.0F, ModSounds.NIKAIDOU_HOT_IRON_HIT.get());
             data(player).putLong(ATTACK_COOLDOWN_UNTIL,
                     SkillCooldownHelper.until(player, player.level().getGameTime(), HOT_IRON_ATTACK_COOLDOWN_TICKS));
         } else {
-            attackSweep(player, RITUAL_SWORD_ATTACK_RANGE, 110.0D, 45.0F, ModSounds.NIKAIDOU_RITUAL_SWORD_HIT.get());
             data(player).putLong(ATTACK_COOLDOWN_UNTIL,
                     SkillCooldownHelper.until(player, player.level().getGameTime(), RITUAL_SWORD_ATTACK_COOLDOWN_TICKS));
         }
+        SkillAnimationScheduler.schedule(player, visual.impactTick(), delayedPlayer -> {
+            if (tool == NikaidouHiroTool.HOT_IRON) {
+                attackSingle(delayedPlayer, HOT_IRON_ATTACK_RANGE, 15.0F, ModSounds.NIKAIDOU_HOT_IRON_HIT.get());
+            } else {
+                attackSweep(delayedPlayer, RITUAL_SWORD_ATTACK_RANGE, 110.0D, 45.0F,
+                        ModSounds.NIKAIDOU_RITUAL_SWORD_HIT.get());
+            }
+        });
         player.swing(InteractionHand.MAIN_HAND, true);
         return true;
+    }
+
+    private static SkillModelVisual nextAttackVisual(Player player, NikaidouHiroTool tool) {
+        CompoundTag tag = data(player);
+        int sequence = tag.getInt(ATTACK_SEQUENCE);
+        tag.putInt(ATTACK_SEQUENCE, sequence + 1);
+        if (tool == NikaidouHiroTool.HOT_IRON) {
+            return sequence % 2 == 0
+                    ? SkillModelVisual.NIKAIDOU_HOT_IRON
+                    : SkillModelVisual.NIKAIDOU_HOT_IRON_OVERHEAD;
+        }
+        return switch (Math.floorMod(sequence, 3)) {
+            case 1 -> SkillModelVisual.NIKAIDOU_RITUAL_SWORD_RIGHT_TO_LEFT;
+            case 2 -> SkillModelVisual.NIKAIDOU_RITUAL_SWORD_DIAGONAL;
+            default -> SkillModelVisual.NIKAIDOU_RITUAL_SWORD;
+        };
     }
 
     private static void attackSingle(ServerPlayer player, double range, float damage, SoundEvent hitSound) {

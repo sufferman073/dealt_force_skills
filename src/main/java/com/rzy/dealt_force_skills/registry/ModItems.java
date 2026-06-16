@@ -5,6 +5,7 @@ import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.SpecialAbility;
 import com.rzy.dealt_force_skills.item.DfsItemQuality;
+import com.rzy.dealt_force_skills.item.DriftwoodItem;
 import com.rzy.dealt_force_skills.item.EffectConsumableItem;
 import com.rzy.dealt_force_skills.item.HarmfulCleanerItem;
 import com.rzy.dealt_force_skills.item.HealingMedicineItem;
@@ -388,6 +389,8 @@ public class ModItems {
             () -> material("premium_coffee_beans", DfsItemQuality.RED));
     public static final RegistryObject<Item> PROGRAMMABLE_PROCESSOR = ITEMS.register("programmable_processor",
             () -> material("programmable_processor"));
+    public static final RegistryObject<Item> DRIFTWOOD = ITEMS.register("driftwood",
+            () -> new DriftwoodItem(new Item.Properties().stacksTo(1)));
 
     private static RepairKitItem armorRepairKit(DfsItemQuality quality, int durability, String id) {
         return new RepairKitItem(durable(durability), quality, tooltip(id), EquipmentSlot.CHEST, 3 * 20,

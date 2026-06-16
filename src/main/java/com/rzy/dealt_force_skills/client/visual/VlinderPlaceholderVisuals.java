@@ -3,13 +3,12 @@ package com.rzy.dealt_force_skills.client.visual;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.vlinder.VlinderTool;
 import com.rzy.dealt_force_skills.client.character.ClientVlinderHudState;
+import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderArmEvent;
 import net.minecraftforge.client.event.RenderHandEvent;
@@ -19,6 +18,8 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VlinderPlaceholderVisuals {
+    private static final ResourceLocation MEDICAL_DRONE_MODEL = model("vlinder_medical_drone");
+
     private VlinderPlaceholderVisuals() {
     }
 
@@ -39,18 +40,10 @@ public final class VlinderPlaceholderVisuals {
         poseStack.scale(0.74F, 0.74F, 0.74F);
 
         Minecraft minecraft = Minecraft.getInstance();
-        minecraft.getItemRenderer().renderStatic(
-                minecraft.player,
-                new ItemStack(Items.HONEYCOMB),
-                ItemDisplayContext.FIRST_PERSON_RIGHT_HAND,
-                false,
-                poseStack,
-                event.getMultiBufferSource(),
-                minecraft.level,
-                event.getPackedLight(),
-                OverlayTexture.NO_OVERLAY,
-                0
-        );
+        float seconds = (minecraft.player.tickCount + event.getPartialTick()) / 20.0F;
+        String animation = ClientVlinderHudState.equippedTool() == VlinderTool.MEDICAL_DRONE ? "idle_hover" : null;
+        BlockbenchAnimatedModelRenderer.render(MEDICAL_DRONE_MODEL, animation, seconds,
+                poseStack, event.getMultiBufferSource(), event.getPackedLight());
         poseStack.popPose();
     }
 
@@ -59,5 +52,9 @@ public final class VlinderPlaceholderVisuals {
         if (ClientVlinderHudState.hasEquippedTool()) {
             event.setCanceled(true);
         }
+    }
+
+    private static ResourceLocation model(String path) {
+        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
     }
 }
