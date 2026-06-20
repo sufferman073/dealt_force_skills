@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.mojang.logging.LogUtils;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -46,7 +47,7 @@ import java.util.Set;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HelmetVisionClient {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final double THERMAL_HIGHLIGHT_RANGE = 96.0D;
+    private static final double THERMAL_HIGHLIGHT_RANGE = DealtForceConfig.doubleValue("client.helmet_vision_client.thermal_highlight_range", 96.0D);
     private static final int HEARING_REVEAL_COLOR = 0xFF7EE8FF;
     private static final String THERMAL_TEAM_NAME = "dfs_thermal";
     private static final Map<Integer, ThermalHighlightState> THERMAL_RESTORE = new HashMap<>();

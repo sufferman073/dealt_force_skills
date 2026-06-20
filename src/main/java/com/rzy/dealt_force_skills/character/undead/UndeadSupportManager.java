@@ -86,7 +86,7 @@ public final class UndeadSupportManager {
             if ("campfire".equals(type)) {
                 if (level.getBlockState(origin).is(Blocks.CAMPFIRE)) {
                     if (distanceSqr(player, origin, 0.5D) <= 9.0D) {
-                        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 30, 1,
+                        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.regeneration.0.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.regeneration.0.amplifier", 1),
                                 false, false, true));
                     }
                     retained.add(support.copy());
@@ -95,9 +95,9 @@ public final class UndeadSupportManager {
                 BlockPos banner = BlockPos.of(support.getLong(SIGN));
                 if (level.getBlockState(banner).is(Blocks.RED_BANNER)) {
                     if (distanceSqr(player, origin, 0.5D) <= 16.0D) {
-                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, 11 * 20, 1,
+                        player.addEffect(new MobEffectInstance(MobEffects.DAMAGE_BOOST, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.damage_boost.1.duration_ticks", 11 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.damage_boost.1.amplifier", 1),
                                 false, false, true));
-                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 11 * 20, 1,
+                        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.movement_speed.2.duration_ticks", 11 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_support_manager.effect.movement_speed.2.amplifier", 1),
                                 false, false, true));
                     }
                     retained.add(support.copy());

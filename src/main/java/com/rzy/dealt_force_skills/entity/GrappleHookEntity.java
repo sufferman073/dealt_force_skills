@@ -40,12 +40,12 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             SynchedEntityData.defineId(GrappleHookEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> RETURNING =
             SynchedEntityData.defineId(GrappleHookEntity.class, EntityDataSerializers.BOOLEAN);
-    private static final double MAX_DISTANCE_SQR = 35.0 * 35.0;
-    private static final int PULL_DELAY_TICKS = 8;
-    private static final int MAX_PULL_TICKS = 48;
-    private static final int MAX_RETURN_TICKS = 60;
-    private static final double RETURN_SPEED_PER_TICK = 1.8D;
-    private static final double RETURN_FINISH_DISTANCE = 0.55D;
+    private static final double MAX_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.max_distance_sqr", 35.0 * 35.0);
+    private static final int PULL_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.pull_delay_ticks", 8);
+    private static final int MAX_PULL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_pull_ticks", 48);
+    private static final int MAX_RETURN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_return_ticks", 60);
+    private static final double RETURN_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_speed_per_tick", 1.8D);
+    private static final double RETURN_FINISH_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_finish_distance", 0.55D);
 
     private int targetId = -1;
     private int hookedAtTick = -1;
@@ -166,7 +166,7 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
         if (target instanceof LivingEntity le) {
             level().playSound(null, sp.blockPosition(), ModSounds.SINEVA_GRAPPLE_HIT_CASTER.get(),
                     SoundSource.PLAYERS, 1.0f, 1.0f);
-            SkillDamageHelper.hurt(le, SkillDamageHelper.sinevaGrapple(sp.serverLevel(), this, sp), sp, 10.0f);
+            SkillDamageHelper.hurt(le, SkillDamageHelper.sinevaGrapple(sp.serverLevel(), this, sp), sp, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.grapple_hook_entity.skill_hurt.0.damage", 10.0f));
             targetId = target.getId();
             hookedAtTick = tickCount;
             setDeltaMovement(Vec3.ZERO);
@@ -222,7 +222,7 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             return;
         }
 
-        le.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5, 0, false, true));
+        le.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapple_hook_entity.effect.stun.0.duration_ticks", 5), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapple_hook_entity.effect.stun.0.amplifier", 0), false, true));
         StunEffect.allowHorizontalMovement(le, 3);
         setPos(target.getX(), target.getY() + target.getBbHeight() * 0.5, target.getZ());
 
@@ -245,6 +245,7 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
         le.setDeltaMovement(Vec3.ZERO);
         le.hurtMarked = true;
         le.hasImpulse = true;
+        syncDraggedPlayer(le);
     }
 
     private void beginReturn() {
@@ -286,5 +287,12 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             horizontal = new Vec3(-Math.sin(Math.toRadians(player.getYRot())), 0.0, Math.cos(Math.toRadians(player.getYRot())));
         }
         return player.position().add(horizontal.normalize().scale(1.6)).add(0.0, 0.05, 0.0);
+    }
+
+    private static void syncDraggedPlayer(LivingEntity target) {
+        if (target instanceof net.minecraft.server.level.ServerPlayer player) {
+            player.connection.teleport(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+            player.fallDistance = 0.0F;
+        }
     }
 }

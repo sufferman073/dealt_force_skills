@@ -28,16 +28,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class GizmoStateManager {
-    public static final int SMOKE_MAX_CHARGES = 2;
-    public static final int SMOKE_RECHARGE_TICKS = 50 * 20;
-    public static final int SMOKE_ACTIVE_LIMIT = 2;
-    public static final int SPIDER_MAX_CHARGES = 1;
-    public static final int SPIDER_RECHARGE_TICKS = 50 * 20;
-    public static final int SPIDER_ACTIVE_LIMIT = 1;
-    public static final int CORE_COOLDOWN_TICKS = 75 * 20;
-    public static final int WEBBED_DURATION_TICKS = 40 * 20;
-    public static final int WEB_ESCAPE_TICKS = 5 * 20;
-    public static final double PASSIVE_RADIUS = 8.0D;
+    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_max_charges", 2);
+    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_recharge_ticks", 50 * 20);
+    public static final int SMOKE_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_active_limit", 2);
+    public static final int SPIDER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_max_charges", 1);
+    public static final int SPIDER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_recharge_ticks", 50 * 20);
+    public static final int SPIDER_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_active_limit", 1);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.core_cooldown_ticks", 75 * 20);
+    public static final int WEBBED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.webbed_duration_ticks", 40 * 20);
+    public static final int WEB_ESCAPE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.web_escape_ticks", 5 * 20);
+    public static final double PASSIVE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_state_manager.passive_radius", 8.0D);
     public static final UUID PASSIVE_MOVE_UUID = UUID.fromString("872ad489-74b0-4c30-a739-5cedda9b7c48");
     public static final UUID PASSIVE_ATTACK_UUID = UUID.fromString("33338d13-a4fe-4db5-a62c-c0491e53ed6d");
 

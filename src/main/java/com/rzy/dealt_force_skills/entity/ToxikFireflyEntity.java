@@ -35,11 +35,11 @@ import java.util.Map;
 import java.util.UUID;
 
 public class ToxikFireflyEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
-    private static final int LIFE_TICKS = 80;
-    private static final double SPEED = 0.82D;
-    private static final double HIT_RADIUS = 0.42D;
-    private static final double AVOID_LOOKAHEAD = 1.15D;
-    private static final int TARGET_REHIT_COOLDOWN_TICKS = 10;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.life_ticks", 80);
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.speed", 0.82D);
+    private static final double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.hit_radius", 0.42D);
+    private static final double AVOID_LOOKAHEAD = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxik_firefly_entity.avoid_lookahead", 1.15D);
+    private static final int TARGET_REHIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.target_rehit_cooldown_ticks", 10);
     private static final Map<UUID, Long> RECENT_TARGET_HITS = new HashMap<>();
 
     private UUID ownerId;

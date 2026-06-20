@@ -44,19 +44,19 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class NoxStateManager {
-    public static final int ROTOR_COOLDOWN_TICKS = 55 * 20;
-    public static final int FLASH_MAX_CHARGES = 2;
-    public static final int FLASH_RECHARGE_TICKS = 45 * 20;
-    public static final int CORE_PREP_TICKS = 12;
-    public static final int CORE_DURATION_TICKS = 35 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 75 * 20;
-    public static final int DELAYED_WOUND_TICKS = 10 * 20;
-    public static final int CRIPPLED_TICKS = 8 * 20;
-    public static final int DECOY_INTERVAL_TICKS = 5 * 20;
-    public static final int MAX_ACTIVE_DECOYS = 2;
+    public static final int ROTOR_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.rotor_cooldown_ticks", 55 * 20);
+    public static final int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.flash_max_charges", 2);
+    public static final int FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.flash_recharge_ticks", 45 * 20);
+    public static final int CORE_PREP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.core_prep_ticks", 12);
+    public static final int CORE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.core_duration_ticks", 35 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.core_cooldown_ticks", 75 * 20);
+    public static final int DELAYED_WOUND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.delayed_wound_ticks", 10 * 20);
+    public static final int CRIPPLED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.crippled_ticks", 8 * 20);
+    public static final int DECOY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.decoy_interval_ticks", 5 * 20);
+    public static final int MAX_ACTIVE_DECOYS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.max_active_decoys", 2);
     public static final int STEALTH_PARTICLE_INTERVAL_TICKS = 10;
-    public static final double STEALTH_WARNING_RANGE = 15.0D;
-    private static final float DECOY_DAMAGE_MULTIPLIER = 0.5f;
+    public static final double STEALTH_WARNING_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_state_manager.stealth_warning_range", 15.0D);
+    private static final float DECOY_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.nox.nox_state_manager.decoy_damage_multiplier", 0.5f);
     public static final UUID STEALTH_SPEED_UUID = UUID.fromString("2b5d4b8a-5e6b-4b2e-8fe5-6e94337104ea");
     public static final String DECOY_TAG = DealtForceSkillsMod.MODID + ".nox_decoy";
     public static final String DECOY_OWNER = "NoxOwner";
@@ -224,7 +224,7 @@ public final class NoxStateManager {
             return;
         }
         boolean applied = target.addEffect(new MobEffectInstance(ModEffects.NOX_DELAYED_WOUND.get(),
-                DELAYED_WOUND_TICKS, 0, false, true, true), owner);
+                DELAYED_WOUND_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.effect.nox_delayed_wound.0.amplifier", 0), false, true, true), owner);
         if (applied || target.hasEffect(ModEffects.NOX_DELAYED_WOUND.get())) {
             NoxDelayedWoundEffect.resetCaps(target, healthCap);
         } else {
@@ -235,7 +235,7 @@ public final class NoxStateManager {
     public static void applyCrippled(LivingEntity target, LivingEntity owner) {
         NoxCrippledEffect.setOwner(target, owner);
         target.addEffect(new MobEffectInstance(ModEffects.NOX_CRIPPLED.get(),
-                CRIPPLED_TICKS, 0, false, true, true), owner);
+                CRIPPLED_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.effect.nox_crippled.1.amplifier", 0), false, true, true), owner);
     }
 
     public static void tryApplyDelayedWound(DamageSource source, LivingEntity target, float amount) {
@@ -373,7 +373,7 @@ public final class NoxStateManager {
         }
         player.setInvisible(true);
         player.setSilent(true);
-        player.addEffect(new MobEffectInstance(ModEffects.NOX_STEALTH.get(), 40, 0, false, false, false));
+        player.addEffect(new MobEffectInstance(ModEffects.NOX_STEALTH.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.effect.nox_stealth.2.duration_ticks", 40), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nox.nox_state_manager.effect.nox_stealth.2.amplifier", 0), false, false, false));
     }
 
     private static void spawnStealthParticles(ServerPlayer player) {

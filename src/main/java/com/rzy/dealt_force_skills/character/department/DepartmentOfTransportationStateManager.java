@@ -47,36 +47,36 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class DepartmentOfTransportationStateManager {
-    public static final int LASER_COOLDOWN_TICKS = 6 * 20;
-    public static final int TRAP_COOLDOWN_TICKS = 45 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 5 * 20;
-    public static final int TRAP_MAX_CHARGES = 2;
-    public static final int TRAP_ACTIVE_LIMIT = TRAP_MAX_CHARGES;
-    public static final int CALIBRATION_DURATION_TICKS = 60 * 60 * 20;
-    public static final int CORE_COUNTDOWN_TICKS = 10 * 20;
-    public static final int CORE_ASCEND_TICKS = 40;
-    private static final double CORE_CALIBRATION_RADIUS = 24.0D;
-    private static final int MAX_CALIBRATION_AMPLIFIER = 4;
-    private static final int CORE_EXECUTION_MIN_AMPLIFIER = 2;
-    private static final float CORE_EXECUTION_MIN_DAMAGE = 1000.0F;
+    public static final int LASER_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.laser_cooldown_ticks", 6 * 20);
+    public static final int TRAP_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_cooldown_ticks", 45 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_cooldown_ticks", 5 * 20);
+    public static final int TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_max_charges", 2);
+    public static final int TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_active_limit", TRAP_MAX_CHARGES);
+    public static final int CALIBRATION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_duration_ticks", 60 * 60 * 20);
+    public static final int CORE_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_countdown_ticks", 10 * 20);
+    public static final int CORE_ASCEND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_ascend_ticks", 40);
+    private static final double CORE_CALIBRATION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.core_calibration_radius", 24.0D);
+    private static final int MAX_CALIBRATION_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.max_calibration_amplifier", 4);
+    private static final int CORE_EXECUTION_MIN_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_execution_min_amplifier", 2);
+    private static final float CORE_EXECUTION_MIN_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.department.department_of_transportation_state_manager.core_execution_min_damage", 1000.0F);
     public static final String CHARGED_CREEPER_TAG = DealtForceSkillsMod.MODID + ".department_charged_creeper";
     public static final String SUMMON_OWNER = "DepartmentOwner";
     public static final String BABY_ZOMBIE_SPAWNED = "DepartmentBabyZombieSpawned";
     private static final String DEATH_EXPLOSION_TRIGGERED = "DepartmentDeathExplosionTriggered";
 
-    private static final int INITIAL_REDUCTION_PERCENT = 75;
-    private static final int MAX_VULNERABILITY_PERCENT = 90;
-    private static final int SKILL_REDUCTION_RECOVERY_PERCENT = 5;
-    private static final int SKILL_VULNERABILITY_RECOVERY_PERCENT = 3;
-    private static final float PASSIVE_PERCENT_MULTIPLIER = 0.01F;
+    private static final int INITIAL_REDUCTION_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.initial_reduction_percent", 75);
+    private static final int MAX_VULNERABILITY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.max_vulnerability_percent", 90);
+    private static final int SKILL_REDUCTION_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.skill_reduction_recovery_percent", 5);
+    private static final int SKILL_VULNERABILITY_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.skill_vulnerability_recovery_percent", 3);
+    private static final float PASSIVE_PERCENT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.department.department_of_transportation_state_manager.passive_percent_multiplier", 0.01F);
     private static final int PASSIVE_SCALE_VERSION_CURRENT = 2;
-    private static final double CONCEALMENT_PROXIMITY = 1.5D;
-    private static final int CONCEALMENT_BREAK_TICKS = 3 * 20;
-    private static final int CALIBRATION_BASE_WINDOW_PERMILLE = 350;
-    private static final int CALIBRATION_MIN_WINDOW_PERMILLE = 150;
-    private static final int CALIBRATION_WINDOW_SHRINK_PER_SUCCESS = 50;
-    private static final int CALIBRATION_SUCCESS_REQUIRED = 4;
-    private static final double TRAP_SEARCH_RANGE = 56.0D;
+    private static final double CONCEALMENT_PROXIMITY = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.concealment_proximity", 1.5D);
+    private static final int CONCEALMENT_BREAK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.concealment_break_ticks", 3 * 20);
+    private static final int CALIBRATION_BASE_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_base_window_permille", 350);
+    private static final int CALIBRATION_MIN_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_min_window_permille", 150);
+    private static final int CALIBRATION_WINDOW_SHRINK_PER_SUCCESS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_window_shrink_per_success", 50);
+    private static final int CALIBRATION_SUCCESS_REQUIRED = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_success_required", 4);
+    private static final double TRAP_SEARCH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.trap_search_range", 56.0D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".department_of_transportation";
     private static final String INITIALIZED = "Initialized";
@@ -389,7 +389,7 @@ public final class DepartmentOfTransportationStateManager {
         tag.putLong(CORE_ASCEND_UNTIL, 0L);
         tag.putFloat(CORE_SPIN_YAW, player.getYRot());
         setEquippedTool(player, DepartmentTool.NONE);
-        player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), CORE_COUNTDOWN_TICKS, 0, false, true, true));
+        player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), CORE_COUNTDOWN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.0.amplifier", 0), false, true, true));
         stunNearby(player.serverLevel(), player, player.position(), 6.0D, 4 * 20);
         play(player, ModSounds.DEPARTMENT_CORE_CAST.get(), 1.0F, 1.0F);
         play(player, ModSounds.DEPARTMENT_CORE_COUNTDOWN.get(), 0.7F, 1.0F);
@@ -565,7 +565,7 @@ public final class DepartmentOfTransportationStateManager {
         tag.putBoolean(CONCEALMENT_READY, true);
         tag.putLong(CONCEALMENT_BREAK_UNTIL, 0L);
         player.setHealth(1.0F);
-        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 10 * 20, 1, false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.movement_speed.2.duration_ticks", 10 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.movement_speed.2.amplifier", 1), false, true, true));
         play(player, ModSounds.DEPARTMENT_PASSIVE_SECOND_FATAL.get(), 0.95F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.second_fatal"), true);
         syncToClient(player);
@@ -653,7 +653,7 @@ public final class DepartmentOfTransportationStateManager {
                         && target.isAlive()
                         && hasExecutionCalibration(target))) {
             CORE_VICTIMS.put(target.getUUID(), new CoreVictim(now + CORE_ASCEND_TICKS, player.getUUID()));
-            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), CORE_ASCEND_TICKS + 10, 0, false, true, true), player);
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), CORE_ASCEND_TICKS + 10, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.3.amplifier", 0), false, true, true), player);
         }
     }
 
@@ -701,7 +701,7 @@ public final class DepartmentOfTransportationStateManager {
     private static void applyConcealmentRuntime(ServerPlayer player) {
         player.setInvisible(true);
         player.setSilent(true);
-        player.addEffect(new MobEffectInstance(ModEffects.DEPARTMENT_CONCEALMENT.get(), 40, 0, false, false, false));
+        player.addEffect(new MobEffectInstance(ModEffects.DEPARTMENT_CONCEALMENT.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.department_concealment.4.duration_ticks", 40), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.department_concealment.4.amplifier", 0), false, false, false));
     }
 
     private static void removeConcealmentRuntime(Player player) {
@@ -839,7 +839,7 @@ public final class DepartmentOfTransportationStateManager {
             target.setDeltaMovement(before.add(target.position().subtract(center).normalize().scale(0.45D)));
             target.hurtMarked = true;
             if (stunTicks > 0) {
-                target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), stunTicks, 0, false, true, true), owner);
+                target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), stunTicks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.6.amplifier", 0), false, true, true), owner);
             }
         }
     }
@@ -851,7 +851,7 @@ public final class DepartmentOfTransportationStateManager {
                 continue;
             }
             if (target.position().distanceToSqr(center) <= radius * radius) {
-                target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), ticks, 0, false, true, true), owner);
+                target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), ticks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.7.amplifier", 0), false, true, true), owner);
             }
         }
     }
@@ -937,7 +937,7 @@ public final class DepartmentOfTransportationStateManager {
         player.removeEffect(ModEffects.DEPARTMENT_VULNERABLE.get());
         if (vulnerabilityPercent > 0) {
             player.addEffect(new MobEffectInstance(ModEffects.DEPARTMENT_VULNERABLE.get(),
-                    60 * 60 * 20, vulnerabilityPercent - 1, false, true, true));
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.department_vulnerable.8.duration_ticks", 60 * 60 * 20), vulnerabilityPercent - 1, false, true, true));
         }
     }
 

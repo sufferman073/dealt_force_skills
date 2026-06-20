@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
 import com.rzy.dealt_force_skills.client.visual.ClientSinevaVisualState;
@@ -24,9 +25,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaShieldInputHandler {
-    private static final int BASH_STAMINA_PERCENT_COST = 20;
-    private static final int CHARGE_STAMINA_PERCENT_COST = 30;
-    private static final int BASH_ACTIVE_STAMINA_TICKS = 20;
+    private static final int BASH_STAMINA_PERCENT_COST = DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_stamina_percent_cost", 20);
+    private static final int CHARGE_STAMINA_PERCENT_COST = DealtForceConfig.intValue("client.sineva_shield_input_handler.charge_stamina_percent_cost", 30);
+    private static final int BASH_ACTIVE_STAMINA_TICKS = DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_active_stamina_ticks", 20);
 
     private static int lockedHotbarSlot = -1;
 

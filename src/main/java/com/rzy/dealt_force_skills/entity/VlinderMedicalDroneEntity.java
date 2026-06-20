@@ -27,10 +27,10 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class VlinderMedicalDroneEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = 10 * 20;
-    private static final double SPEED = 0.40D;
-    private static final double HIT_DISTANCE = 1.5D;
-    private static final double MAX_OWNER_DISTANCE = 128.0D;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlindermedicaldroneentity.life_ticks", 10 * 20);
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.speed", 0.40D);
+    private static final double HIT_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.hit_distance", 1.5D);
+    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.max_owner_distance", 128.0D);
     private static final DustParticleOptions HEAL_DUST = new DustParticleOptions(new Vector3f(0.45f, 1.0f, 0.68f), 1.0f);
     private static final DustParticleOptions WASTE_DUST = new DustParticleOptions(new Vector3f(0.55f, 0.35f, 1.0f), 1.0f);
 

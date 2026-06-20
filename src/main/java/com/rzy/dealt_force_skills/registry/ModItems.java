@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.registry;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.SpecialAbility;
@@ -393,13 +394,17 @@ public class ModItems {
             () -> new DriftwoodItem(new Item.Properties().stacksTo(1)));
 
     private static RepairKitItem armorRepairKit(DfsItemQuality quality, int durability, String id) {
-        return new RepairKitItem(durable(durability), quality, tooltip(id), EquipmentSlot.CHEST, 3 * 20,
+        String key = "consumables." + id;
+        return new RepairKitItem(durable(DealtForceConfig.intValue(key + ".durability", durability)), quality,
+                tooltip(id), EquipmentSlot.CHEST, DealtForceConfig.intValue(key + ".use_ticks", 3 * 20),
                 ModSounds.ITEM_ARMOR_REPAIR_START, ModSounds.ITEM_ARMOR_REPAIR_WORK, ModSounds.ITEM_ARMOR_REPAIR_FINISH,
                 message("armor_repair_start"), message("armor_repair_work"), message("armor_repair_fail"));
     }
 
     private static RepairKitItem helmetRepairKit(DfsItemQuality quality, int durability, String id) {
-        return new RepairKitItem(durable(durability), quality, tooltip(id), EquipmentSlot.HEAD, 3 * 20,
+        String key = "consumables." + id;
+        return new RepairKitItem(durable(DealtForceConfig.intValue(key + ".durability", durability)), quality,
+                tooltip(id), EquipmentSlot.HEAD, DealtForceConfig.intValue(key + ".use_ticks", 3 * 20),
                 ModSounds.ITEM_HELMET_REPAIR_START, ModSounds.ITEM_HELMET_REPAIR_WORK, ModSounds.ITEM_HELMET_REPAIR_FINISH,
                 message("helmet_repair_start"), message("helmet_repair_work"), message("helmet_repair_fail"));
     }
@@ -412,10 +417,14 @@ public class ModItems {
     private static EffectConsumableItem painReliefItem(Item.Properties properties, String id, int durationTicks,
                                                        Supplier<SoundEvent> startSound,
                                                        Supplier<SoundEvent> finishSound) {
-        return new EffectConsumableItem(properties, DfsItemQuality.WHITE, tooltip(id), 3 * 20,
+        String key = "consumables." + id;
+        List<EffectConsumableItem.EffectEntry> effects = configuredEffects(key,
+                List.of(new EffectConsumableItem.EffectEntry(ModEffects.PAIN_RELIEF, durationTicks, 0)));
+        return new EffectConsumableItem(properties, DfsItemQuality.WHITE, tooltip(id),
+                DealtForceConfig.intValue(key + ".use_ticks", 3 * 20),
                 startSound, finishSound,
                 message(id + "_start"), message(id + "_finish"),
-                List.of(new EffectConsumableItem.EffectEntry(ModEffects.PAIN_RELIEF, durationTicks, 0)));
+                effects);
     }
 
     private static QualityTooltipItem material(String id) {
@@ -427,10 +436,11 @@ public class ModItems {
     }
 
     private static EffectConsumableItem beverage(String id, List<EffectConsumableItem.EffectEntry> effects) {
+        String key = "consumables." + id;
         return new EffectConsumableItem(new Item.Properties().stacksTo(16), DfsItemQuality.RED,
-                tooltip(id), 3 * 20,
+                tooltip(id), DealtForceConfig.intValue(key + ".use_ticks", 3 * 20),
                 ModSounds.ITEM_BEVERAGE_START, ModSounds.ITEM_BEVERAGE_FINISH,
-                message("beverage_start"), message(id + "_finish"), effects);
+                message("beverage_start"), message(id + "_finish"), configuredEffects(key, effects));
     }
 
     private static EffectConsumableItem injection(String id, int useTicks, List<EffectConsumableItem.EffectEntry> effects) {
@@ -439,18 +449,23 @@ public class ModItems {
 
     private static EffectConsumableItem injection(String id, DfsItemQuality quality, int useTicks,
                                                   List<EffectConsumableItem.EffectEntry> effects) {
+        String key = "consumables." + id;
         return new EffectConsumableItem(new Item.Properties().stacksTo(16), quality,
-                tooltip(id), useTicks,
+                tooltip(id), DealtForceConfig.intValue(key + ".use_ticks", useTicks),
                 ModSounds.ITEM_INJECTION_START, ModSounds.ITEM_INJECTION_FINISH,
-                message("injection_start"), message(id + "_finish"), effects);
+                message("injection_start"), message(id + "_finish"), configuredEffects(key, effects));
     }
 
     private static HealingMedicineItem medicine(String id, DfsItemQuality quality, int durability, int useTicks,
                                                 int durabilityPerSecond, double healPercent, int painReliefExtraCost) {
-        return new HealingMedicineItem(durable(durability), quality, tooltip(id), useTicks,
+        String key = "consumables." + id;
+        return new HealingMedicineItem(durable(DealtForceConfig.intValue(key + ".durability", durability)),
+                quality, tooltip(id), DealtForceConfig.intValue(key + ".use_ticks", useTicks),
                 ModSounds.ITEM_MEDICINE_START, ModSounds.ITEM_MEDICINE_WORK, ModSounds.ITEM_MEDICINE_FINISH,
                 message(id + "_start"), message(id + "_finish"),
-                durabilityPerSecond, healPercent, painReliefExtraCost);
+                DealtForceConfig.intValue(key + ".durability_per_second", durabilityPerSecond),
+                DealtForceConfig.doubleValue(key + ".heal_percent", healPercent),
+                DealtForceConfig.intValue(key + ".pain_relief_extra_cost", painReliefExtraCost));
     }
 
     private static DfsEquipmentItem armor(String id, DfsItemQuality quality, Faction faction, int durability,
@@ -480,10 +495,22 @@ public class ModItems {
                                               double hearingBoost, String noiseReductionKey,
                                               boolean nightVision, boolean thermalVision,
                                               SpecialAbility ability, double lootDuplicateChance) {
-        DfsEquipmentItem.Profile profile = new DfsEquipmentItem.Profile(id, quality, slot, faction, defense, toughness,
-                coverageKey, movementLimit, actionLimit, knockbackResistance, bluntResistance, kineticAbsorption,
-                lightweight, hearingBoost, noiseReductionKey, nightVision, thermalVision, ability, lootDuplicateChance);
-        return new DfsEquipmentItem(new Item.Properties().durability(durability), profile, tooltip(id));
+        String key = "equipment." + id;
+        DfsEquipmentItem.Profile profile = new DfsEquipmentItem.Profile(id, quality, slot, faction,
+                DealtForceConfig.intValue(key + ".defense", defense),
+                DealtForceConfig.doubleValue(key + ".toughness", toughness), coverageKey,
+                DealtForceConfig.doubleValue(key + ".movement_limit", movementLimit),
+                DealtForceConfig.doubleValue(key + ".action_limit", actionLimit),
+                DealtForceConfig.doubleValue(key + ".knockback_resistance", knockbackResistance),
+                DealtForceConfig.doubleValue(key + ".blunt_resistance", bluntResistance),
+                DealtForceConfig.doubleValue(key + ".kinetic_absorption", kineticAbsorption),
+                DealtForceConfig.doubleValue(key + ".lightweight", lightweight),
+                DealtForceConfig.doubleValue(key + ".hearing_boost", hearingBoost), noiseReductionKey,
+                DealtForceConfig.booleanValue(key + ".night_vision", nightVision),
+                DealtForceConfig.booleanValue(key + ".thermal_vision", thermalVision), ability,
+                DealtForceConfig.doubleValue(key + ".loot_duplicate_chance", lootDuplicateChance));
+        int configuredDurability = DealtForceConfig.intValue(key + ".durability", durability);
+        return new DfsEquipmentItem(new Item.Properties().durability(configuredDurability), profile, tooltip(id));
     }
 
     private static EffectConsumableItem.EffectEntry effect(Supplier<MobEffect> effect, int seconds, int amplifier) {
@@ -502,6 +529,21 @@ public class ModItems {
             result.add(new EffectConsumableItem.EffectEntry(entry.effect(), entry.durationTicks() * 2, doubledLevelAmplifier));
         }
         return result;
+    }
+
+    private static List<EffectConsumableItem.EffectEntry> configuredEffects(
+            String key,
+            List<EffectConsumableItem.EffectEntry> effects
+    ) {
+        List<EffectConsumableItem.EffectEntry> result = new ArrayList<>();
+        for (int i = 0; i < effects.size(); i++) {
+            EffectConsumableItem.EffectEntry entry = effects.get(i);
+            String effectKey = key + ".effects.effect_" + i;
+            result.add(new EffectConsumableItem.EffectEntry(entry.effect(),
+                    DealtForceConfig.intValue(effectKey + ".duration_ticks", entry.durationTicks()),
+                    DealtForceConfig.intValue(effectKey + ".amplifier", entry.amplifier())));
+        }
+        return List.copyOf(result);
     }
 
     private static Item.Properties durable(int durability) {

@@ -55,7 +55,7 @@ public final class NikaidouHiroHeldItemVisuals {
             poseStack.mulPose(Axis.ZP.rotationDegrees(18.0F));
             poseStack.scale(1.12F, 1.12F, 1.12F);
         } else {
-            poseStack.translate(0.18D, 0.04D, -0.66D);
+            poseStack.translate(0.18D, -0.26D, -0.66D);
             poseStack.mulPose(Axis.YP.rotationDegrees(-18.0F));
             poseStack.mulPose(Axis.XP.rotationDegrees(-22.0F));
             poseStack.mulPose(Axis.ZP.rotationDegrees(8.0F));
@@ -143,14 +143,14 @@ public final class NikaidouHiroHeldItemVisuals {
             poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(progress, 42.0F, -96.0F)));
         } else if (visual == SkillModelVisual.NIKAIDOU_HOT_IRON_OVERHEAD) {
             poseStack.translate(Mth.lerp(progress, 0.04F, -0.04F),
-                    Mth.lerp(progress, 0.04F, 0.22F) - arc * 0.08F,
+                    Mth.lerp(progress, -0.22F, -0.04F) - arc * 0.08F,
                     Mth.lerp(progress, -0.18F, -0.34F));
             poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(progress, -4.0F, 8.0F)));
             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(progress, -42.0F, 16.0F)));
             poseStack.mulPose(Axis.ZP.rotationDegrees(Mth.lerp(progress, 7.0F, -7.0F)));
         } else {
             poseStack.translate(Mth.lerp(progress, 0.10F, -0.10F),
-                    Mth.lerp(progress, 0.08F, 0.20F) - arc * 0.08F,
+                    Mth.lerp(progress, -0.20F, -0.08F) - arc * 0.08F,
                     Mth.lerp(progress, -0.24F, -0.40F));
             poseStack.mulPose(Axis.YP.rotationDegrees(Mth.lerp(progress, -14.0F, 12.0F)));
             poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(progress, -34.0F, 10.0F)));

@@ -43,11 +43,11 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(ShepherdSonicTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 40;
-    private static final int AUTO_DETONATION_DELAY_TICKS = 10;
-    private static final double AUTO_TRIGGER_RADIUS = 4.0D;
-    private static final double AUTO_DAMAGE_RADIUS = 4.0D;
-    private static final double MANUAL_DAMAGE_RADIUS = 6.0D;
-    private static final double MAX_OWNER_DISTANCE = 50.0D;
+    private static final int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdsonictrapentity.auto_detonation_delay_ticks", 10);
+    private static final double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_trigger_radius", 4.0D);
+    private static final double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_damage_radius", 4.0D);
+    private static final double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.manual_damage_radius", 6.0D);
+    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.max_owner_distance", 50.0D);
     private static final DustParticleOptions SONIC_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.83f, 0.20f), 1.35f);
 
     private UUID ownerId;
@@ -246,10 +246,10 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
 
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.shepherdSonic(level, this, owner), owner instanceof LivingEntity living ? living : null, 10.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.shepherdSonic(level, this, owner), owner instanceof LivingEntity living ? living : null, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherd_sonic_trap_entity.skill_hurt.0.damage", 10.0f));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
-            target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), 8 * 20, 1, false, true, true), owner);
+            target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_sonic_trap_entity.effect.sonic_shock.0.duration_ticks", 8 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_sonic_trap_entity.effect.sonic_shock.0.amplifier", 1), false, true, true), owner);
             RangedSoundHelper.playTrapSoundThrottled(level, target.position(), ModSounds.SHEPHERD_SONIC_SHOCK_HIT.get(),
                     0.58f, 1.0f + (target.getRandom().nextFloat() - 0.5f) * 0.12f, 8, 5.0D);
         }

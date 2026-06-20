@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.shop;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.item.DfsItemQuality;
 import com.rzy.dealt_force_skills.registry.ModItems;
 import net.minecraft.world.item.Item;
@@ -134,7 +135,8 @@ public final class DfsShopCatalog {
     }
 
     private static Entry entry(String id, RegistryObject<Item> item, Category category, DfsItemQuality quality, int price) {
-        return new Entry(id, item, category, quality, price);
+        return new Entry(id, item, category, quality,
+                DealtForceConfig.intValue("shop.items." + id + ".price", price));
     }
 
     public enum Category {

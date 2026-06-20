@@ -15,6 +15,8 @@ import com.rzy.dealt_force_skills.character.dwolf.DWolfSkills;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoSkills;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothSkills;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawSkills;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaSkills;
@@ -31,6 +33,8 @@ import com.rzy.dealt_force_skills.character.nox.NoxSkills;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorSkills;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedSkills;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdSkills;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
 import com.rzy.dealt_force_skills.character.sineva.SinevaSkills;
@@ -157,6 +161,14 @@ public final class SkillDispatcher {
             TempestStateManager.initializeIfNeeded(player);
             TempestStateManager.syncToClient(player);
         }
+        if (ModCharacters.SAEED_ID.equals(character.id())) {
+            SaeedStateManager.initializeIfNeeded(player);
+            SaeedStateManager.syncToClient(player);
+        }
+        if (ModCharacters.GHROTH_ID.equals(character.id())) {
+            GhrothStateManager.initializeIfNeeded(player);
+            GhrothStateManager.syncToClient(player);
+        }
         player.displayClientMessage(
                 Component.translatable("message.dealt_force_skills.character_selected",
                         Component.translatable(character.nameTranslationKey())),
@@ -231,6 +243,12 @@ public final class SkillDispatcher {
                     }
                     if (ModCharacters.TEMPEST_ID.equals(character.id())) {
                         TempestStateManager.tick(player);
+                    }
+                    if (ModCharacters.SAEED_ID.equals(character.id())) {
+                        SaeedStateManager.tick(player);
+                    }
+                    if (ModCharacters.GHROTH_ID.equals(character.id())) {
+                        GhrothStateManager.tick(player);
                     }
                 });
     }
@@ -398,6 +416,18 @@ public final class SkillDispatcher {
         if (ModCharacters.TEMPEST_ID.equals(character.id())) {
             boolean handled = TempestSkills.useSkill(player, slot, alternate);
             TempestStateManager.syncToClient(player);
+            return handled;
+        }
+
+        if (ModCharacters.SAEED_ID.equals(character.id())) {
+            boolean handled = SaeedSkills.useSkill(player, slot, alternate);
+            SaeedStateManager.syncToClient(player);
+            return handled;
+        }
+
+        if (ModCharacters.GHROTH_ID.equals(character.id())) {
+            boolean handled = GhrothSkills.useSkill(player, slot, alternate);
+            GhrothStateManager.syncToClient(player);
             return handled;
         }
 

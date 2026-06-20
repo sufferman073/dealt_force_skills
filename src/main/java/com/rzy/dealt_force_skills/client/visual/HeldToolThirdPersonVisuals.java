@@ -241,8 +241,8 @@ public final class HeldToolThirdPersonVisuals {
 
     private static ToolSpec flashlight(float seconds) {
         return new ToolSpec(new ResourceLocation(DealtForceSkillsMod.MODID, "manba_flashlight"),
-                "idle_hold", seconds, 0.48F,
-                0.02D, -0.14D, -0.04D, 0.0F, -8.0F, 90.0F);
+                "idle_hold", seconds, 0.64F,
+                -0.02D, 0.54D, -0.06D, 0.0F, -6.0F, 0.0F);
     }
 
     private static ToolSpec gizmo(GizmoTool tool, float seconds) {

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
@@ -27,10 +28,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class DWolfInputHandler {
-    private static final int SMOKE_HIGH_THROW_HOLD_TICKS = 8;
-    private static final int SMOKE_TRIGGER_TICKS = 5;
-    private static final int CANNON_SHOT_INTERVAL_TICKS = 5;
-    private static final int SLIDE_LOCAL_COOLDOWN_TICKS = 8;
+    private static final int SMOKE_HIGH_THROW_HOLD_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_high_throw_hold_ticks", 8);
+    private static final int SMOKE_TRIGGER_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_trigger_ticks", 5);
+    private static final int CANNON_SHOT_INTERVAL_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.cannon_shot_interval_ticks", 5);
+    private static final int SLIDE_LOCAL_COOLDOWN_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.slide_local_cooldown_ticks", 8);
 
     private static boolean active2WasDown;
     private static int active2HeldTicks;
@@ -180,7 +181,12 @@ public final class DWolfInputHandler {
     @SubscribeEvent
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
         if (ClientDWolfHudState.shouldRender() && ClientDWolfHudState.overloadActiveTicks() > 0) {
-            event.setFOV(event.getFOV() * 1.33D);
+            double maximum = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+                    "client.fov.maximum_degrees", 120.0D);
+            double cappedMaximum = Math.max(1.0D, maximum);
+            if (event.getFOV() > cappedMaximum) {
+                event.setFOV(cappedMaximum);
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
@@ -24,7 +25,7 @@ import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxWorldMarkersOverlay {
-    private static final double FLASH_MARKER_DISTANCE = 36.0D;
+    private static final double FLASH_MARKER_DISTANCE = DealtForceConfig.doubleValue("client.nox_world_markers_overlay.flash_marker_distance", 36.0D);
 
     private NoxWorldMarkersOverlay() {
     }

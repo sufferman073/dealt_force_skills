@@ -35,18 +35,21 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class MorseStateManager {
-    public static final int SHOCK_MAX_CHARGES = 2;
-    public static final int SHOCK_RECHARGE_TICKS = 40 * 20;
-    public static final int FLASH_MAX_CHARGES = 2;
-    public static final int FLASH_RECHARGE_TICKS = 40 * 20;
-    public static final int SONAR_COOLDOWN_TICKS = 75 * 20;
-    public static final int SONAR_DEPLOY_TICKS = 20;
+    public static final int SHOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_max_charges", 2);
+    public static final int SHOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_recharge_ticks", 40 * 20);
+    public static final int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_max_charges", 2);
+    public static final int FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_recharge_ticks", 40 * 20);
+    public static final int SONAR_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_cooldown_ticks", 75 * 20);
+    public static final int SONAR_DEPLOY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_deploy_ticks", 20);
 
-    private static final int SOUND_MARK_TICKS = 40;
-    private static final int SOUND_MARK_COOLDOWN_TICKS = 10 * 20;
-    private static final double SOUND_MARK_RANGE = 50.0D;
-    private static final double DEPLOY_RANGE = 5.0D;
-    private static final double DEPLOY_CANCEL_DISTANCE_SQR = 2.25D;
+    private static final int SOUND_MARK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+            "characters.morse.passive.sound_mark_ticks", 40);
+    private static final int SOUND_MARK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+            "characters.morse.passive.sound_mark_cooldown_ticks", 10 * 20);
+    private static final double SOUND_MARK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+            "characters.morse.passive.sound_mark_range", 50.0D);
+    private static final double DEPLOY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.morse_state_manager.deploy_range", 5.0D);
+    private static final double DEPLOY_CANCEL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.morse_state_manager.deploy_cancel_distance_sqr", 2.25D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".morse";
     private static final String INITIALIZED = "Initialized";

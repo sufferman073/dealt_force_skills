@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawTool;
@@ -22,9 +23,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawInputHandler {
-    private static final int EQUIP_HOLD_TICKS = 8;
-    private static final int KNIFE_RELEASE_TICKS = 4;
-    private static final int FLASH_DRONE_RELEASE_TICKS = 5;
+    private static final int EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.hackclaw_input_handler.equip_hold_ticks", 8);
+    private static final int KNIFE_RELEASE_TICKS = DealtForceConfig.intValue("client.hackclaw_input_handler.knife_release_ticks", 4);
+    private static final int FLASH_DRONE_RELEASE_TICKS = DealtForceConfig.intValue("client.hackclaw_input_handler.flash_drone_release_ticks", 5);
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean sentKnifeEquip;

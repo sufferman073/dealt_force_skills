@@ -32,14 +32,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class SinevaSkills {
-    private static final double FRONT_DOT = Math.cos(Math.toRadians(60.0));
-    private static final int BASH_COOLDOWN_TICKS = 10;
-    private static final int CHARGE_COOLDOWN_TICKS = 20;
-    private static final int BASH_ACTIVE_STAMINA_TICKS = 20;
-    private static final int SILENCE_TICKS = 60;
-    private static final double PROJECTILE_REFLECT_MIN_SPEED = 1.4D;
-    private static final double PROJECTILE_REFLECT_MAX_SPEED = 3.8D;
-    private static final double PROJECTILE_CHARGE_SPEED_BONUS = 0.45D;
+    private static final double FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.front_dot", Math.cos(Math.toRadians(60.0)));
+    private static final int BASH_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_cooldown_ticks", 10);
+    private static final int CHARGE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.charge_cooldown_ticks", 20);
+    private static final int BASH_ACTIVE_STAMINA_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_active_stamina_ticks", 20);
+    private static final int SILENCE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.silence_ticks", 60);
+    private static final double PROJECTILE_REFLECT_MIN_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_min_speed", 1.4D);
+    private static final double PROJECTILE_REFLECT_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_max_speed", 3.8D);
+    private static final double PROJECTILE_CHARGE_SPEED_BONUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_charge_speed_bonus", 0.45D);
     private static final ConcurrentHashMap<UUID, ChargeData> CHARGING_PLAYERS = new ConcurrentHashMap<>();
 
     private SinevaSkills() {
@@ -194,7 +194,7 @@ public final class SinevaSkills {
         if (!target.isAlive()) {
             return false;
         }
-        target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), SILENCE_TICKS, 0, false, true));
+        target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), SILENCE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.effect.stun.0.amplifier", 0), false, true));
         SinevaKnockdownState.apply(player, target, SILENCE_TICKS);
         return true;
     }
@@ -348,7 +348,7 @@ public final class SinevaSkills {
         AABB box = new AABB(corePos).inflate(4.0);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                 entity -> entity != owner && entity.isAlive() && entity.distanceToSqr(center) <= 16.0)) {
-            SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaBladeWire(level, null, owner), owner, 12.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaBladeWire(level, null, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.sineva.sineva_skills.skill_hurt.2.damage", 12.0f));
         }
         // Blade wire explosion should destroy Uluru quick covers in range
         com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper.destroyQuickCovers(level, center, 5.0);

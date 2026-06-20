@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.department;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -11,10 +12,10 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 public final class DepartmentPlacementHelper {
-    public static final double TRAP_RANGE = 20.0D;
-    private static final double TRAP_WIDTH = 0.42D;
-    private static final double TRAP_HEIGHT = 0.36D;
-    private static final double SURFACE_GAP = 0.025D;
+    public static final double TRAP_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_range", 20.0D);
+    private static final double TRAP_WIDTH = DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_width", 0.42D);
+    private static final double TRAP_HEIGHT = DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_height", 0.36D);
+    private static final double SURFACE_GAP = DealtForceConfig.doubleValue("characters.department.department_placement_helper.surface_gap", 0.025D);
 
     private DepartmentPlacementHelper() {
     }

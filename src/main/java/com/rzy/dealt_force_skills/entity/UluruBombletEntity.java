@@ -26,9 +26,9 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class UluruBombletEntity extends Projectile implements ItemSupplier {
-    private static final double EXPLOSION_RADIUS = 4.6;
-    private static final int ARMING_TICKS = 2 * 20;
-    private static final int ARMED_FUSE_TICKS = 12;
+    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurubombletentity.explosion_radius", 4.6);
+    private static final int ARMING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.arming_ticks", 2 * 20);
+    private static final int ARMED_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.armed_fuse_ticks", 12);
 
     private UUID ownerId;
     private boolean exploded;

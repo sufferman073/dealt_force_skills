@@ -34,21 +34,21 @@ import java.util.Map;
 import java.util.UUID;
 
 public class HackclawFlashDroneEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFETIME_TICKS = 12 * 20;
-    private static final int FAST_FLIGHT_TICKS = 8;
-    private static final int LOOK_REQUIRED_TICKS = 10;
-    private static final int FLASH_TICKS = 6 * 20;
-    private static final int MAX_FLASHES = 2;
-    private static final int MAX_HEALTH = 4;
-    private static final int WARNING_INTERVAL_TICKS = 20;
-    private static final double SLOW_SPEED = 0.12D;
-    private static final double LOOK_RADIUS = 15.0D;
-    private static final double WARNING_RADIUS = 20.0D;
-    private static final double VIEW_DOT_THRESHOLD = 0.50D;
-    private static final double BOUNCE_FACTOR = 0.55D;
-    private static final double COLLISION_STEP = 0.45D;
+    private static final int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_lifetime_ticks", 12 * 20);
+    private static final int FAST_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.fast_flight_ticks", 8);
+    private static final int LOOK_REQUIRED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.look_required_ticks", 10);
+    private static final int FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.flash_ticks", 6 * 20);
+    private static final int MAX_FLASHES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.max_flashes", 2);
+    private static final int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_health", 4);
+    private static final int WARNING_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.warning_interval_ticks", 20);
+    private static final double SLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.slow_speed", 0.12D);
+    private static final double LOOK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.look_radius", 15.0D);
+    private static final double WARNING_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.warning_radius", 20.0D);
+    private static final double VIEW_DOT_THRESHOLD = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.view_dot_threshold", 0.50D);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.bounce_factor", 0.55D);
+    private static final double COLLISION_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclaw_flash_drone_entity.collision_step", 0.45D);
     private static final double SURFACE_OFFSET = 0.08D;
-    private static final double MIN_BOUNCE_SPEED = 0.06D;
+    private static final double MIN_BOUNCE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.min_bounce_speed", 0.06D);
 
     private final Map<UUID, Integer> lookTicks = new HashMap<>();
     private UUID ownerId;
@@ -299,7 +299,7 @@ public class HackclawFlashDroneEntity extends Projectile implements ItemSupplier
 
     private void flash(ServerLevel level, ServerPlayer target) {
         target.addEffect(new MobEffectInstance(ModEffects.HACKCLAW_FLASH_BLIND.get(),
-                FLASH_TICKS, 0, false, false, true), owner(level));
+                FLASH_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.effect.hackclaw_flash_blind.0.amplifier", 0), false, false, true), owner(level));
         RangedSoundHelper.playThrottled(level, target.position(), ModSounds.HACKCLAW_FLASH_DRONE_FLASH.get(),
                 SoundSource.PLAYERS, 0.9f, 1.0f, 18.0D, 3, 3.0D);
         level.sendParticles(ParticleTypes.FLASH, getX(), getY() + 0.25D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);

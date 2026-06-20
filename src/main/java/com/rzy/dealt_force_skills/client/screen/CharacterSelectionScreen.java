@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class CharacterSelectionScreen extends Screen {
     private static final int ROW_HEIGHT = 124;
@@ -31,6 +32,7 @@ public class CharacterSelectionScreen extends Screen {
     private CharacterRole selectedRole = CharacterRole.ENGINEER;
     private int page = 0;
     private final Map<String, Integer> descriptionScroll = new HashMap<>();
+    private final List<DisabledButtonVisual> disabledButtonVisuals = new ArrayList<>();
 
     public CharacterSelectionScreen() {
         super(Component.translatable("screen.dealt_force_skills.character_select.title"));
@@ -38,6 +40,7 @@ public class CharacterSelectionScreen extends Screen {
 
     @Override
     protected void init() {
+        disabledButtonVisuals.clear();
         int left = panelLeft();
         int top = panelTop();
         int panelWidth = panelWidth();
@@ -64,11 +67,20 @@ public class CharacterSelectionScreen extends Screen {
         for (CharacterDefinition character : pagedCharacterList()) {
             int buttonX = left + panelWidth - 116;
             int buttonY = y + 90;
-            addRenderableWidget(Button.builder(
-                            Component.translatable("screen.dealt_force_skills.character_select.choose"),
+            boolean canSelect = ClientCharacterSelectionState.canSelect(character);
+            Button chooseButton = Button.builder(
+                            Component.translatable(canSelect
+                                    ? "screen.dealt_force_skills.character_select.choose"
+                                    : "screen.dealt_force_skills.character_select.unavailable"),
                             button -> ClientCharacterSelectionState.selectCharacter(character.id()))
                     .bounds(buttonX, buttonY, 96, 20)
-                    .build());
+                    .build();
+            chooseButton.active = canSelect;
+            addRenderableWidget(chooseButton);
+            if (!canSelect) {
+                disabledButtonVisuals.add(new DisabledButtonVisual(buttonX, buttonY, 96, 20,
+                        Component.translatable("screen.dealt_force_skills.character_select.unavailable")));
+            }
             y += ROW_HEIGHT;
         }
 
@@ -98,6 +110,7 @@ public class CharacterSelectionScreen extends Screen {
         renderBackground(graphics);
         drawPanel(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
+        drawDisabledButtonOverlays(graphics);
     }
 
     @Override
@@ -174,6 +187,13 @@ public class CharacterSelectionScreen extends Screen {
             drawDescriptionScrollbar(graphics, textX + textWidth + 4, textY, DESCRIPTION_HEIGHT, scroll, maxScroll,
                     descriptionContentHeight(character, textWidth));
         }
+
+        Optional<String> blockedMessageKey = ClientCharacterSelectionState.selectionBlockedMessageKey(character);
+        if (blockedMessageKey.isPresent()) {
+            graphics.drawString(font,
+                    Component.translatable(blockedMessageKey.get()),
+                    left + 10, top + 94, 0xFF6A6A);
+        }
     }
 
     private List<CharacterDefinition> characterList() {
@@ -225,6 +245,20 @@ public class CharacterSelectionScreen extends Screen {
     private void rebuildCharacterWidgets() {
         clearWidgets();
         init();
+    }
+
+    public void refreshCharacterWidgets() {
+        rebuildCharacterWidgets();
+    }
+
+    private void drawDisabledButtonOverlays(GuiGraphics graphics) {
+        for (DisabledButtonVisual visual : disabledButtonVisuals) {
+            graphics.fill(visual.x(), visual.y(), visual.x() + visual.width(), visual.y() + visual.height(), 0xFF050505);
+            graphics.fill(visual.x(), visual.y(), visual.x() + visual.width(), visual.y() + 1, 0xFF2A2A2A);
+            graphics.fill(visual.x(), visual.y() + visual.height() - 1, visual.x() + visual.width(),
+                    visual.y() + visual.height(), 0xFF2A2A2A);
+            graphics.drawCenteredString(font, visual.label(), visual.x() + visual.width() / 2, visual.y() + 6, 0xFF555555);
+        }
     }
 
     @Override
@@ -295,5 +329,8 @@ public class CharacterSelectionScreen extends Screen {
 
     private static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private record DisabledButtonVisual(int x, int y, int width, int height, Component label) {
     }
 }

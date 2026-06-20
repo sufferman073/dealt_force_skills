@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
@@ -25,7 +26,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LunaInputHandler {
-    private static final int GRENADE_RELEASE_TICKS = 4;
+    private static final int GRENADE_RELEASE_TICKS = DealtForceConfig.intValue("client.luna_input_handler.grenade_release_ticks", 4);
     private static boolean chargingBow;
     private static int bowChargeTicks;
     private static LunaTool chargingTool = LunaTool.NONE;

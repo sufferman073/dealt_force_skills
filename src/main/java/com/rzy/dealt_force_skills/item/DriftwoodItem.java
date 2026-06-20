@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.item;
 
+import com.rzy.dealt_force_skills.character.CharacterAvailability;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_OpenCharacterSelection;
@@ -32,6 +33,7 @@ public class DriftwoodItem extends Item {
         }
 
         if (!CharacterSelectionManager.hasSelectedCharacter(serverPlayer)) {
+            CharacterAvailability.syncToClient(serverPlayer);
             NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(), serverPlayer);
             return InteractionResultHolder.success(stack);
         }
@@ -41,6 +43,7 @@ public class DriftwoodItem extends Item {
             CharacterSelectionManager.grantCharacterReselection(serverPlayer);
             stack.shrink(1);
         }
+        CharacterAvailability.syncToClient(serverPlayer);
         NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(true), serverPlayer);
         return InteractionResultHolder.success(stack);
     }

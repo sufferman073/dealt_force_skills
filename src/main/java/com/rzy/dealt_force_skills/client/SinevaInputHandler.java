@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
@@ -16,8 +17,8 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaInputHandler {
-    private static final int BLADE_WIRE_HOLD_TICKS = 10;
-    private static final int GRAPPLE_RELEASE_TICKS = 3;
+    private static final int BLADE_WIRE_HOLD_TICKS = DealtForceConfig.intValue("client.sineva_input_handler.blade_wire_hold_ticks", 10);
+    private static final int GRAPPLE_RELEASE_TICKS = DealtForceConfig.intValue("client.sineva_input_handler.grapple_release_ticks", 3);
 
     private static boolean active1WasDown;
     private static int active1HeldTicks;

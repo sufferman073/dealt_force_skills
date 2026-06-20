@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.UUID;
 
 public class DepartmentOverheatLaserEntity extends Entity implements ItemSupplier {
-    private static final double MAX_DISTANCE = 15.0D;
-    private static final int MAX_LIFETIME_TICKS = 20;
-    private static final double HIT_RADIUS = 0.55D;
+    private static final double MAX_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.max_distance", 15.0D);
+    private static final int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentoverheatlaserentity.max_lifetime_ticks", 20);
+    private static final double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.hit_radius", 0.55D);
     private static final DustParticleOptions LASER_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.92F, 0.18F), 1.15F);
 
     private UUID ownerId;
@@ -149,7 +149,7 @@ public class DepartmentOverheatLaserEntity extends Entity implements ItemSupplie
             }
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, source, ownerLiving, 1.6F);
+            SkillDamageHelper.hurt(target, source, ownerLiving, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.department_overheat_laser_entity.skill_hurt.0.damage", 1.6F));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             DepartmentOfTransportationStateManager.addCalibration(target, ownerLiving);

@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class UndeadUpgradeManager {
-    public static final int BASE_MAX_TALENT_POINTS = 27;
+    public static final int BASE_MAX_TALENT_POINTS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_upgrade_manager.base_max_talent_points", 27);
 
     private static final String UPGRADES = "Upgrades";
     private static final String LEVELS = "Levels";

@@ -20,7 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.UUID;
 
 public class BladeWireBlockEntity extends BlockEntity {
-    private static final int MAX_CORE_HEALTH = 120;
+    private static final int MAX_CORE_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.bladewireblockentity.max_core_health", 120);
     private static final String OWNER = "Owner";
     private static final String CORE_POS = "CorePos";
     private static final String CORE = "Core";
@@ -97,10 +97,10 @@ public class BladeWireBlockEntity extends BlockEntity {
             }
 
             Vec3 beforeDamageMovement = target.getDeltaMovement();
-            SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaBladeWire(serverLevel, null, owner), owner, 4.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaBladeWire(serverLevel, null, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("deployables.blade_wire_block_entity.skill_hurt.0.damage", 4.0f));
             target.setDeltaMovement(beforeDamageMovement);
             target.hurtMarked = true;
-            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 30, 0, true, true));
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.blade_wire_block_entity.effect.movement_slowdown.0.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.blade_wire_block_entity.effect.movement_slowdown.0.amplifier", 0), true, true));
             level.playSound(null, target.blockPosition(), ModSounds.WIRE_STEP.get(),
                     SoundSource.BLOCKS, 0.35f, 1.0f);
         }

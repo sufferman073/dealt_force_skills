@@ -28,9 +28,9 @@ import java.util.UUID;
 public class HackclawInterferenceFieldEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
     private static final EntityDataAccessor<Integer> ATTACHED_FACE =
             SynchedEntityData.defineId(HackclawInterferenceFieldEntity.class, EntityDataSerializers.INT);
-    public static final double RADIUS = 10.0D;
-    private static final int DURATION_TICKS = 10 * 20;
-    private static final int DEVICE_DISRUPT_INTERVAL_TICKS = 10;
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawinterferencefieldentity.radius", 10.0D);
+    private static final int DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawinterferencefieldentity.duration_ticks", 10 * 20);
+    private static final int DEVICE_DISRUPT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawinterferencefieldentity.device_disrupt_interval_ticks", 10);
 
     private UUID ownerId;
     private int age;

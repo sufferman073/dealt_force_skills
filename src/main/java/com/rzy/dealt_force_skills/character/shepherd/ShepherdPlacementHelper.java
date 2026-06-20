@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.shepherd;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ClipContext;
@@ -11,10 +12,10 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 public final class ShepherdPlacementHelper {
-    public static final double SONIC_TRAP_RANGE = 8.0D;
-    private static final double TRAP_WIDTH = 0.38D;
-    private static final double TRAP_HEIGHT = 0.22D;
-    private static final double SURFACE_GAP = 0.025D;
+    public static final double SONIC_TRAP_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.shepherd.shepherd_placement_helper.sonic_trap_range", 8.0D);
+    private static final double TRAP_WIDTH = DealtForceConfig.doubleValue("characters.shepherd.shepherd_placement_helper.trap_width", 0.38D);
+    private static final double TRAP_HEIGHT = DealtForceConfig.doubleValue("characters.shepherd.shepherd_placement_helper.trap_height", 0.22D);
+    private static final double SURFACE_GAP = DealtForceConfig.doubleValue("characters.shepherd.shepherd_placement_helper.surface_gap", 0.025D);
 
     private ShepherdPlacementHelper() {
     }

@@ -33,13 +33,13 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class NoxFlashGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = 4 * 20;
-    private static final int BOUNCE_FUSE_TICKS = 12;
-    private static final double BOUNCE_FACTOR = 0.66D;
-    private static final double RADIUS = 24.0D;
-    private static final int MAX_FLASH_TICKS = 15 * 20;
-    private static final int MIN_FLASH_TICKS = 2;
-    private static final double MAX_FLASH_ANGLE = 90.0D;
+    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxflashgrenadeentity.default_fuse_ticks", 4 * 20);
+    private static final int BOUNCE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxflashgrenadeentity.bounce_fuse_ticks", 12);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxflashgrenadeentity.bounce_factor", 0.66D);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxflashgrenadeentity.radius", 24.0D);
+    private static final int MAX_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxflashgrenadeentity.max_flash_ticks", 15 * 20);
+    private static final int MIN_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxflashgrenadeentity.min_flash_ticks", 2);
+    private static final double MAX_FLASH_ANGLE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.nox_flash_grenade_entity.max_flash_angle", 90.0D);
 
     private UUID ownerId;
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
@@ -169,11 +169,11 @@ public class NoxFlashGrenadeEntity extends Projectile implements ItemSupplier {
 
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.noxFlash(level, this, owner), 1.0f);
+            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.noxFlash(level, this, owner), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.nox_flash_grenade_entity.skill_hurt.0.damage", 1.0f));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             target.addEffect(new MobEffectInstance(ModEffects.NOX_FLASHED.get(),
-                    flashTicks, 0, false, false, true), owner);
+                    flashTicks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.nox_flash_grenade_entity.effect.nox_flashed.0.amplifier", 0), false, false, true), owner);
             target.level().playSound(null, target.blockPosition(), ModSounds.NOX_FLASH_HIT.get(),
                     SoundSource.PLAYERS, 0.7f, 1.0f);
         }

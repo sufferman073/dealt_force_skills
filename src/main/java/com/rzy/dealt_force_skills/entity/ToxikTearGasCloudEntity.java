@@ -26,9 +26,9 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class ToxikTearGasCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = 20 * 20;
-    public static final double RADIUS = 6.0D;
-    private static final int BASE_BLIND_TICKS = 3 * 20;
+    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.life_ticks", 20 * 20);
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikteargascloudentity.radius", 6.0D);
+    private static final int BASE_BLIND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.base_blind_ticks", 3 * 20);
     private UUID ownerId;
     private int lifeTicks = LIFE_TICKS;
 
@@ -110,7 +110,7 @@ public class ToxikTearGasCloudEntity extends Entity implements ItemSupplier {
                         ModEffects.TOXIK_TEAR_GAS_BLIND.get(), BASE_BLIND_TICKS, 0);
             } else {
                 target.addEffect(new MobEffectInstance(ModEffects.TOXIK_TEAR_GAS_BLIND.get(),
-                        BASE_BLIND_TICKS, 0, false, true, true), owner);
+                        BASE_BLIND_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxik_tear_gas_cloud_entity.effect.toxik_tear_gas_blind.0.amplifier", 0), false, true, true), owner);
             }
         }
     }

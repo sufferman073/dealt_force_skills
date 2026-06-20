@@ -124,7 +124,9 @@ public final class GenericSkillHudOverlay {
                 || ModCharacters.TOXIK_ID.equals(selectedId)
                 || ModCharacters.RAPTOR_ID.equals(selectedId)
                 || ModCharacters.VLINDER_ID.equals(selectedId)
-                || ModCharacters.TEMPEST_ID.equals(selectedId);
+                || ModCharacters.TEMPEST_ID.equals(selectedId)
+                || ModCharacters.SAEED_ID.equals(selectedId)
+                || ModCharacters.GHROTH_ID.equals(selectedId);
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

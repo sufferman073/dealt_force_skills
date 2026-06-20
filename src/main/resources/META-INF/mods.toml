@@ -3,39 +3,39 @@ loaderVersion="[47,)"
 license="All Rights Reserved"
 
 [[mods]]
-modId="dealt_force_skills"
+modId="${mod_id}"
 version="${mod_version}"
-displayName="dealt_force_skills"
+displayName="${mod_name}"
 authors="RZY"
 description='''感谢您的游玩'''
 
-[[dependencies.dealt_force_skills]]
+[[dependencies.${mod_id}]]
 modId="forge"
 mandatory=true
 versionRange="[47,)"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.dealt_force_skills]]
+[[dependencies.${mod_id}]]
 modId="minecraft"
 mandatory=true
 versionRange="[1.20.1,1.20.2)"
 ordering="NONE"
 side="BOTH"
 
-[[dependencies.dealt_force_skills]]
+[[dependencies.${mod_id}]]
 modId="parcool"
 mandatory=true
 versionRange="[3.4.3,)"
 ordering="AFTER"
 side="BOTH"
 
-[[dependencies.dealt_force_skills]]
+[[dependencies.${mod_id}]]
 modId="tacz"
-mandatory=false
+mandatory=true
 versionRange="[1.1.5,)"
 ordering="AFTER"
 side="BOTH"
 
 [[mixins]]
-config="dealt_force_skills.mixins.json"
+config="${mod_id}.mixins.json"

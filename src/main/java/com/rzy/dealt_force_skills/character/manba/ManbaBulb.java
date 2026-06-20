@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.manba;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
+
 public enum ManbaBulb {
     RED_BULB("红灯泡", 1.50D, 1.25D, 1.12D),
     GREEN_BULB("绿灯泡", 1.40D, 1.10D, 1.0D),
@@ -13,10 +15,11 @@ public enum ManbaBulb {
     private final double consumeMultiplier;
 
     ManbaBulb(String displayName, double progressMultiplier, double blindMultiplier, double consumeMultiplier) {
+        String key = "characters.manba.loadout.bulbs." + name().toLowerCase();
         this.displayName = displayName;
-        this.progressMultiplier = progressMultiplier;
-        this.blindMultiplier = blindMultiplier;
-        this.consumeMultiplier = consumeMultiplier;
+        this.progressMultiplier = DealtForceConfig.doubleValue(key + ".progress_multiplier", progressMultiplier);
+        this.blindMultiplier = DealtForceConfig.doubleValue(key + ".blind_multiplier", blindMultiplier);
+        this.consumeMultiplier = DealtForceConfig.doubleValue(key + ".consume_multiplier", consumeMultiplier);
     }
 
     public String displayName() {

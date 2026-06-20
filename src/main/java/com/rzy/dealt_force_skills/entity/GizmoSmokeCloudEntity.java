@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.UUID;
 
 public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = 15 * 20;
-    public static final double RADIUS = 5.625D;
-    private static final int LARGE_SMOKE_PARTICLES_PER_TICK = 7;
+    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmosmokecloudentity.life_ticks", 15 * 20);
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmokecloudentity.radius", 5.625D);
+    private static final int LARGE_SMOKE_PARTICLES_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmosmokecloudentity.large_smoke_particles_per_tick", 7);
 
     private UUID ownerId;
 
@@ -99,7 +99,7 @@ public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
                 continue;
             }
 
-            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 0, false, true, true));
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_smoke_cloud_entity.effect.movement_slowdown.0.duration_ticks", 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_smoke_cloud_entity.effect.movement_slowdown.0.amplifier", 0), false, true, true));
             if (target.hasEffect(ModEffects.CORROSION.get())) {
                 revealIds.add(target.getId());
             }

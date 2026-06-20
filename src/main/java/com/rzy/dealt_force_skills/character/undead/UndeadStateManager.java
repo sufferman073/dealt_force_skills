@@ -42,15 +42,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class UndeadStateManager {
-    public static final float BASE_MAX_ENERGY = 100.0F;
-    public static final float BASE_ENERGY_REGEN_PER_TICK = 4.0F / 20.0F;
-    public static final double HUNTER_WALL_CLIMB_SPEED_PER_TICK = 0.80D;
-    private static final float HUNTER_HORIZONTAL_DRAIN_PER_TICK = 3.0F / 20.0F;
-    private static final float HUNTER_VERTICAL_DRAIN_PER_TICK = 5.0F / 20.0F;
-    private static final double HUNTER_MOVEMENT_THRESHOLD_SQR = 0.0025D;
-    private static final double HUNTER_MAX_TRACKED_DISPLACEMENT_SQR = 4.0D;
+    public static final float BASE_MAX_ENERGY = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_max_energy", 100.0F);
+    public static final float BASE_ENERGY_REGEN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_energy_regen_per_tick", 4.0F / 20.0F);
+    public static final double HUNTER_WALL_CLIMB_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_wall_climb_speed_per_tick", 0.80D);
+    private static final float HUNTER_HORIZONTAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.hunter_horizontal_drain_per_tick", 3.0F / 20.0F);
+    private static final float HUNTER_VERTICAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.hunter_vertical_drain_per_tick", 5.0F / 20.0F);
+    private static final double HUNTER_MOVEMENT_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_movement_threshold_sqr", 0.0025D);
+    private static final double HUNTER_MAX_TRACKED_DISPLACEMENT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_max_tracked_displacement_sqr", 4.0D);
+    private static final float WARRIOR_BLOODLUST_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.warrior_bloodlust_self_health_cost_fraction", 0.04F);
     private static final double EXPLORER_SPIRIT_OPPORTUNITY_RANGE =
-            ManbaStateManager.OPPORTUNITY_WINDOW_RANGE * 2.0D;
+            com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.explorer_spirit_opportunity_range", ManbaStateManager.OPPORTUNITY_WINDOW_RANGE * 2.0D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".undead";
     private static final String INITIALIZED = "Initialized";
@@ -307,7 +308,7 @@ public final class UndeadStateManager {
             tag.putLong(EXPLORER_MEDITATING_UNTIL, 0L);
         } else {
             tag.putLong(EXPLORER_MEDITATING_UNTIL, now + 10L * 20L);
-            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 10 * 20, 1, false, true, true));
+            player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.0.duration_ticks", 10 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.0.amplifier", 1), false, true, true));
         }
     }
 
@@ -316,7 +317,7 @@ public final class UndeadStateManager {
             return false;
         }
         data(player).putLong(EXPLORER_MEDITATING_UNTIL, player.level().getGameTime() + 10L * 20L);
-        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 10 * 20, 1,
+        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.1.duration_ticks", 10 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.1.amplifier", 1),
                 false, true, true));
         return true;
     }
@@ -588,7 +589,7 @@ public final class UndeadStateManager {
             player.serverLevel().playSound(null, player.blockPosition(),
                     SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 1.0F, 0.65F);
             if (source.getEntity() instanceof LivingEntity attacker) {
-                attacker.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 3 * 20, 0,
+                attacker.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.2.duration_ticks", 3 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.2.amplifier", 0),
                         false, true, true), player);
                 player.serverLevel().sendParticles(ParticleTypes.CRIT,
                         attacker.getX(), attacker.getY() + attacker.getBbHeight() * 0.5D, attacker.getZ(),
@@ -818,7 +819,7 @@ public final class UndeadStateManager {
                     ? 8.4F
                     : 6.0F;
             SkillDamageHelper.hurt(target, player.damageSources().playerAttack(player), player, damage);
-            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 30, 0,
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.3.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.3.amplifier", 0),
                     false, true, true), player);
             player.serverLevel().sendParticles(ParticleTypes.CRIT,
                     target.getX(), target.getY() + target.getBbHeight() * 0.5D, target.getZ(),
@@ -857,7 +858,7 @@ public final class UndeadStateManager {
                 && UndeadUpgradeManager.has(
                 player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.WARRIOR_INNER_POTENTIAL)
                 && player.tickCount % 20 == 0) {
-            player.hurt(player.damageSources().magic(), player.getMaxHealth() * 0.04F);
+            player.hurt(player.damageSources().magic(), player.getMaxHealth() * WARRIOR_BLOODLUST_SELF_HEALTH_COST_FRACTION);
         }
         if (now < tag.getLong(WARRIOR_BLOODLUST_UNTIL) && player.tickCount % 10 == 0) {
             player.serverLevel().sendParticles(ParticleTypes.FLAME,
@@ -910,7 +911,7 @@ public final class UndeadStateManager {
             return;
         }
         if (now < tag.getLong(ROGUE_SPEED_UNTIL)) {
-            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 6, 1,
+            player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.movement_speed.4.duration_ticks", 6), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.movement_speed.4.amplifier", 1),
                     false, false, true));
         }
         if (now < tag.getLong(ROGUE_INVISIBLE_UNTIL) && player.tickCount % 10 == 0) {
@@ -946,10 +947,10 @@ public final class UndeadStateManager {
             }
             target.getPersistentData().putLong(RITUAL_DANCE_UNTIL, now + 10L);
             target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
-                    12, 0, false, true, true), player);
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.raptor_electromagnetic_interference.5.duration_ticks", 12), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.raptor_electromagnetic_interference.5.amplifier", 0), false, true, true), player);
             if (player.tickCount % 20 == 0) {
                 target.invulnerableTime = 0;
-                SkillDamageHelper.hurt(target, player.damageSources().magic(), player, 4.0F);
+                SkillDamageHelper.hurt(target, player.damageSources().magic(), player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.skill_hurt.1.damage", 4.0F));
             }
         }
     }
@@ -1040,7 +1041,7 @@ public final class UndeadStateManager {
         setEnergy(player, 0.0F);
         tag.putBoolean(HUNTER_SCATTER, false);
         tag.putLong(HUNTER_EXHAUSTED_UNTIL, now + 5L * 20L);
-        player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5 * 20, 0,
+        player.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.6.duration_ticks", 5 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.stun.6.amplifier", 0),
                 false, true, true));
     }
 
@@ -1070,7 +1071,7 @@ public final class UndeadStateManager {
     private static void refreshVisualMarker(ServerPlayer player, net.minecraft.world.effect.MobEffect effect) {
         MobEffectInstance current = player.getEffect(effect);
         if (current == null || current.getDuration() <= 5) {
-            player.addEffect(new MobEffectInstance(effect, 10, 0,
+            player.addEffect(new MobEffectInstance(effect, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.custom.7.duration_ticks", 10), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.custom.7.amplifier", 0),
                     false, false, false));
         }
     }

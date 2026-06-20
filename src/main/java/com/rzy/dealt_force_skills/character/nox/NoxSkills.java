@@ -15,11 +15,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 public final class NoxSkills {
-    private static final double ROTOR_LOCK_RANGE = 48.0D;
-    private static final double ROTOR_LOCK_MIN_ALIGNMENT = 0.78D;
-    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = 0.975D;
-    private static final double ROTOR_LOCK_MAX_OFF_AXIS = 2.0D;
-    private static final double ROTOR_SPEED = 1.75D;
+    private static final double ROTOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_range", 48.0D);
+    private static final double ROTOR_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_min_alignment", 0.78D);
+    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_direct_alignment", 0.975D);
+    private static final double ROTOR_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_max_off_axis", 2.0D);
+    private static final double ROTOR_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_speed", 1.75D);
 
     private NoxSkills() {
     }

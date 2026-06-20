@@ -42,20 +42,20 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class RaptorStateManager {
-    public static final int FALCON_COOLDOWN_TICKS = 45 * 20;
-    public static final int PULSE_MAX_CHARGES = 2;
-    public static final int PULSE_RECHARGE_TICKS = 40 * 20;
-    public static final int HUMMINGBIRD_COOLDOWN_TICKS = 45 * 20;
-    public static final int HUMMINGBIRD_ATTACH_TICKS = 20;
-    public static final int HUMMINGBIRD_DURATION_TICKS = 30 * 20;
-    public static final int HUMMINGBIRD_REVEAL_TICKS = 45;
-    public static final double HUMMINGBIRD_RANGE = 90.0D;
-    private static final int FOOTPRINT_INTERVAL_TICKS = 20;
-    private static final int FOOTPRINT_LIFE_TICKS = 5 * 60 * 20;
+    public static final int FALCON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.falcon_cooldown_ticks", 45 * 20);
+    public static final int PULSE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_max_charges", 2);
+    public static final int PULSE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_recharge_ticks", 40 * 20);
+    public static final int HUMMINGBIRD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_cooldown_ticks", 45 * 20);
+    public static final int HUMMINGBIRD_ATTACH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_attach_ticks", 20);
+    public static final int HUMMINGBIRD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_duration_ticks", 30 * 20);
+    public static final int HUMMINGBIRD_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_reveal_ticks", 45);
+    public static final double HUMMINGBIRD_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.hummingbird_range", 90.0D);
+    private static final int FOOTPRINT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_interval_ticks", 20);
+    private static final int FOOTPRINT_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_life_ticks", 5 * 60 * 20);
     private static final int FOOTPRINT_SYNC_LIMIT = 1200;
-    private static final double FOOTPRINT_SYNC_RANGE = 128.0D;
-    private static final double FOOTPRINT_READ_RANGE = 32.0D;
-    private static final double FOOTPRINT_READ_DISTANCE = 0.95D;
+    private static final double FOOTPRINT_SYNC_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_sync_range", 128.0D);
+    private static final double FOOTPRINT_READ_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_range", 32.0D);
+    private static final double FOOTPRINT_READ_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_distance", 0.95D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".raptor";
     private static final String INITIALIZED = "Initialized";
@@ -358,7 +358,7 @@ public final class RaptorStateManager {
         }
         RaptorHummingbirdMarkedEffect.setOwner(target, player);
         target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_HUMMINGBIRD_MARKED.get(),
-                HUMMINGBIRD_DURATION_TICKS, 0, false, true, true), player);
+                HUMMINGBIRD_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.effect.raptor_hummingbird_marked.0.amplifier", 0), false, true, true), player);
         ACTIVE_HUMMINGBIRD_TARGETS.put(player.getUUID(), target.getId());
         if (ReconRevealThrottle.tryStart(target, HUMMINGBIRD_REVEAL_TICKS)) {
             NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(List.of(

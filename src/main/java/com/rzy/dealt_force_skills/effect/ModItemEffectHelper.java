@@ -266,7 +266,7 @@ public final class ModItemEffectHelper {
 
     public static void handleLivingDeath(LivingEntity entity, net.minecraft.world.damagesource.DamageSource source) {
         if (source.getEntity() instanceof ServerPlayer player && player.hasEffect(ModEffects.HELA.get())) {
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 5 * 20, 2, false, true, true), player);
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("effects.mod_item_effect_helper.effect.regeneration.1.duration_ticks", 5 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("effects.mod_item_effect_helper.effect.regeneration.1.amplifier", 2), false, true, true), player);
         }
     }
 

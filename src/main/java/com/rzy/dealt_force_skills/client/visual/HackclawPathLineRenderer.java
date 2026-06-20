@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client.visual;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
@@ -23,9 +24,9 @@ import java.util.List;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawPathLineRenderer {
-    private static final double MAX_LOCK_RANGE = 62.0D;
-    private static final double MIN_LOCK_ALIGNMENT = 0.93D;
-    private static final double MAX_LOCK_OFF_AXIS = 0.9D;
+    private static final double MAX_LOCK_RANGE = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_range", 62.0D);
+    private static final double MIN_LOCK_ALIGNMENT = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.min_lock_alignment", 0.93D);
+    private static final double MAX_LOCK_OFF_AXIS = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_off_axis", 0.9D);
     private static final int LOCK_SAMPLES = 18;
     private static final List<ClientLine> LINES = new ArrayList<>();
     private static int highlightedTargetId = -1;

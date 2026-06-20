@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.item;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -18,6 +19,7 @@ import java.util.function.Supplier;
 
 public abstract class DfsUseItem extends QualityTooltipItem {
     private final int useTicks;
+    private final String configKey;
     private final Supplier<SoundEvent> startSound;
     private final Supplier<SoundEvent> finishSound;
     private final String startMessageKey;
@@ -32,7 +34,9 @@ public abstract class DfsUseItem extends QualityTooltipItem {
                          String startMessageKey,
                          String finishMessageKey) {
         super(properties, quality, tooltipKey);
-        this.useTicks = useTicks;
+        String id = tooltipKey.substring(tooltipKey.lastIndexOf('.') + 1);
+        this.configKey = "consumables." + id;
+        this.useTicks = DealtForceConfig.intValue(configKey + ".use_ticks", useTicks);
         this.startSound = startSound;
         this.finishSound = finishSound;
         this.startMessageKey = startMessageKey;
@@ -70,6 +74,10 @@ public abstract class DfsUseItem extends QualityTooltipItem {
     }
 
     protected abstract boolean applyUseEffect(ItemStack stack, Level level, ServerPlayer player);
+
+    protected final String configKey() {
+        return configKey;
+    }
 
     protected void consumeOneUse(ItemStack stack, ServerPlayer player) {
         if (player.getAbilities().instabuild) {

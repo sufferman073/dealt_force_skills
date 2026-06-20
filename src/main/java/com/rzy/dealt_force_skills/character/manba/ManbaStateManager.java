@@ -74,13 +74,13 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class ManbaStateManager {
-    public static final int ELBOW_MAX_CHARGES = 6;
-    public static final int ELBOW_RECHARGE_TICKS = 6 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 5 * 20;
-    public static final int DUEL_DURATION_TICKS = 183 * 20;
-    public static final int DUEL_STALE_TICKS = 30 * 20;
-    private static final long DUEL_AFFECTION_DECAY_INTERVAL_TICKS = 2L * 20L;
-    private static final int DUEL_DAMAGE_AFFECTION_GAIN = 2;
+    public static final int ELBOW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_max_charges", 6);
+    public static final int ELBOW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_recharge_ticks", 6 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.core_cooldown_ticks", 5 * 20);
+    public static final int DUEL_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_duration_ticks", 183 * 20);
+    public static final int DUEL_STALE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_stale_ticks", 30 * 20);
+    private static final long DUEL_AFFECTION_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("characters.manba.manba_state_manager.duel_affection_decay_interval_ticks", 2L * 20L);
+    private static final int DUEL_DAMAGE_AFFECTION_GAIN = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_damage_affection_gain", 2);
     public static final UUID BASE_SLOW_UUID = UUID.fromString("9176e91f-98c8-4b40-a38c-35e71cb1a210");
     public static final UUID LIGHT_WARRIOR_SPEED_UUID = UUID.fromString("a6c6dd8e-7c8b-4f2d-97e1-067f4af0d73d");
     public static final UUID UNYIELDING_SPEED_UUID = UUID.fromString("597bbf92-2763-4d0a-b02b-9d4d7d60dd64");
@@ -116,28 +116,28 @@ public final class ManbaStateManager {
     private static final String DAMAGE_SPEED_UNTIL = "DamageSpeedUntil";
 
     private static final int FLASHLIGHT_SCALE = 100;
-    private static final int FLASHLIGHT_BLIND_COST = 10 * FLASHLIGHT_SCALE;
-    private static final int FLASHLIGHT_FULL_PROGRESS = 1000;
-    private static final int FLASHLIGHT_BEAM_SYNC_INTERVAL_TICKS = 2;
-    private static final int FLASHLIGHT_BEAM_TTL_TICKS = 6;
-    private static final int FLASHLIGHT_LIGHT_INTERVAL_TICKS = 4;
-    private static final int FLASHLIGHT_LIGHT_LEVEL = 15;
-    private static final int FLASHLIGHT_MAX_LIGHT_BLOCKS = 120;
-    private static final int STEEL_BODY_MIN_COOLDOWN_TICKS = 3 * 20;
-    private static final double DUEL_LOCK_RANGE = 32.0D;
-    private static final double DUEL_BGM_TRACK_RADIUS = 96.0D;
-    private static final double DAMAGE_DECAY_START_DISTANCE = 4.0D;
-    private static final double DAMAGE_DECAY_PER_BLOCK = 0.12D;
-    private static final double ELBOW_RANGE = 3.2D;
-    private static final double ELBOW_FRONT_DOT = Math.cos(Math.toRadians(65.0D));
-    private static final double ELBOW_KNOCKBACK_HORIZONTAL = 2.65D;
-    private static final double ELBOW_KNOCKBACK_VERTICAL = 0.42D;
-    private static final int ELBOW_KNOCKBACK_STUN_GRACE_TICKS = 6;
-    private static final double BRAVE_DASH_RANGE = 4.25D;
-    private static final double FLASHLIGHT_TARGET_LOOK_DOT = Math.cos(Math.toRadians(85.0D));
-    public static final double OPPORTUNITY_WINDOW_RANGE = 45.0D;
-    public static final int OPPORTUNITY_WINDOW_SYNC_INTERVAL_TICKS = 10;
-    private static final int OPPORTUNITY_WINDOW_MAX_MARKERS = 256;
+    private static final int FLASHLIGHT_BLIND_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_blind_cost", 10 * FLASHLIGHT_SCALE);
+    private static final int FLASHLIGHT_FULL_PROGRESS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_full_progress", 1000);
+    private static final int FLASHLIGHT_BEAM_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_beam_sync_interval_ticks", 2);
+    private static final int FLASHLIGHT_BEAM_TTL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_beam_ttl_ticks", 6);
+    private static final int FLASHLIGHT_LIGHT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_light_interval_ticks", 4);
+    private static final int FLASHLIGHT_LIGHT_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_light_level", 15);
+    private static final int FLASHLIGHT_MAX_LIGHT_BLOCKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_max_light_blocks", 120);
+    private static final int STEEL_BODY_MIN_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.steel_body_min_cooldown_ticks", 3 * 20);
+    private static final double DUEL_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_lock_range", 32.0D);
+    private static final double DUEL_BGM_TRACK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_bgm_track_radius", 96.0D);
+    private static final double DAMAGE_DECAY_START_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.damage_decay_start_distance", 4.0D);
+    private static final double DAMAGE_DECAY_PER_BLOCK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.damage_decay_per_block", 0.12D);
+    private static final double ELBOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_range", 3.2D);
+    private static final double ELBOW_FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_front_dot", Math.cos(Math.toRadians(65.0D)));
+    private static final double ELBOW_KNOCKBACK_HORIZONTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_knockback_horizontal", 2.65D);
+    private static final double ELBOW_KNOCKBACK_VERTICAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_knockback_vertical", 0.42D);
+    private static final int ELBOW_KNOCKBACK_STUN_GRACE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_knockback_stun_grace_ticks", 6);
+    private static final double BRAVE_DASH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.brave_dash_range", 4.25D);
+    private static final double FLASHLIGHT_TARGET_LOOK_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.flashlight_target_look_dot", Math.cos(Math.toRadians(85.0D)));
+    public static final double OPPORTUNITY_WINDOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.opportunity_window_range", 45.0D);
+    public static final int OPPORTUNITY_WINDOW_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.opportunity_window_sync_interval_ticks", 10);
+    private static final int OPPORTUNITY_WINDOW_MAX_MARKERS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.opportunity_window_max_markers", 256);
     private static final Map<UUID, Map<UUID, FlashProgress>> FLASH_PROGRESS = new HashMap<>();
     private static final Map<UUID, Set<BlockPos>> FLASHLIGHT_LIGHT_BLOCKS = new HashMap<>();
     private static final Map<UUID, UUID> DUEL_TARGET_TO_OWNER = new HashMap<>();
@@ -380,9 +380,9 @@ public final class ManbaStateManager {
             SkillDamageHelper.hurt(target,
                     SkillDamageHelper.manbaElbow(player.serverLevel(), null, player),
                     player,
-                    2.4f);
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.manba.manba_state_manager.skill_hurt.0.damage", 2.4f));
             StunEffect.allowHorizontalMovement(target, ELBOW_KNOCKBACK_STUN_GRACE_TICKS);
-            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 48, 0, false, true, true), player);
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.0.duration_ticks", 48), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.0.amplifier", 0), false, true, true), player);
             SinevaKnockdownState.apply(player, target, 48);
             applyElbowKnockback(player, target, forward);
             player.level().playSound(null, target.blockPosition(), ModSounds.MANBA_ELBOW_HIT.get(),
@@ -581,7 +581,7 @@ public final class ManbaStateManager {
         back = back.lengthSqr() < 0.001D ? new Vec3(0.0D, 0.0D, 1.0D) : back.normalize();
         Vec3 pos = living.position().subtract(back.scale(1.25D));
         player.teleportTo(pos.x, living.getY(), pos.z);
-        player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, 3 * 20, 0, false, false, false));
+        player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.invisibility.1.duration_ticks", 3 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.invisibility.1.amplifier", 0), false, false, false));
         data(player).putBoolean(DIVERSION_READY, false);
         data(player).putInt(DIVERSION_VIEW_TICKS, 0);
         recordDiversionHurt(player);
@@ -1264,7 +1264,7 @@ public final class ManbaStateManager {
             if (horizontal.lengthSqr() > 0.001D && direction.dot(horizontal.normalize()) < 0.15D) {
                 continue;
             }
-            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 30, 0, false, true, true), player);
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.3.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.3.amplifier", 0), false, true, true), player);
             SinevaKnockdownState.apply(player, target, 30);
         }
         player.level().playSound(null, player.blockPosition(), ModSounds.VYRON_DASH.get(), SoundSource.PLAYERS, 0.8f, 0.8f);

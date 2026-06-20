@@ -31,19 +31,19 @@ import java.util.List;
 import java.util.Optional;
 
 public final class VlinderStateManager {
-    public static final int MEDICAL_MAX_CHARGES = 2;
-    public static final int MEDICAL_RECHARGE_TICKS = 40 * 20;
-    public static final int SMOKE_MAX_CHARGES = 2;
-    public static final int SMOKE_RECHARGE_TICKS = 40 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 100 * 20;
-    public static final int HEALING_DUST_TICKS = 20 * 20;
-    public static final int MEDICAL_WASTE_TICKS = 20 * 20;
-    public static final int DOWNED_DURATION_TICKS = 90 * 20;
-    public static final int RESCUE_PROTECTION_TICKS = 60 * 20;
-    public static final int REVIVE_OTHER_TICKS = 5 * 20;
-    public static final int REVIVE_SELF_TICKS = 3 * 20;
-    public static final double REVIVE_RANGE = 1.5D;
-    public static final double LOCK_RANGE = 96.0D;
+    public static final int MEDICAL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_max_charges", 2);
+    public static final int MEDICAL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_recharge_ticks", 40 * 20);
+    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_max_charges", 2);
+    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_recharge_ticks", 40 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.core_cooldown_ticks", 100 * 20);
+    public static final int HEALING_DUST_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.healing_dust_ticks", 20 * 20);
+    public static final int MEDICAL_WASTE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_waste_ticks", 20 * 20);
+    public static final int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.downed_duration_ticks", 90 * 20);
+    public static final int RESCUE_PROTECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.rescue_protection_ticks", 60 * 20);
+    public static final int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_other_ticks", 5 * 20);
+    public static final int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_self_ticks", 3 * 20);
+    public static final double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.revive_range", 1.5D);
+    public static final double LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.lock_range", 96.0D);
 
     private static final DustParticleOptions DOWNED_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.35f, 0.72f), 1.25f);
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".vlinder";
@@ -137,7 +137,7 @@ public final class VlinderStateManager {
         MobEffectInstance current = player.getEffect(ModEffects.VLINDER_VITAL_DOWNED.get());
         if (current == null || current.getDuration() < remaining - 5) {
             player.addEffect(new MobEffectInstance(ModEffects.VLINDER_VITAL_DOWNED.get(),
-                    remaining, 0, false, true, true));
+                    remaining, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_vital_downed.0.amplifier", 0), false, true, true));
         }
         if (player.getHealth() < 1.0F) {
             player.setHealth(1.0F);
@@ -171,7 +171,7 @@ public final class VlinderStateManager {
         player.setHealth(Math.max(1.0F, Math.min(player.getHealth(), player.getMaxHealth())));
         player.clearFire();
         player.addEffect(new MobEffectInstance(ModEffects.VLINDER_VITAL_DOWNED.get(),
-                DOWNED_DURATION_TICKS, 0, false, true, true));
+                DOWNED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_vital_downed.1.amplifier", 0), false, true, true));
         player.level().playSound(null, player.blockPosition(), ModSounds.VLINDER_DOWNED_TRIGGER.get(),
                 SoundSource.PLAYERS, 0.9F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.downed"), true);
@@ -188,7 +188,7 @@ public final class VlinderStateManager {
         if (fullHeal) {
             player.setHealth(player.getMaxHealth());
             player.clearFire();
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 4 * 20, 0, false, true, true));
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.regeneration.2.duration_ticks", 4 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.regeneration.2.amplifier", 0), false, true, true));
         }
         grantRescueProtection(player);
         player.level().playSound(null, player.blockPosition(),
@@ -242,9 +242,9 @@ public final class VlinderStateManager {
 
     public static void applyHealingDust(ServerPlayer owner, LivingEntity target) {
         target.addEffect(new MobEffectInstance(ModEffects.VLINDER_HEALING_DUST.get(),
-                HEALING_DUST_TICKS, 0, false, true, true), owner);
+                HEALING_DUST_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_healing_dust.3.amplifier", 0), false, true, true), owner);
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
-                HEALING_DUST_TICKS, 2, false, true, true), owner);
+                HEALING_DUST_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.regeneration.4.amplifier", 2), false, true, true), owner);
         for (MobEffectInstance effect : new ArrayList<>(target.getActiveEffects())) {
             if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
                 target.removeEffect(effect.getEffect());
@@ -257,7 +257,7 @@ public final class VlinderStateManager {
 
     public static void applyMedicalWaste(ServerPlayer owner, LivingEntity target) {
         target.addEffect(new MobEffectInstance(ModEffects.VLINDER_MEDICAL_WASTE_INTERFERENCE.get(),
-                MEDICAL_WASTE_TICKS, 0, false, true, true), owner);
+                MEDICAL_WASTE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_medical_waste_interference.5.amplifier", 0), false, true, true), owner);
     }
 
     public static boolean hasMedicalWasteInterference(LivingEntity target) {
@@ -267,7 +267,7 @@ public final class VlinderStateManager {
     public static void markPlasmaInjected(ServerPlayer target) {
         int duration = Math.max(20, downedRemainingTicks(target));
         target.addEffect(new MobEffectInstance(ModEffects.VLINDER_PLASMA_INJECTED.get(),
-                duration, 0, false, true, true));
+                duration, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_plasma_injected.6.amplifier", 0), false, true, true));
     }
 
     public static VlinderTool equippedTool(Player player) {
@@ -548,7 +548,7 @@ public final class VlinderStateManager {
         long until = player.level().getGameTime() + RESCUE_PROTECTION_TICKS;
         data(player).putLong(RESCUE_PROTECTION_UNTIL, until);
         player.addEffect(new MobEffectInstance(ModEffects.VLINDER_RESCUE_PROTECTION.get(),
-                RESCUE_PROTECTION_TICKS, 0, false, true, true));
+                RESCUE_PROTECTION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_rescue_protection.7.amplifier", 0), false, true, true));
     }
 
     private static void expireDowned(ServerPlayer player) {

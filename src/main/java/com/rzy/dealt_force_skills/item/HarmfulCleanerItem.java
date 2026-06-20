@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.item;
 
 import com.rzy.dealt_force_skills.effect.ModItemEffectHelper;
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -51,9 +52,10 @@ public class HarmfulCleanerItem extends DfsUseItem {
                               String finishMessageKey,
                               boolean selectable) {
         super(properties, quality, tooltipKey, useTicks, startSound, finishSound, startMessageKey, finishMessageKey);
-        this.maxAmplifierInclusive = maxAmplifierInclusive;
-        this.strongest = strongest;
-        this.selectable = selectable;
+        this.maxAmplifierInclusive = DealtForceConfig.intValue(
+                configKey() + ".max_removed_effect_amplifier", maxAmplifierInclusive);
+        this.strongest = DealtForceConfig.booleanValue(configKey() + ".remove_strongest_first", strongest);
+        this.selectable = DealtForceConfig.booleanValue(configKey() + ".selectable_effect", selectable);
     }
 
     @Override

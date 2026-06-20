@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.vlinder.VlinderToolAction;
@@ -19,7 +20,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VlinderInputHandler {
-    private static final int SELF_HEAL_HOLD_TICKS = 10;
+    private static final int SELF_HEAL_HOLD_TICKS = DealtForceConfig.intValue("client.vlinder_input_handler.self_heal_hold_ticks", 10);
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean sentSelfHeal;

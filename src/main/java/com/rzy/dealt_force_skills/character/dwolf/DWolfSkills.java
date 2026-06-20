@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 public final class DWolfSkills {
-    private static final double SELF_REWARD_SERVER_DRIFT_SQR = 0.04D;
+    private static final double SELF_REWARD_SERVER_DRIFT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.dwolf.d_wolf_skills.self_reward_server_drift_sqr", 0.04D);
 
     private DWolfSkills() {
     }
@@ -63,7 +63,7 @@ public final class DWolfSkills {
         }
 
         player.invulnerableTime = 0;
-        player.hurt(SkillDamageHelper.dWolfSelfReward(player.serverLevel(), player, player), 8.0f);
+        player.hurt(SkillDamageHelper.dWolfSelfReward(player.serverLevel(), player, player), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.dwolf.d_wolf_skills.hurt.0.damage", 8.0f));
         DWolfStateManager.markSelfReward(player);
         if (player.isAlive()) {
             handleOverloadKill(player);

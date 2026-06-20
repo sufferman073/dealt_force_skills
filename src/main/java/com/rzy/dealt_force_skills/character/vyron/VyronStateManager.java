@@ -22,13 +22,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class VyronStateManager {
-    public static final int DASH_COOLDOWN_TICKS = 8 * 20;
-    public static final int DASH_DURATION_TICKS = 12;
-    public static final int POWERED_DURATION_TICKS = 3 * 20;
-    public static final int MAGNETIC_BOMB_MAX_CHARGES = 2;
-    public static final int MAGNETIC_BOMB_RECHARGE_TICKS = 28 * 20;
-    public static final int MAGNETIC_BOMB_FUSE_TICKS = 3 * 20;
-    public static final int TIGER_CANNON_COOLDOWN_TICKS = 45 * 20;
+    public static final int DASH_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.dash_cooldown_ticks", 8 * 20);
+    public static final int DASH_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.dash_duration_ticks", 12);
+    public static final int POWERED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.powered_duration_ticks", 3 * 20);
+    public static final int MAGNETIC_BOMB_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.magnetic_bomb_max_charges", 2);
+    public static final int MAGNETIC_BOMB_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.magnetic_bomb_recharge_ticks", 28 * 20);
+    public static final int MAGNETIC_BOMB_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.magnetic_bomb_fuse_ticks", 3 * 20);
+    public static final int TIGER_CANNON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.tiger_cannon_cooldown_ticks", 45 * 20);
     public static final UUID POWERED_SPEED_UUID = UUID.fromString("f98e31d3-cd09-4e75-94dc-0180ad55d97a");
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".vyron";
@@ -148,7 +148,7 @@ public final class VyronStateManager {
             return;
         }
         data(player).putLong(POWERED_UNTIL, player.level().getGameTime() + POWERED_DURATION_TICKS);
-        player.addEffect(new MobEffectInstance(ModEffects.VYRON_POWERED.get(), POWERED_DURATION_TICKS, 0, false, true, true));
+        player.addEffect(new MobEffectInstance(ModEffects.VYRON_POWERED.get(), POWERED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vyron.vyron_state_manager.effect.vyron_powered.0.amplifier", 0), false, true, true));
         player.level().playSound(null, player.blockPosition(), landing ? ModSounds.VYRON_POWERED_LAND.get() : ModSounds.VYRON_POWERED_ACTIVATE.get(),
                 SoundSource.PLAYERS, 0.85f, 1.0f);
     }

@@ -27,10 +27,11 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class DWolfSmokeGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_FLIGHT_TICKS = 80;
-    private static final double BOUNCE_FACTOR = 0.7D;
+    private static final int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfsmokegrenadeentity.max_flight_ticks", 80);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfsmokegrenadeentity.bounce_factor", 0.7D);
 
     private UUID ownerId;
+    private int smokeLifeTicks = DWolfSmokeCloudEntity.LIFE_TICKS;
 
     public DWolfSmokeGrenadeEntity(EntityType<? extends DWolfSmokeGrenadeEntity> type, Level level) {
         super(type, level);
@@ -40,6 +41,10 @@ public class DWolfSmokeGrenadeEntity extends Projectile implements ItemSupplier 
         super(type, level);
         setOwner(owner);
         ownerId = owner.getUUID();
+    }
+
+    public void setSmokeLifeTicks(int smokeLifeTicks) {
+        this.smokeLifeTicks = Math.max(1, smokeLifeTicks);
     }
 
     @Override
@@ -85,6 +90,9 @@ public class DWolfSmokeGrenadeEntity extends Projectile implements ItemSupplier 
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        smokeLifeTicks = tag.contains("SmokeLifeTicks")
+                ? Math.max(1, tag.getInt("SmokeLifeTicks"))
+                : DWolfSmokeCloudEntity.LIFE_TICKS;
     }
 
     @Override
@@ -92,6 +100,7 @@ public class DWolfSmokeGrenadeEntity extends Projectile implements ItemSupplier 
         if (ownerId != null) {
             tag.putUUID("Owner", ownerId);
         }
+        tag.putInt("SmokeLifeTicks", smokeLifeTicks);
     }
 
     @Override
@@ -135,6 +144,7 @@ public class DWolfSmokeGrenadeEntity extends Projectile implements ItemSupplier 
                 160, DWolfSmokeCloudEntity.RADIUS * 0.55D, 1.1D, DWolfSmokeCloudEntity.RADIUS * 0.55D, 0.025D);
 
         DWolfSmokeCloudEntity cloud = new DWolfSmokeCloudEntity(ModEntities.D_WOLF_SMOKE_CLOUD.get(), serverLevel, ownerId);
+        cloud.setLifeTicks(smokeLifeTicks);
         cloud.setPos(center.x, center.y, center.z);
         serverLevel.addFreshEntity(cloud);
         discard();

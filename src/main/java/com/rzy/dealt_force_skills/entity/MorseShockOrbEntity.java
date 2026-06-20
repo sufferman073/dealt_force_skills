@@ -29,9 +29,9 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class MorseShockOrbEntity extends Projectile implements ItemSupplier {
-    private static final double RADIUS = 7.0D;
-    private static final int STRONG_SHOCK_TICKS = 4 * 20;
-    private static final int STRONG_SHOCK_AMPLIFIER = 0;
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morseshockorbentity.radius", 7.0D);
+    private static final int STRONG_SHOCK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseshockorbentity.strong_shock_ticks", 4 * 20);
+    private static final int STRONG_SHOCK_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morse_shock_orb_entity.strong_shock_amplifier", 0);
     private static final DustParticleOptions SHOCK_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.24f), 1.2f);
 
     private UUID ownerId;

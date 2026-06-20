@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
@@ -21,9 +22,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class RaptorInputHandler {
-    private static final int ACTIVE_LONG_HOLD_TICKS = 15;
-    private static final int PULSE_EQUIP_HOLD_TICKS = 8;
-    private static final int PULSE_RELEASE_TICKS = 3;
+    private static final int ACTIVE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.active_long_hold_ticks", 15);
+    private static final int PULSE_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.pulse_equip_hold_ticks", 8);
+    private static final int PULSE_RELEASE_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.pulse_release_ticks", 3);
 
     private static boolean active1WasDown;
     private static int active1HeldTicks;

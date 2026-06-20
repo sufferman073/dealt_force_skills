@@ -34,11 +34,11 @@ import java.util.Set;
 import java.util.UUID;
 
 public class LunaReconArrowEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
-    private static final int MAX_BOUNCES = 8;
-    private static final int MAX_LIFE_TICKS = 20 * 20;
-    private static final int MOVE_SCAN_DELAY_TICKS = 2 * 20;
-    private static final double SCAN_RADIUS = 40.0D;
-    private static final double MOVE_THRESHOLD_SQR = 0.025D;
+    private static final int MAX_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.luna_recon_arrow_entity.max_bounces", 8);
+    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.max_life_ticks", 20 * 20);
+    private static final int MOVE_SCAN_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.move_scan_delay_ticks", 2 * 20);
+    private static final double SCAN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.scan_radius", 40.0D);
+    private static final double MOVE_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.move_threshold_sqr", 0.025D);
 
     private int bounces;
     private Vec3 lastForward = new Vec3(0.0D, 0.0D, 1.0D);

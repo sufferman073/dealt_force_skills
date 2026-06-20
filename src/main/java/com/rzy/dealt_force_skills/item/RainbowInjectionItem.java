@@ -33,7 +33,7 @@ public class RainbowInjectionItem extends DfsUseItem {
                 if (effect.getCategory() == MobEffectCategory.BENEFICIAL
                         && effect != MobEffects.LEVITATION
                         && !isExcludedModEffect(effect)) {
-                    player.addEffect(new MobEffectInstance(effect, 360 * 20, 3, false, true, true), player);
+                    player.addEffect(new MobEffectInstance(effect, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.rainbow_injection_item.effect.custom.0.duration_ticks", 360 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.rainbow_injection_item.effect.custom.0.amplifier", 3), false, true, true), player);
                 }
             }
         } else {

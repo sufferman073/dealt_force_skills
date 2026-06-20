@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.manba;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
+
 public enum ManbaBattery {
     GREEN_BATTERY("绿电池", 2.0D, 0.5D, false),
     YELLOW_BATTERY("黄电池", 1.5D, 1.0D, false),
@@ -11,10 +13,11 @@ public enum ManbaBattery {
     private final boolean noBlindCost;
 
     ManbaBattery(String displayName, double durabilityMultiplier, double regenMultiplier, boolean noBlindCost) {
+        String key = "characters.manba.loadout.batteries." + name().toLowerCase();
         this.displayName = displayName;
-        this.durabilityMultiplier = durabilityMultiplier;
-        this.regenMultiplier = regenMultiplier;
-        this.noBlindCost = noBlindCost;
+        this.durabilityMultiplier = DealtForceConfig.doubleValue(key + ".durability_multiplier", durabilityMultiplier);
+        this.regenMultiplier = DealtForceConfig.doubleValue(key + ".regen_multiplier", regenMultiplier);
+        this.noBlindCost = DealtForceConfig.booleanValue(key + ".no_blind_cost", noBlindCost);
     }
 
     public String displayName() {

@@ -23,7 +23,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class UluruQuickCoverPackageEntity extends Projectile implements ItemSupplier {
-    private static final double MAX_DISTANCE_SQR = 15.0 * 15.0;
+    private static final double MAX_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruquickcoverpackageentity.max_distance_sqr", 15.0 * 15.0);
 
     private Direction coverFacing = Direction.NORTH;
 

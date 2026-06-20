@@ -14,10 +14,10 @@ public final class UndeadSoulManager {
     private static final String SOULS = DealtForceSkillsMod.MODID + ".undead_souls";
     private static final String LAST_SURVIVAL_AWARD_TICK =
             DealtForceSkillsMod.MODID + ".undead_last_survival_award_tick";
-    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = 60L * 20L;
-    private static final long SURVIVAL_AWARD = 500L;
-    private static final long PLAYER_KILL_AWARD = 4500L;
-    private static final long PLAYER_DEATH_AWARD = 6000L;
+    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award_interval_ticks", 60L * 20L);
+    private static final long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award", 500L);
+    private static final long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_kill_award", 4500L);
+    private static final long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_death_award", 6000L);
 
     private UndeadSoulManager() {
     }

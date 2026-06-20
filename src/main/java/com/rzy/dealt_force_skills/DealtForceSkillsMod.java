@@ -1,6 +1,10 @@
 package com.rzy.dealt_force_skills;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
+import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.entity.NoxDecoyEntity;
+import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.registry.ModBlockEntities;
 import com.rzy.dealt_force_skills.registry.ModBlocks;
@@ -13,6 +17,9 @@ import com.rzy.dealt_force_skills.registry.ModItems;
 import com.rzy.dealt_force_skills.registry.ModLootModifiers;
 import com.rzy.dealt_force_skills.registry.ModParticles;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.shop.DfsShopCatalog;
+import com.rzy.dealt_force_skills.shop.GhrothArmoryCatalog;
+import com.rzy.dealt_force_skills.shop.UndeadShopEntry;
 import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -24,6 +31,7 @@ public class DealtForceSkillsMod {
     public static final String MODID = "dealt_force_skills";
 
     public DealtForceSkillsMod() {
+        DealtForceConfig.bootstrap();
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModSounds.SOUNDS.register(modBus);
@@ -40,13 +48,24 @@ public class DealtForceSkillsMod {
         modBus.addListener(NetworkHandler::onCommonSetup);
         modBus.addListener(this::onCommonSetup);
         modBus.addListener(this::registerEntityAttributes);
+        DealtForceConfig.flush();
     }
 
     private void onCommonSetup(FMLCommonSetupEvent event) {
-        event.enqueueWork(ModBrewingRecipes::register);
+        event.enqueueWork(() -> {
+            ModBrewingRecipes.register();
+            DealtForceConfig.populateGameplayDefaults();
+            ModCharacters.all();
+            ElectronicInterferenceManager.populateConfigDefaults();
+            DfsShopCatalog.entries();
+            GhrothArmoryCatalog.entries();
+            UndeadShopEntry.values();
+            DealtForceConfig.finishInitialPopulation();
+        });
     }
 
     private void registerEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.NOX_DECOY.get(), NoxDecoyEntity.createAttributes().build());
+        event.put(ModEntities.SAEED_GUARD.get(), SaeedGuardEntity.createAttributes().build());
     }
 }

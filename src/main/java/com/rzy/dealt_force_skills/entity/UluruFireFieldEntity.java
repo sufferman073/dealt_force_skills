@@ -18,9 +18,9 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class UluruFireFieldEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = 20 * 20;
-    private static final int DAMAGE_INTERVAL_TICKS = 8;
-    private static final double RADIUS = 6.0;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.life_ticks", 20 * 20);
+    private static final int DAMAGE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.damage_interval_ticks", 8);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurufirefieldentity.radius", 6.0);
     private UUID ownerId;
 
     public UluruFireFieldEntity(EntityType<? extends UluruFireFieldEntity> type, Level level) {

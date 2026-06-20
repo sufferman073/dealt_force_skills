@@ -1,6 +1,8 @@
 package com.rzy.dealt_force_skills.shop;
 
+import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_OpenHaffShop;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
@@ -15,6 +17,8 @@ public final class HaffShopManager {
     public static boolean shouldOpenShop(ServerPlayer player) {
         return player.serverLevel().getGameRules().getBoolean(ModGameRules.DEALT_FORCE_SHOP)
                 && !LexNinjiaStateManager.isLexNinjia(player)
+                && !GhrothStateManager.isGhroth(player)
+                && !SaeedStateManager.isSaeed(player)
                 && HaffCoinManager.canUseShop(player);
     }
 

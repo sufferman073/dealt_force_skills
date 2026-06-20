@@ -29,8 +29,8 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class ToxikTearGasGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_FLIGHT_TICKS = 80;
-    private static final double BOUNCE_FACTOR = 0.7D;
+    private static final int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargasgrenadeentity.max_flight_ticks", 80);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikteargasgrenadeentity.bounce_factor", 0.7D);
     private static final DustParticleOptions CYAN_TRAIL = new DustParticleOptions(new Vector3f(0.25f, 1.0f, 0.92f), 0.9f);
 
     private UUID ownerId;

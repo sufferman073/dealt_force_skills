@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.manba.ManbaToolAction;
@@ -24,9 +25,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ManbaInputHandler {
-    private static final int DUEL_LOCK_TICKS = 10;
-    private static final double DUEL_LOCK_RANGE = 32.0D;
-    private static final double DUEL_LOCK_MIN_ALIGNMENT = 0.78D;
+    private static final int DUEL_LOCK_TICKS = DealtForceConfig.intValue("client.manba_input_handler.duel_lock_ticks", 10);
+    private static final double DUEL_LOCK_RANGE = DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_range", 32.0D);
+    private static final double DUEL_LOCK_MIN_ALIGNMENT = DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_min_alignment", 0.78D);
     private static boolean active2WasDown;
     private static boolean sentFlashlightStart;
     private static boolean coreWasDown;

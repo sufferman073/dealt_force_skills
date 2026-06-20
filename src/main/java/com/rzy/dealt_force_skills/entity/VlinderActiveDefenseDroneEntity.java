@@ -30,11 +30,11 @@ import java.util.Comparator;
 import java.util.UUID;
 
 public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = 35 * 20;
-    public static final int INJECTION_TICKS = 6 * 20;
-    private static final int ABSORB_INTERVAL_TICKS = 5 * 20;
-    private static final double INJECTION_RANGE = 20.0D;
-    private static final double FOLLOW_SPEED = 0.32D;
+    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.life_ticks", 35 * 20);
+    public static final int INJECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.injection_ticks", 6 * 20);
+    private static final int ABSORB_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.absorb_interval_ticks", 5 * 20);
+    private static final double INJECTION_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.injection_range", 20.0D);
+    private static final double FOLLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.follow_speed", 0.32D);
     private static final DustParticleOptions DRONE_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.2f), 1.0f);
 
     private UUID ownerId;
@@ -192,7 +192,7 @@ public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSuppl
 
     private void refreshAbsorption(ServerPlayer owner, ServerLevel level) {
         owner.setAbsorptionAmount(Math.max(owner.getAbsorptionAmount(), 40.0F));
-        owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, ABSORB_INTERVAL_TICKS + 20, 9, false, true, true), owner);
+        owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, ABSORB_INTERVAL_TICKS + 20, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinder_active_defense_drone_entity.effect.absorption.0.amplifier", 9), false, true, true), owner);
         VlinderStateManager.markVlinderSuppliedBuff(owner, ABSORB_INTERVAL_TICKS + 20);
         level.playSound(null, owner.blockPosition(), ModSounds.VLINDER_ABSORPTION_REFRESH.get(),
                 SoundSource.PLAYERS, 0.7F, 1.0F);

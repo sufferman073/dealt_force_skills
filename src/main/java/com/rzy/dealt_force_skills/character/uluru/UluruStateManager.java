@@ -14,11 +14,11 @@ import net.minecraft.world.entity.player.Player;
 import java.util.Optional;
 
 public final class UluruStateManager {
-    public static final int INCENDIARY_MAX_CHARGES = 2;
-    public static final int INCENDIARY_RECHARGE_TICKS = 45 * 20;
-    public static final int COVER_MAX_CHARGES = 2;
-    public static final int COVER_RECHARGE_TICKS = 30 * 20;
-    public static final int MISSILE_COOLDOWN_TICKS = 90 * 20;
+    public static final int INCENDIARY_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_max_charges", 2);
+    public static final int INCENDIARY_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_recharge_ticks", 45 * 20);
+    public static final int COVER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_max_charges", 2);
+    public static final int COVER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_recharge_ticks", 30 * 20);
+    public static final int MISSILE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.missile_cooldown_ticks", 90 * 20);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".uluru";
     private static final String INITIALIZED = "Initialized";

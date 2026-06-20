@@ -12,10 +12,10 @@ import net.minecraft.world.entity.player.Player;
 public final class LexNinjiaCurrencyManager {
     private static final String LOTUS_BOXES = DealtForceSkillsMod.MODID + ".lex_ninjia_lotus_boxes";
     private static final String LAST_SURVIVAL_AWARD_TICK = DealtForceSkillsMod.MODID + ".lex_ninjia_last_survival_award_tick";
-    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = 60L * 20L;
-    private static final long SURVIVAL_AWARD = 500L;
-    private static final long PLAYER_KILL_AWARD = 4500L;
-    private static final long PLAYER_DEATH_AWARD = 6000L;
+    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award_interval_ticks", 60L * 20L);
+    private static final long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award", 500L);
+    private static final long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_kill_award", 4500L);
+    private static final long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_death_award", 6000L);
 
     private LexNinjiaCurrencyManager() {
     }

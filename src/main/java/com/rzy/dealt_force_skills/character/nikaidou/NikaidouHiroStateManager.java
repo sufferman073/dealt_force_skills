@@ -38,23 +38,25 @@ import java.util.Comparator;
 import java.util.Optional;
 
 public final class NikaidouHiroStateManager {
-    public static final int MAX_RIFT_STACKS = 25;
-    public static final int RIFT_DURATION_TICKS = 60 * 20;
-    public static final int CORRECTION_COOLDOWN_TICKS = 15 * 20;
-    public static final int CORRECTION_DURATION_TICKS = 8 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 90 * 20;
-    public static final int DOOMED_TICKS = 10 * 20;
-    private static final int RIFT_EFFECT_LEVELS_PER_STACK = 2;
-    private static final int HOT_IRON_ATTACK_COOLDOWN_TICKS = 23;
-    private static final int RITUAL_SWORD_ATTACK_COOLDOWN_TICKS = 13;
-    private static final double HOT_IRON_ATTACK_RANGE = 3.0D;
-    private static final double RITUAL_SWORD_ATTACK_RANGE = 3.0D;
-    private static final double MELEE_RAY_INFLATE = 0.28D;
-    private static final double SWEEP_HITBOX_INFLATE = 0.35D;
-    private static final int CORE_DECAY_INTERVAL_TICKS = 5;
-    private static final double CORE_DECAY_INITIAL_PER_SECOND = 0.001D;
-    private static final double CORE_DECAY_MAX_PER_SECOND = 0.15D;
-    private static final double CORE_DECAY_RAMP_SECONDS = 10.0D;
+    public static final int MAX_RIFT_STACKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.max_rift_stacks", 25);
+    public static final int RIFT_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.rift_duration_ticks", 60 * 20);
+    public static final int CORRECTION_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.correction_cooldown_ticks", 15 * 20);
+    public static final int CORRECTION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.correction_duration_ticks", 8 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.core_cooldown_ticks", 90 * 20);
+    public static final int DOOMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.doomed_ticks", 10 * 20);
+    private static final int RIFT_EFFECT_LEVELS_PER_STACK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.rift_effect_levels_per_stack", 2);
+    private static final int HOT_IRON_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_cooldown_ticks", 23);
+    private static final int RITUAL_SWORD_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_cooldown_ticks", 13);
+    private static final double HOT_IRON_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_range", 3.0D);
+    private static final double RITUAL_SWORD_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_range", 3.0D);
+    private static final double MELEE_RAY_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+            "characters.nikaidou_hiro.melee_ray_inflate", 0.28D);
+    private static final double SWEEP_HITBOX_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+            "characters.nikaidou_hiro.sweep_hitbox_inflate", 0.35D);
+    private static final int CORE_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_interval_ticks", 5);
+    private static final double CORE_DECAY_INITIAL_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_initial_per_second", 0.001D);
+    private static final double CORE_DECAY_MAX_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_max_per_second", 0.15D);
+    private static final double CORE_DECAY_RAMP_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_ramp_seconds", 10.0D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".nikaidou_hiro";
     private static final String INITIALIZED = "Initialized";
@@ -154,7 +156,7 @@ public final class NikaidouHiroStateManager {
         tag.putLong(ACTIVE1_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, CORRECTION_COOLDOWN_TICKS));
         tag.putLong(ACTIVE1_UNTIL, now + CORRECTION_DURATION_TICKS);
         player.addEffect(new MobEffectInstance(ModEffects.NIKAIDOU_CORRECTION.get(),
-                CORRECTION_DURATION_TICKS, 0, false, true, true));
+                CORRECTION_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_correction.0.amplifier", 0), false, true, true));
         play(player, ModSounds.NIKAIDOU_CORRECTION_START.get(), 0.85F, 1.0F);
         return true;
     }
@@ -200,7 +202,7 @@ public final class NikaidouHiroStateManager {
         setEquippedTool(player, NikaidouHiroTool.RITUAL_SWORD);
         player.setHealth(player.getMaxHealth());
         player.addEffect(new MobEffectInstance(ModEffects.NIKAIDOU_CORE.get(),
-                60 * 60 * 20, 0, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_core.1.duration_ticks", 60 * 60 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_core.1.amplifier", 0), false, true, true));
         play(player, ModSounds.NIKAIDOU_CORE_START.get(), 1.0F, 1.0F);
         return true;
     }
@@ -504,7 +506,7 @@ public final class NikaidouHiroStateManager {
         }
         if (!player.hasEffect(ModEffects.NIKAIDOU_CORE.get())) {
             player.addEffect(new MobEffectInstance(ModEffects.NIKAIDOU_CORE.get(),
-                    60 * 60 * 20, 0, false, true, true));
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_core.3.duration_ticks", 60 * 60 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_core.3.amplifier", 0), false, true, true));
         }
         long lastDecayTick = tag.getLong(CORE_LAST_DECAY_TICK);
         long elapsedSinceLastDecay = now - lastDecayTick;
@@ -555,7 +557,7 @@ public final class NikaidouHiroStateManager {
         player.setHealth(Math.max(1.0F, player.getHealth()));
         player.removeEffect(ModEffects.NIKAIDOU_CORE.get());
         player.addEffect(new MobEffectInstance(ModEffects.NIKAIDOU_DOOMED.get(),
-                DOOMED_TICKS, 0, false, true, true));
+                DOOMED_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.nikaidou_doomed.4.amplifier", 0), false, true, true));
         play(player, ModSounds.NIKAIDOU_DOOM_TRIGGER.get(), 1.0F, 1.0F);
     }
 
@@ -605,9 +607,9 @@ public final class NikaidouHiroStateManager {
         }
         skeleton.setHealth(1000.0F);
         skeleton.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE,
-                20 * 60 * 60, 2, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.damage_resistance.5.duration_ticks", 20 * 60 * 60), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.damage_resistance.5.amplifier", 2), false, true, true));
         skeleton.addEffect(new MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_BOOST,
-                20 * 60 * 60, 99, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.damage_boost.6.duration_ticks", 20 * 60 * 60), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.effect.damage_boost.6.amplifier", 99), false, true, true));
         skeleton.setPersistenceRequired();
         level.addFreshEntity(skeleton);
         level.playSound(null, skeleton.blockPosition(), ModSounds.NIKAIDOU_DOOM_DEATH.get(),

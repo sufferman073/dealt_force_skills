@@ -26,16 +26,16 @@ import java.util.List;
 import java.util.Optional;
 
 public final class LunaStateManager {
-    public static final int SHOCK_ARROW_MAX_CHARGES = 2;
-    public static final int SHOCK_ARROW_RECHARGE_TICKS = 30 * 20;
-    public static final int COMPOSITE_GRENADE_MAX_CHARGES = 2;
-    public static final int COMPOSITE_GRENADE_RECHARGE_TICKS = 30 * 20;
-    public static final int COMPOSITE_GRENADE_FUSE_TICKS = 5 * 20;
-    public static final int RECON_ARROW_COOLDOWN_TICKS = 45 * 20;
-    public static final int MAX_BOW_CHARGE_TICKS = 14;
-    public static final int SKILL_REVEAL_TICKS = 30;
-    public static final int PASSIVE_REVEAL_TICKS = 20;
-    public static final int RECON_REVEAL_TICKS = 40;
+    public static final int SHOCK_ARROW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_max_charges", 2);
+    public static final int SHOCK_ARROW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_recharge_ticks", 30 * 20);
+    public static final int COMPOSITE_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_max_charges", 2);
+    public static final int COMPOSITE_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_recharge_ticks", 30 * 20);
+    public static final int COMPOSITE_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_fuse_ticks", 5 * 20);
+    public static final int RECON_ARROW_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_arrow_cooldown_ticks", 45 * 20);
+    public static final int MAX_BOW_CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.max_bow_charge_ticks", 14);
+    public static final int SKILL_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.skill_reveal_ticks", 30);
+    public static final int PASSIVE_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.passive_reveal_ticks", 20);
+    public static final int RECON_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_reveal_ticks", 40);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".luna";
     private static final String INITIALIZED = "Initialized";

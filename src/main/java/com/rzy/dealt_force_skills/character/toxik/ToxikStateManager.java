@@ -36,21 +36,21 @@ import java.util.Optional;
 import java.util.Set;
 
 public final class ToxikStateManager {
-    public static final int ADRENALINE_COOLDOWN_TICKS = 45 * 20;
-    public static final int ADRENALINE_BASE_DURATION_TICKS = 5 * 20;
-    public static final int TEAR_GAS_MAX_CHARGES = 2;
-    public static final int TEAR_GAS_RECHARGE_TICKS = 35 * 20;
-    public static final int FIREFLY_COOLDOWN_TICKS = 90 * 20;
-    public static final int FIREFLY_BASE_DURATION_TICKS = 10 * 20;
-    public static final int FIREFLY_PULLOUT_TICKS = 4 * 20;
-    public static final double ADRENALINE_RADIUS = 5.0D;
-    public static final double FIREFLY_RANGE = 30.0D;
-    private static final double PASSIVE_BEHAVIOR_MULTIPLIER = 11.0D;
-    private static final double FIREFLY_MIN_ALIGNMENT = 0.18D;
-    private static final double FIREFLY_MAX_OFF_AXIS = 18.0D;
-    private static final int FIREFLY_FAN_HORIZONTAL_SAMPLES = 13;
-    private static final int FIREFLY_FAN_VERTICAL_SAMPLES = 5;
-    private static final int FIREFLY_SWARM_COUNT = 22;
+    public static final int ADRENALINE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.adrenaline_cooldown_ticks", 45 * 20);
+    public static final int ADRENALINE_BASE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.adrenaline_base_duration_ticks", 5 * 20);
+    public static final int TEAR_GAS_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.tear_gas_max_charges", 2);
+    public static final int TEAR_GAS_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.tear_gas_recharge_ticks", 35 * 20);
+    public static final int FIREFLY_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_cooldown_ticks", 90 * 20);
+    public static final int FIREFLY_BASE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_base_duration_ticks", 10 * 20);
+    public static final int FIREFLY_PULLOUT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_pullout_ticks", 4 * 20);
+    public static final double ADRENALINE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.toxik.toxik_state_manager.adrenaline_radius", 5.0D);
+    public static final double FIREFLY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.toxik.toxik_state_manager.firefly_range", 30.0D);
+    private static final double PASSIVE_BEHAVIOR_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.toxik.toxik_state_manager.passive_behavior_multiplier", 11.0D);
+    private static final double FIREFLY_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.toxik.toxik_state_manager.firefly_min_alignment", 0.18D);
+    private static final double FIREFLY_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.toxik.toxik_state_manager.firefly_max_off_axis", 18.0D);
+    private static final int FIREFLY_FAN_HORIZONTAL_SAMPLES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_fan_horizontal_samples", 13);
+    private static final int FIREFLY_FAN_VERTICAL_SAMPLES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_fan_vertical_samples", 5);
+    private static final int FIREFLY_SWARM_COUNT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.firefly_swarm_count", 22);
     private static final DustParticleOptions FIREFLY_DUST = new DustParticleOptions(new Vector3f(0.72f, 1.0f, 0.22f), 1.15f);
     private static final Set<java.util.UUID> EFFECT_SCALING_GUARD = new HashSet<>();
 
@@ -206,7 +206,7 @@ public final class ToxikStateManager {
 
     public static void applyAdrenaline(ServerPlayer owner, LivingEntity target, int baseTicks) {
         MobEffectInstance baseEffect = new MobEffectInstance(ModEffects.TOXIK_ADRENALINE.get(),
-                baseTicks, 0, false, true, true);
+                baseTicks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.toxik.toxik_state_manager.effect.toxik_adrenaline.0.amplifier", 0), false, true, true);
         for (MobEffectInstance active : new ArrayList<>(target.getActiveEffects())) {
             if (active.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
                 target.removeEffect(active.getEffect());

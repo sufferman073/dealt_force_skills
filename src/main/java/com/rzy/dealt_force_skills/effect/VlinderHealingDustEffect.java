@@ -25,7 +25,7 @@ public class VlinderHealingDustEffect extends MobEffect {
             }
         }
         if (!entity.level().isClientSide && entity.tickCount % 18 == 0 && entity.getHealth() < entity.getMaxHealth()) {
-            entity.heal(1.0F);
+            entity.heal(com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("effects.vlinder_healing_dust_effect.heal.0.heal_amount", 1.0F));
         }
     }
 }

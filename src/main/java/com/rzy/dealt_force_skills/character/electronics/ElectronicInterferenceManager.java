@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.character.electronics;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.entity.GizmoSmokeTrapEntity;
 import com.rzy.dealt_force_skills.entity.GizmoSpiderNestTrapEntity;
 import com.rzy.dealt_force_skills.entity.GizmoSpiderlingEntity;
@@ -12,6 +13,7 @@ import com.rzy.dealt_force_skills.entity.HackclawInterferenceFieldEntity;
 import com.rzy.dealt_force_skills.entity.MorseSonarDetectorEntity;
 import com.rzy.dealt_force_skills.entity.NoxRotorDroneEntity;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
+import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdDroneEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdSonicTrapEntity;
 import com.rzy.dealt_force_skills.entity.StingerSmokeDroneEntity;
@@ -103,7 +105,39 @@ public final class ElectronicInterferenceManager {
     }
 
     public static boolean isElectronicSkill(CharacterDefinition character, SkillSlot slot) {
-        if (character == null || slot == SkillSlot.PASSIVE || ModCharacters.SINEVA_ID.equals(character.id())) {
+        if (character == null || slot == null) {
+            return false;
+        }
+
+        String id = character.id();
+        int separator = id.lastIndexOf('/');
+        String characterKey = separator >= 0 ? id.substring(separator + 1) : id.substring(id.indexOf(':') + 1);
+        return DealtForceConfig.booleanValue(
+                "characters." + characterKey + ".skills." + slot.name().toLowerCase() + ".electronic",
+                defaultElectronicSkill(character, slot));
+    }
+
+    public static void populateConfigDefaults() {
+        for (CharacterDefinition character : ModCharacters.all()) {
+            for (SkillSlot slot : SkillSlot.values()) {
+                isElectronicSkill(character, slot);
+            }
+        }
+        String[] devices = {
+                "gizmo_smoke_trap", "gizmo_spider_nest", "gizmo_spiderling", "gizmo_t_boy",
+                "hackclaw_flash_drone", "morse_sonar_detector", "shepherd_sonic_trap", "shepherd_drone",
+                "nox_rotor_drone", "raptor_falcon_drone", "stinger_smoke_drone", "vlinder_medical_drone",
+                "vlinder_remote_smoke_round", "vlinder_active_defense_drone", "tempest_wall_drill_stinger",
+                "uluru_loitering_missile"
+        };
+        for (String device : devices) {
+            DealtForceConfig.booleanValue("summons." + device + ".electronic", true);
+        }
+        DealtForceConfig.booleanValue("summons.saeed_guard.electronic", false);
+    }
+
+    private static boolean defaultElectronicSkill(CharacterDefinition character, SkillSlot slot) {
+        if (slot == SkillSlot.PASSIVE || ModCharacters.SINEVA_ID.equals(character.id())) {
             return false;
         }
 
@@ -157,22 +191,28 @@ public final class ElectronicInterferenceManager {
     }
 
     private static boolean isDestroyableElectronicDevice(Entity entity) {
-        return entity instanceof GizmoSmokeTrapEntity
-                || entity instanceof GizmoSpiderNestTrapEntity
-                || entity instanceof GizmoSpiderlingEntity
-                || entity instanceof GizmoTBoyEntity
-                || entity instanceof HackclawFlashDroneEntity
-                || entity instanceof MorseSonarDetectorEntity
-                || entity instanceof ShepherdSonicTrapEntity
-                || entity instanceof ShepherdDroneEntity
-                || entity instanceof NoxRotorDroneEntity
-                || entity instanceof RaptorFalconDroneEntity
-                || entity instanceof StingerSmokeDroneEntity
-                || entity instanceof VlinderMedicalDroneEntity
-                || entity instanceof VlinderRemoteSmokeRoundEntity
-                || entity instanceof VlinderActiveDefenseDroneEntity
-                || entity instanceof TempestWallDrillStingerEntity
-                || entity instanceof UluruLoiteringMissileEntity;
+        return configuredDevice(entity, GizmoSmokeTrapEntity.class, "gizmo_smoke_trap", true)
+                || configuredDevice(entity, GizmoSpiderNestTrapEntity.class, "gizmo_spider_nest", true)
+                || configuredDevice(entity, GizmoSpiderlingEntity.class, "gizmo_spiderling", true)
+                || configuredDevice(entity, GizmoTBoyEntity.class, "gizmo_t_boy", true)
+                || configuredDevice(entity, HackclawFlashDroneEntity.class, "hackclaw_flash_drone", true)
+                || configuredDevice(entity, MorseSonarDetectorEntity.class, "morse_sonar_detector", true)
+                || configuredDevice(entity, ShepherdSonicTrapEntity.class, "shepherd_sonic_trap", true)
+                || configuredDevice(entity, ShepherdDroneEntity.class, "shepherd_drone", true)
+                || configuredDevice(entity, NoxRotorDroneEntity.class, "nox_rotor_drone", true)
+                || configuredDevice(entity, RaptorFalconDroneEntity.class, "raptor_falcon_drone", true)
+                || configuredDevice(entity, StingerSmokeDroneEntity.class, "stinger_smoke_drone", true)
+                || configuredDevice(entity, VlinderMedicalDroneEntity.class, "vlinder_medical_drone", true)
+                || configuredDevice(entity, VlinderRemoteSmokeRoundEntity.class, "vlinder_remote_smoke_round", true)
+                || configuredDevice(entity, VlinderActiveDefenseDroneEntity.class, "vlinder_active_defense_drone", true)
+                || configuredDevice(entity, TempestWallDrillStingerEntity.class, "tempest_wall_drill_stinger", true)
+                || configuredDevice(entity, UluruLoiteringMissileEntity.class, "uluru_loitering_missile", true)
+                || configuredDevice(entity, SaeedGuardEntity.class, "saeed_guard", false);
+    }
+
+    private static boolean configuredDevice(Entity entity, Class<? extends Entity> type, String key, boolean defaultValue) {
+        return type.isInstance(entity)
+                && DealtForceConfig.booleanValue("summons." + key + ".electronic", defaultValue);
     }
 
     private static void discardElectronicDevice(Entity entity) {

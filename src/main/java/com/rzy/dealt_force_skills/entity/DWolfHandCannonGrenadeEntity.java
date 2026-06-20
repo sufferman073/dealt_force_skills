@@ -26,9 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int FUSE_TICKS = 70;
-    private static final double RADIUS = 6.0D;
-    private static final double BOUNCE_FACTOR = 0.62D;
+    private static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfhandcannongrenadeentity.fuse_ticks", 70);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.radius", 6.0D);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.bounce_factor", 0.62D);
     private static final double GROUND_REST_OFFSET = 0.24D;
 
     private int fuseRemaining = FUSE_TICKS;

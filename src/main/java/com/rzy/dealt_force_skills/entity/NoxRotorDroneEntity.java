@@ -33,12 +33,12 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFE_TICKS = 8 * 20;
-    private static final int POST_BOUNCE_EXPLODE_TICKS = 6;
-    private static final double BOUNCE_FACTOR = 0.82D;
-    private static final double EXPLOSION_RADIUS = 2.0D;
-    private static final double HOMING_STRENGTH = 0.14D;
-    private static final double HOMING_SPEED = 1.75D;
+    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.max_life_ticks", 8 * 20);
+    private static final int POST_BOUNCE_EXPLODE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.post_bounce_explode_ticks", 6);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.bounce_factor", 0.82D);
+    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.explosion_radius", 2.0D);
+    private static final double HOMING_STRENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_strength", 0.14D);
+    private static final double HOMING_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_speed", 1.75D);
 
     private UUID ownerId;
     private UUID targetId;
@@ -227,7 +227,7 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
             }
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.noxRotor(level, this, owner), owner, 8.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.noxRotor(level, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.nox_rotor_drone_entity.skill_hurt.0.damage", 8.0f));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             NoxStateManager.applyCrippled(target, owner);

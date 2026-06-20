@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.undead.UndeadStateManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,10 +30,17 @@ public final class DealtCurrencyRegistry {
                 UndeadSoulManager::grant
         ));
         registerBuiltin(new SimpleProvider(
+                "saeed_tactical_points",
+                "currency.dealt_force_skills.tactical_points",
+                SaeedStateManager::isSaeed,
+                SaeedStateManager::grantTacticalPoints
+        ));
+        registerBuiltin(new SimpleProvider(
                 "haff_coins",
                 "currency.dealt_force_skills.haff_coins",
                 player -> !LexNinjiaStateManager.isLexNinjia(player)
-                        && !UndeadStateManager.isUndead(player),
+                        && !UndeadStateManager.isUndead(player)
+                        && !SaeedStateManager.isSaeed(player),
                 HaffCoinManager::grant
         ));
     }

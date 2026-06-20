@@ -30,7 +30,9 @@ public final class CharacterSkinTextures {
             Map.entry(ModCharacters.CATDAD_ID, skin("catdad")),
             Map.entry(ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID, skin("department_of_transportation")),
             Map.entry(ModCharacters.UNDEAD_ID, skin("undead")),
-            Map.entry(ModCharacters.LEX_NINJIA_ID, skin("lex_ninjia"))
+            Map.entry(ModCharacters.LEX_NINJIA_ID, skin("lex_ninjia")),
+            Map.entry(ModCharacters.SAEED_ID, skin("saeed")),
+            Map.entry(ModCharacters.GHROTH_ID, skin("ghroth"))
     );
 
     private CharacterSkinTextures() {

@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -131,10 +132,11 @@ public final class ManbaFlashlightBeamRenderer {
         Vec3 up = new Vec3(0.0D, 1.0D, 0.0D);
         Vec3 right = rightVector(look, up);
         Vec3 vertical = look.cross(right).normalize();
+        double handSide = player.getMainArm() == HumanoidArm.LEFT ? -1.0D : 1.0D;
         return player.getEyePosition(partialTick)
-                .add(look.scale(0.66D))
-                .add(right.scale(0.74D))
-                .add(vertical.scale(-0.34D));
+                .add(look.scale(0.50D))
+                .add(right.scale(-0.48D * handSide))
+                .add(vertical.scale(-0.62D));
     }
 
     private static Vec3 rightVector(Vec3 look, Vec3 up) {

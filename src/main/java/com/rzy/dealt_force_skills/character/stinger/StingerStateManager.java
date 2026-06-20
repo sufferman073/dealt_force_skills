@@ -27,16 +27,16 @@ import java.util.List;
 import java.util.Optional;
 
 public final class StingerStateManager {
-    public static final int SMOKE_COOLDOWN_TICKS = 40 * 20;
-    public static final int DRONE_COOLDOWN_TICKS = 55 * 20;
-    public static final int STIM_MAX_CHARGES = 6;
-    public static final int STIM_RECHARGE_TICKS = 25 * 20;
-    public static final int STIM_DURATION_TICKS = 20 * 20;
-    public static final int DOWNED_DURATION_TICKS = 45 * 20;
-    public static final int DOWNED_COOLDOWN_TICKS = 60 * 20;
-    public static final int REVIVE_OTHER_TICKS = 3 * 20;
-    public static final int REVIVE_SELF_TICKS = 20;
-    public static final double REVIVE_RANGE = 1.5D;
+    public static final int SMOKE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.smoke_cooldown_ticks", 40 * 20);
+    public static final int DRONE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.drone_cooldown_ticks", 55 * 20);
+    public static final int STIM_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_max_charges", 6);
+    public static final int STIM_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_recharge_ticks", 25 * 20);
+    public static final int STIM_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_duration_ticks", 20 * 20);
+    public static final int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_duration_ticks", 45 * 20);
+    public static final int DOWNED_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_cooldown_ticks", 60 * 20);
+    public static final int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_other_ticks", 3 * 20);
+    public static final int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_self_ticks", 20);
+    public static final double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_state_manager.revive_range", 1.5D);
     private static final DustParticleOptions DOWNED_DUST = new DustParticleOptions(new Vector3f(0.28f, 0.86f, 1.0f), 1.25f);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".stinger";
@@ -125,7 +125,7 @@ public final class StingerStateManager {
         MobEffectInstance current = player.getEffect(ModEffects.STINGER_DOWNED.get());
         if (current == null || current.getDuration() < remaining - 5) {
             player.addEffect(new MobEffectInstance(ModEffects.STINGER_DOWNED.get(),
-                    remaining, 0, false, true, true));
+                    remaining, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_downed.0.amplifier", 0), false, true, true));
         }
         if (player.getHealth() < 1.0f) {
             player.setHealth(1.0f);
@@ -161,7 +161,7 @@ public final class StingerStateManager {
         player.setHealth(Math.max(1.0f, Math.min(player.getHealth(), player.getMaxHealth())));
         player.clearFire();
         player.addEffect(new MobEffectInstance(ModEffects.STINGER_DOWNED.get(),
-                DOWNED_DURATION_TICKS, 0, false, true, true));
+                DOWNED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_downed.1.amplifier", 0), false, true, true));
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.downed"), true);
     }
 
@@ -175,7 +175,7 @@ public final class StingerStateManager {
         if (fullHeal) {
             player.setHealth(player.getMaxHealth());
             player.clearFire();
-            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 4 * 20, 0, false, true, true));
+            player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.2.duration_ticks", 4 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.2.amplifier", 0), false, true, true));
         }
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.revived"), true);
     }
@@ -304,11 +304,11 @@ public final class StingerStateManager {
 
     public static void applyStimHeal(LivingEntity target) {
         target.addEffect(new MobEffectInstance(ModEffects.STINGER_STIM_HEAL.get(),
-                STIM_DURATION_TICKS, 0, false, true, true));
+                STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_stim_heal.3.amplifier", 0), false, true, true));
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
-                STIM_DURATION_TICKS, 1, false, true, true));
+                STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.4.amplifier", 1), false, true, true));
         target.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
-                STIM_DURATION_TICKS, 1, false, true, true));
+                STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.absorption.5.amplifier", 1), false, true, true));
         for (MobEffectInstance effect : new ArrayList<>(target.getActiveEffects())) {
             if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
                 target.removeEffect(effect.getEffect());
@@ -318,14 +318,14 @@ public final class StingerStateManager {
 
     public static void applySmokeRegen(ServerPlayer target) {
         target.addEffect(new MobEffectInstance(ModEffects.STINGER_SMOKE_REGEN.get(),
-                30, 0, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_smoke_regen.6.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_smoke_regen.6.amplifier", 0), false, true, true));
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
-                30, 0, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.7.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.7.amplifier", 0), false, true, true));
     }
 
     public static void applyStimSuppression(LivingEntity target) {
         target.addEffect(new MobEffectInstance(ModEffects.STINGER_STIM_SUPPRESSION.get(),
-                STIM_DURATION_TICKS, 0, false, true, true));
+                STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_stim_suppression.8.amplifier", 0), false, true, true));
     }
 
     public static boolean hasStimSuppression(LivingEntity target) {

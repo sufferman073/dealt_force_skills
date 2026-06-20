@@ -1,10 +1,13 @@
 package com.rzy.dealt_force_skills.network;
 
+import com.rzy.dealt_force_skills.character.CharacterAvailability;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.shop.SaeedRecruitManager;
 import com.rzy.dealt_force_skills.skill.SkillDispatcher;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -53,11 +56,27 @@ public class C2S_SelectCharacter {
                     return;
                 }
 
+                var requestedCharacter = ModCharacters.get(msg.characterId);
+                if (requestedCharacter.isEmpty()) {
+                    NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(currentCharacterId.get()), player);
+                    player.displayClientMessage(Component.translatable("message.dealt_force_skills.invalid_character"), false);
+                    return;
+                }
+                var blockedMessageKey = CharacterAvailability.selectionBlockedMessageKey(player, requestedCharacter.get());
+                if (blockedMessageKey.isPresent()) {
+                    NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(currentCharacterId.get()), player);
+                    player.displayClientMessage(Component.translatable(blockedMessageKey.get()), false);
+                    return;
+                }
+
                 CharacterSelectionManager.replaceCharacter(player, msg.characterId).ifPresentOrElse(
                         character -> {
                             CharacterSelectionManager.consumeCharacterReselection(player);
                             SkillDispatcher.onCharacterSelected(player, character);
                             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(character.id()), player);
+                            if (ModCharacters.SAEED_ID.equals(character.id())) {
+                                SaeedRecruitManager.openInitialChoiceIfNeeded(player);
+                            }
                         },
                         () -> {
                             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(currentCharacterId.get()), player);
@@ -67,10 +86,27 @@ public class C2S_SelectCharacter {
                 return;
             }
 
+            var requestedCharacter = ModCharacters.get(msg.characterId);
+            if (requestedCharacter.isEmpty()) {
+                NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(""), player);
+                player.displayClientMessage(Component.translatable("message.dealt_force_skills.invalid_character"), false);
+                return;
+            }
+            var blockedMessageKey = CharacterAvailability.selectionBlockedMessageKey(player, requestedCharacter.get());
+            if (blockedMessageKey.isPresent()) {
+                NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(""), player);
+                player.displayClientMessage(Component.translatable(blockedMessageKey.get()), false);
+                return;
+            }
+
             CharacterSelectionManager.selectCharacter(player, msg.characterId).ifPresentOrElse(
                     character -> {
+                        CharacterSelectionManager.consumeCharacterReselection(player);
                         SkillDispatcher.onCharacterSelected(player, character);
                         NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(character.id()), player);
+                        if (ModCharacters.SAEED_ID.equals(character.id())) {
+                            SaeedRecruitManager.openInitialChoiceIfNeeded(player);
+                        }
                     },
                     () -> {
                         NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(""), player);

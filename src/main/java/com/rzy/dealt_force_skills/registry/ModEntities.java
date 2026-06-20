@@ -28,6 +28,10 @@ import com.rzy.dealt_force_skills.entity.NoxFlashGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.NoxRotorDroneEntity;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.RaptorPulseGrenadeEntity;
+import com.rzy.dealt_force_skills.entity.SaeedFireArrowEntity;
+import com.rzy.dealt_force_skills.entity.SaeedFireFieldEntity;
+import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
+import com.rzy.dealt_force_skills.entity.SaeedHakimMissileEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdDroneEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdFragGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdSonicTrapEntity;
@@ -452,4 +456,36 @@ public class ModEntities {
                             .clientTrackingRange(128)
                             .updateInterval(2)
                             .build("department_explosive_trap"));
+
+    public static final RegistryObject<EntityType<SaeedGuardEntity>> SAEED_GUARD =
+            ENTITIES.register("saeed_guard",
+                    () -> EntityType.Builder.<SaeedGuardEntity>of(SaeedGuardEntity::new, MobCategory.CREATURE)
+                            .sized(0.6f, 1.8f)
+                            .clientTrackingRange(128)
+                            .updateInterval(2)
+                            .build("saeed_guard"));
+
+    public static final RegistryObject<EntityType<SaeedFireArrowEntity>> SAEED_FIRE_ARROW =
+            ENTITIES.register("saeed_fire_arrow",
+                    () -> EntityType.Builder.<SaeedFireArrowEntity>of(SaeedFireArrowEntity::new, MobCategory.MISC)
+                            .sized(0.25f, 0.25f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("saeed_fire_arrow"));
+
+    public static final RegistryObject<EntityType<SaeedHakimMissileEntity>> SAEED_HAKIM_MISSILE =
+            ENTITIES.register("saeed_hakim_missile",
+                    () -> EntityType.Builder.<SaeedHakimMissileEntity>of(SaeedHakimMissileEntity::new, MobCategory.MISC)
+                            .sized(0.32f, 0.32f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("saeed_hakim_missile"));
+
+    public static final RegistryObject<EntityType<SaeedFireFieldEntity>> SAEED_FIRE_FIELD =
+            ENTITIES.register("saeed_fire_field",
+                    () -> EntityType.Builder.<SaeedFireFieldEntity>of(SaeedFireFieldEntity::new, MobCategory.MISC)
+                            .sized(0.1f, 0.1f)
+                            .clientTrackingRange(96)
+                            .updateInterval(5)
+                            .build("saeed_fire_field"));
 }

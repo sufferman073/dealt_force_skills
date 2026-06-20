@@ -38,8 +38,8 @@ public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier, Blockb
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(GizmoSmokeTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 8;
-    private static final double TRIGGER_RADIUS = 3.0D;
-    private static final double MAX_OWNER_DISTANCE = 50.0D;
+    private static final double TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.trigger_radius", 3.0D);
+    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.max_owner_distance", 50.0D);
     private static final DustParticleOptions YELLOW_BURST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.08f), 1.8f);
 
     private UUID ownerId;

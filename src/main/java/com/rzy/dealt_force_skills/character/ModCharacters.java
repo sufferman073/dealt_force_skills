@@ -5,7 +5,9 @@ import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -22,6 +24,8 @@ public final class ModCharacters {
     public static final String HACKCLAW_ID = DealtForceSkillsMod.MODID + ":recon/hackclaw";
     public static final String MORSE_ID = DealtForceSkillsMod.MODID + ":recon/morse";
     public static final String RAPTOR_ID = DealtForceSkillsMod.MODID + ":recon/raptor";
+    public static final String SAEED_ID = DealtForceSkillsMod.MODID + ":boss/saeed";
+    public static final String GHROTH_ID = DealtForceSkillsMod.MODID + ":boss/ghroth";
     public static final String STINGER_ID = DealtForceSkillsMod.MODID + ":support/stinger";
     public static final String TOXIK_ID = DealtForceSkillsMod.MODID + ":support/toxik";
     public static final String VLINDER_ID = DealtForceSkillsMod.MODID + ":support/vlinder";
@@ -32,6 +36,38 @@ public final class ModCharacters {
     public static final String UNDEAD_ID = DealtForceSkillsMod.MODID + ":special/undead";
     public static final String LEX_NINJIA_ID = DealtForceSkillsMod.MODID + ":special/lex_ninjia";
 
+    private static final Map<String, String> COMMAND_NAME_ALIASES = Map.ofEntries(
+            Map.entry(normalizeCommandName("深蓝"), SINEVA_ID),
+            Map.entry(normalizeCommandName("乌鲁鲁"), ULURU_ID),
+            Map.entry(normalizeCommandName("比特"), GIZMO_ID),
+            Map.entry(normalizeCommandName("牧羊人"), SHEPHERD_ID),
+            Map.entry(normalizeCommandName("红狼"), D_WOLF_ID),
+            Map.entry(normalizeCommandName("威龙"), VYRON_ID),
+            Map.entry(normalizeCommandName("疾风"), TEMPEST_ID),
+            Map.entry(normalizeCommandName("露娜"), LUNA_ID),
+            Map.entry(normalizeCommandName("骇爪"), HACKCLAW_ID),
+            Map.entry(normalizeCommandName("回响"), MORSE_ID),
+            Map.entry(normalizeCommandName("银翼"), RAPTOR_ID),
+            Map.entry(normalizeCommandName("赛伊德"), SAEED_ID),
+            Map.entry(normalizeCommandName("典狱长"), GHROTH_ID),
+            Map.entry(normalizeCommandName("毒刺"), STINGER_ID),
+            Map.entry(normalizeCommandName("毒克"), TOXIK_ID),
+            Map.entry(normalizeCommandName("蝶"), VLINDER_ID),
+            Map.entry(normalizeCommandName("曼巴"), MANBA_ID),
+            Map.entry(normalizeCommandName("二阶堂浩"), NIKAIDOU_HIRO_ID),
+            Map.entry(normalizeCommandName("猫爸"), CATDAD_ID),
+            Map.entry(normalizeCommandName("运输部"), DEPARTMENT_OF_TRANSPORTATION_ID),
+            Map.entry(normalizeCommandName("亡灵"), UNDEAD_ID),
+            Map.entry(normalizeCommandName("蕾克拉忍者"), LEX_NINJIA_ID)
+    );
+    private static final List<String> COMMAND_NAME_ALIAS_SUGGESTIONS = List.of(
+            "深蓝", "乌鲁鲁", "比特", "牧羊人",
+            "红狼", "威龙", "疾风",
+            "露娜", "骇爪", "回响", "银翼",
+            "赛伊德", "典狱长",
+            "毒刺", "毒克", "蝶",
+            "曼巴", "二阶堂浩", "猫爸", "运输部", "亡灵", "蕾克拉忍者"
+    );
     private static final Map<String, CharacterDefinition> CHARACTERS = new LinkedHashMap<>();
 
     public static final CharacterDefinition SINEVA = register(new CharacterDefinition(
@@ -469,6 +505,64 @@ public final class ModCharacters {
             )
     ));
 
+    public static final CharacterDefinition SAEED = register(new CharacterDefinition(
+            SAEED_ID,
+            "character.dealt_force_skills.saeed.name",
+            CharacterRole.BOSS,
+            "characters_records/Bosses/Saeed_team/Saeed.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.saeed.skill.red_sky_hunt",
+                            "character.dealt_force_skills.saeed.skill.red_sky_hunt.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.saeed.skill.tactical_roll",
+                            "character.dealt_force_skills.saeed.skill.tactical_roll.desc",
+                            12 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.saeed.skill.fire_arrow",
+                            "character.dealt_force_skills.saeed.skill.fire_arrow.desc",
+                            30 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.saeed.skill.command_order",
+                            "character.dealt_force_skills.saeed.skill.command_order.desc",
+                            120 * 20,
+                            true)
+            )
+    ));
+
+    public static final CharacterDefinition GHROTH = register(new CharacterDefinition(
+            GHROTH_ID,
+            "character.dealt_force_skills.ghroth.name",
+            CharacterRole.BOSS,
+            "characters_records/Bosses/Ghroth.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.ghroth.skill.demigod_brain",
+                            "character.dealt_force_skills.ghroth.skill.demigod_brain.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.ghroth.skill.stars_orbit",
+                            "character.dealt_force_skills.ghroth.skill.stars_orbit.desc",
+                            25 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.ghroth.skill.justice",
+                            "character.dealt_force_skills.ghroth.skill.justice.desc",
+                            25 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.ghroth.skill.noon",
+                            "character.dealt_force_skills.ghroth.skill.noon.desc",
+                            50 * 20,
+                            true)
+            )
+    ));
+
     public static final CharacterDefinition MANBA = register(new CharacterDefinition(
             MANBA_ID,
             "character.dealt_force_skills.manba.name",
@@ -654,6 +748,44 @@ public final class ModCharacters {
         return Optional.ofNullable(CHARACTERS.get(id));
     }
 
+    public static Optional<CharacterDefinition> findByCommandName(String value) {
+        if (value == null || value.isBlank()) {
+            return Optional.empty();
+        }
+        String trimmed = value.trim();
+        CharacterDefinition exact = CHARACTERS.get(trimmed);
+        if (exact != null) {
+            return Optional.of(exact);
+        }
+        CharacterDefinition namespaced = CHARACTERS.get(DealtForceSkillsMod.MODID + ":" + trimmed);
+        if (namespaced != null) {
+            return Optional.of(namespaced);
+        }
+
+        String normalized = normalizeCommandName(trimmed);
+        String aliasedId = COMMAND_NAME_ALIASES.get(normalized);
+        if (aliasedId != null) {
+            return get(aliasedId);
+        }
+        return CHARACTERS.values().stream()
+                .filter(character -> matchesCommandName(normalized, character))
+                .findFirst();
+    }
+
+    public static List<String> commandNameSuggestions() {
+        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        for (CharacterDefinition character : CHARACTERS.values()) {
+            String id = character.id();
+            String path = id.contains(":") ? id.substring(id.indexOf(':') + 1) : id;
+            String shortName = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
+            suggestions.add(shortName);
+            suggestions.add(path);
+            suggestions.add(id);
+        }
+        suggestions.addAll(COMMAND_NAME_ALIAS_SUGGESTIONS);
+        return List.copyOf(suggestions);
+    }
+
     public static List<CharacterDefinition> byRole(CharacterRole role) {
         return CHARACTERS.values().stream()
                 .filter(character -> character.role() == role)
@@ -666,5 +798,26 @@ public final class ModCharacters {
         }
         CHARACTERS.put(character.id(), character);
         return character;
+    }
+
+    private static boolean matchesCommandName(String normalized, CharacterDefinition character) {
+        String id = character.id();
+        String path = id.contains(":") ? id.substring(id.indexOf(':') + 1) : id;
+        String shortName = path.contains("/") ? path.substring(path.lastIndexOf('/') + 1) : path;
+        String translationName = character.nameTranslationKey()
+                .replace("character." + DealtForceSkillsMod.MODID + ".", "")
+                .replace(".name", "");
+        return normalized.equals(normalizeCommandName(id))
+                || normalized.equals(normalizeCommandName(path))
+                || normalized.equals(normalizeCommandName(shortName))
+                || normalized.equals(normalizeCommandName(translationName));
+    }
+
+    private static String normalizeCommandName(String value) {
+        StringBuilder result = new StringBuilder();
+        value.toLowerCase(Locale.ROOT).codePoints()
+                .filter(Character::isLetterOrDigit)
+                .forEach(result::appendCodePoint);
+        return result.toString();
     }
 }

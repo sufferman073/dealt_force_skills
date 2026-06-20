@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.network;
 
 import com.rzy.dealt_force_skills.client.screen.HaffShopScreen;
+import com.rzy.dealt_force_skills.client.screen.GhrothArmoryScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -26,7 +27,10 @@ public class S2C_SyncHaffCoins {
     public static void handle(S2C_SyncHaffCoins msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
                 Dist.CLIENT,
-                () -> () -> HaffShopScreen.updateCoins(msg.coins)
+                () -> () -> {
+                    HaffShopScreen.updateCoins(msg.coins);
+                    GhrothArmoryScreen.updateCoins(msg.coins);
+                }
         ));
         ctx.get().setPacketHandled(true);
     }

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.morse.MorseTool;
@@ -30,8 +31,8 @@ import java.lang.reflect.Method;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class MorseInputHandler {
-    private static final int FLASH_EQUIP_HOLD_TICKS = 8;
-    private static final int FLASH_RELEASE_TICKS = 2;
+    private static final int FLASH_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.morse_input_handler.flash_equip_hold_ticks", 8);
+    private static final int FLASH_RELEASE_TICKS = DealtForceConfig.intValue("client.morse_input_handler.flash_release_ticks", 2);
     private static final String TACZ_CLIENT_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
     private static boolean active2WasDown;
     private static int active2HeldTicks;

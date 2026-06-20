@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.nox.NoxTool;
@@ -29,13 +30,13 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxInputHandler {
-    private static final int FLASH_EQUIP_HOLD_TICKS = 8;
-    private static final int FLASH_RELEASE_TICKS = 3;
-    private static final int ROTOR_LOCK_TICKS = 10;
-    private static final double ROTOR_LOCK_RANGE = 48.0D;
-    private static final double ROTOR_LOCK_MIN_ALIGNMENT = 0.78D;
-    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = 0.975D;
-    private static final double ROTOR_LOCK_MAX_OFF_AXIS = 2.0D;
+    private static final int FLASH_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.nox_input_handler.flash_equip_hold_ticks", 8);
+    private static final int FLASH_RELEASE_TICKS = DealtForceConfig.intValue("client.nox_input_handler.flash_release_ticks", 3);
+    private static final int ROTOR_LOCK_TICKS = DealtForceConfig.intValue("client.nox_input_handler.rotor_lock_ticks", 10);
+    private static final double ROTOR_LOCK_RANGE = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_range", 48.0D);
+    private static final double ROTOR_LOCK_MIN_ALIGNMENT = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_min_alignment", 0.78D);
+    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_direct_alignment", 0.975D);
+    private static final double ROTOR_LOCK_MAX_OFF_AXIS = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_max_off_axis", 2.0D);
 
     private static boolean active2WasDown;
     private static int active2HeldTicks;

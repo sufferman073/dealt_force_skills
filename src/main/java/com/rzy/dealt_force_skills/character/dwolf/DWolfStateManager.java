@@ -25,18 +25,18 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class DWolfStateManager {
-    public static final int HAND_CANNON_MAX_CHARGES = 2;
-    public static final int HAND_CANNON_RECHARGE_TICKS = 25 * 20;
-    public static final int SMOKE_MAX_CHARGES = 2;
-    public static final int SMOKE_RECHARGE_TICKS = 25 * 20;
-    public static final int OVERLOAD_COOLDOWN_TICKS = 75 * 20;
-    public static final int OVERLOAD_STARTUP_TICKS = 10;
-    public static final int OVERLOAD_DURATION_TICKS = 25 * 20;
-    public static final int OVERLOAD_EXTENSION_TICKS = 5 * 20;
-    public static final int OVERLOAD_REGEN_TICKS = 3 * 20;
-    public static final int SLIDE_TICKS = 12;
-    public static final int SLIDE_STAMINA_PERCENT_COST = 15;
-    public static final int SLIDE_COOLDOWN_TICKS = 8;
+    public static final int HAND_CANNON_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_max_charges", 2);
+    public static final int HAND_CANNON_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_recharge_ticks", 25 * 20);
+    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_max_charges", 2);
+    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_recharge_ticks", 25 * 20);
+    public static final int OVERLOAD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_cooldown_ticks", 75 * 20);
+    public static final int OVERLOAD_STARTUP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_startup_ticks", 10);
+    public static final int OVERLOAD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_duration_ticks", 25 * 20);
+    public static final int OVERLOAD_EXTENSION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_extension_ticks", 5 * 20);
+    public static final int OVERLOAD_REGEN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_regen_ticks", 3 * 20);
+    public static final int SLIDE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_ticks", 12);
+    public static final int SLIDE_STAMINA_PERCENT_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_stamina_percent_cost", 15);
+    public static final int SLIDE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_cooldown_ticks", 8);
     public static final UUID OVERLOAD_SPEED_UUID = UUID.fromString("02c58f66-7af1-4a6a-9df8-2b6c5b5224b1");
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".d_wolf";
@@ -222,8 +222,8 @@ public final class DWolfStateManager {
 
         CompoundTag tag = data(player);
         tag.putLong(OVERLOAD_ACTIVE_UNTIL, tag.getLong(OVERLOAD_ACTIVE_UNTIL) + OVERLOAD_EXTENSION_TICKS);
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, OVERLOAD_REGEN_TICKS, 3, false, true, true));
-        player.addEffect(new MobEffectInstance(MobEffects.SATURATION, OVERLOAD_REGEN_TICKS, 1, false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, OVERLOAD_REGEN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.effect.regeneration.0.amplifier", 3), false, true, true));
+        player.addEffect(new MobEffectInstance(MobEffects.SATURATION, OVERLOAD_REGEN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.effect.saturation.1.amplifier", 1), false, true, true));
         NetworkHandler.sendToPlayer(new S2C_DWolfStaminaRestore(50), player);
         player.level().playSound(null, player.blockPosition(), ModSounds.D_WOLF_OVERLOAD_KILL_EXTENSION.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f);

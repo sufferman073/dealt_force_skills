@@ -33,11 +33,11 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier {
-    public static final int FUSE_TICKS = 3 * 20;
-    public static final double RADIUS = 10.0D;
-    public static final int ACTION_PAUSE_TICKS = 8;
-    public static final int EMI_TICKS = 20 * 20;
-    private static final double BOUNCE_FACTOR = 0.7D;
+    public static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.fuse_ticks", 3 * 20);
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.radius", 10.0D);
+    public static final int ACTION_PAUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.action_pause_ticks", 8);
+    public static final int EMI_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.emi_ticks", 20 * 20);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.bounce_factor", 0.7D);
     private static final DustParticleOptions BLUE_TRAIL = new DustParticleOptions(new Vector3f(0.35f, 0.56f, 1.0f), 1.0f);
     private static final DustParticleOptions BLUE_BURST = new DustParticleOptions(new Vector3f(0.48f, 0.76f, 1.0f), 1.6f);
 
@@ -133,11 +133,11 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
                 continue;
             }
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.raptorPulse(level, directEntity, owner), 1.0f);
+            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.raptorPulse(level, directEntity, owner), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.raptor_pulse_grenade_entity.skill_hurt.0.damage", 1.0f));
             target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ACTION_PAUSE.get(),
-                    ACTION_PAUSE_TICKS, 0, false, true, true), owner);
+                    ACTION_PAUSE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptor_pulse_grenade_entity.effect.raptor_action_pause.0.amplifier", 0), false, true, true), owner);
             target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
-                    EMI_TICKS, 0, false, true, true), owner);
+                    EMI_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptor_pulse_grenade_entity.effect.raptor_electromagnetic_interference.1.amplifier", 0), false, true, true), owner);
             level.playSound(null, target.blockPosition(), ModSounds.RAPTOR_PULSE_STAGGER_HIT.get(),
                     SoundSource.PLAYERS, 0.55f, 1.0f);
         }

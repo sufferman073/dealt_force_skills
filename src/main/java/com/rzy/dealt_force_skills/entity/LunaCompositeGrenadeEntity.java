@@ -34,14 +34,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LunaCompositeGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = 100;
-    private static final double RADIUS = 8.0D;
-    private static final double WALL_BOUNCE_FACTOR = 0.55D;
-    private static final double GROUND_ROLL_FACTOR = 0.36D;
-    private static final double ROLL_STOP_SPEED_SQR = 0.004D;
-    private static final int MAX_ROLL_TICKS = 12;
-    private static final float ARMOR_DAMAGE_SHARE = 0.50f;
-    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = 10.0f;
+    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.default_fuse_ticks", 100);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.radius", 8.0D);
+    private static final double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.wall_bounce_factor", 0.55D);
+    private static final double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.ground_roll_factor", 0.36D);
+    private static final double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.roll_stop_speed_sqr", 0.004D);
+    private static final int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.max_roll_ticks", 12);
+    private static final float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.lunacompositegrenadeentity.armor_damage_share", 0.50f);
+    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.lunacompositegrenadeentity.armor_durability_damage_per_point", 10.0f);
 
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
     private int rollingTicks;

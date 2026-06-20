@@ -26,8 +26,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class UluruIncendiaryGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final double FIRE_RADIUS = 6.0;
-    private static final double BOUNCE_FACTOR = 0.68D;
+    private static final double FIRE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.fire_radius", 6.0);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.bounce_factor", 0.68D);
 
     public UluruIncendiaryGrenadeEntity(EntityType<? extends UluruIncendiaryGrenadeEntity> type, Level level) {
         super(type, level);

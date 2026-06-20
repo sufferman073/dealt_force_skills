@@ -33,10 +33,10 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
-    private static final int FUSE_TICKS = 5 * 20;
-    private static final int KNOCKDOWN_TICKS = 5 * 20;
-    private static final double RADIUS = 4.0D;
-    private static final int MAX_FLOOR_BOUNCES = 2;
+    private static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.fuse_ticks", 5 * 20);
+    private static final int KNOCKDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.knockdown_ticks", 5 * 20);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vyrontigercannonentity.radius", 4.0D);
+    private static final int MAX_FLOOR_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyron_tiger_cannon_entity.max_floor_bounces", 2);
 
     private int fuseRemaining = FUSE_TICKS;
     private int floorBounces;
@@ -174,7 +174,7 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
             if (!hasLineOfSight(center, targetCenter) || isBlockedBySinevaShield(target, center)) {
                 continue;
             }
-            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), KNOCKDOWN_TICKS, 0, false, true, true));
+            target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), KNOCKDOWN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyron_tiger_cannon_entity.effect.stun.0.amplifier", 0), false, true, true));
             if (owner instanceof ServerPlayer attacker) {
                 SinevaKnockdownState.apply(attacker, target, KNOCKDOWN_TICKS);
             }

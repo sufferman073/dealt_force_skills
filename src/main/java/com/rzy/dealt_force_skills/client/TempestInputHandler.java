@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.tempest.TempestToolAction;
@@ -20,7 +21,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class TempestInputHandler {
-    private static final int WALL_DRILL_EQUIP_HOLD_TICKS = 8;
+    private static final int WALL_DRILL_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.tempest_input_handler.wall_drill_equip_hold_ticks", 8);
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean sentWallEquip;

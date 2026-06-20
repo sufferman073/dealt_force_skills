@@ -46,14 +46,16 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, Bl
             SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_FACING_Z =
             SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
-    public static final double RANGE = 75.0D;
-    private static final double HALF_ANGLE_COS = Math.cos(Math.toRadians(55.0D));
-    private static final int SCAN_TICKS = 4 * 20;
-    private static final int IDLE_TICKS = 6 * 20;
-    private static final int CYCLE_TICKS = SCAN_TICKS + IDLE_TICKS;
-    private static final int TOTAL_TICKS = SCAN_TICKS * 3 + IDLE_TICKS * 2;
-    private static final int REVEAL_TICKS = 45;
-    private static final int DETECTOR_MARKER_TICKS = 18;
+    public static final double RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morsesonardetectorentity.range", 75.0D);
+    private static final double HALF_ANGLE_COS = Math.cos(Math.toRadians(
+            com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+                    "summons.morse_sonar_detector.half_angle_degrees", 55.0D)));
+    private static final int SCAN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.scan_ticks", 4 * 20);
+    private static final int IDLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.idle_ticks", 6 * 20);
+    private static final int CYCLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.cycle_ticks", SCAN_TICKS + IDLE_TICKS);
+    private static final int TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.total_ticks", SCAN_TICKS * 3 + IDLE_TICKS * 2);
+    private static final int REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.reveal_ticks", 45);
+    private static final int DETECTOR_MARKER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.detector_marker_ticks", 18);
     private static final DustParticleOptions SONAR_DUST = new DustParticleOptions(new Vector3f(0.28f, 0.72f, 1.0f), 1.0f);
     private static final Map<UUID, MorseSonarDetectorEntity> ACTIVE = new HashMap<>();
 
@@ -222,7 +224,7 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, Bl
                     new MorseWorldMarker(MorseMarkerType.SONAR_REVEAL, actor.getId(), actor.position(), REVEAL_TICKS)
             )), owner);
             actor.addEffect(new MobEffectInstance(ModEffects.MORSE_SONAR_REVEALED.get(),
-                    2 * 20, 0, false, true, true), owner);
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morse_sonar_detector_entity.effect.morse_sonar_revealed.0.duration_ticks", 2 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morse_sonar_detector_entity.effect.morse_sonar_revealed.0.amplifier", 0), false, true, true), owner);
             owner.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.sonar_action_owner",
                     actor.getDisplayName()), true);
             actor.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.sonar_action_target"), true);

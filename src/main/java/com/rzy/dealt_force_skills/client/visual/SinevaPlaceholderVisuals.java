@@ -142,7 +142,7 @@ public final class SinevaPlaceholderVisuals {
             float thrust = Mth.sin(bash * Mth.PI) * 0.08f + charge * 0.05f;
 
             poseStack.pushPose();
-            poseStack.translate(0.0d, 0.78d, -1.22d - thrust * 0.12f);
+            poseStack.translate(0.0d, 1.68d, -0.96d - thrust * 0.12f);
             renderSinevaShield(poseStack, event.getMultiBufferSource(), event.getPackedLight(), true,
                     ClientSinevaRenderState.isViewportBroken(minecraft.player));
             poseStack.popPose();
@@ -345,7 +345,7 @@ public final class SinevaPlaceholderVisuals {
         poseStack.translate(x, y, z);
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0f - bodyYaw));
         if (frontShield) {
-            poseStack.translate(0.0d, 0.86d, -0.74d - thrust * 0.45f);
+            poseStack.translate(0.0d, 0.38d, -0.58d - thrust * 0.45f);
         } else {
             poseStack.translate(0.0d, 1.35d, 0.40d);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
@@ -438,7 +438,7 @@ public final class SinevaPlaceholderVisuals {
             if (frontShield) {
                 getParentModel().body.translateAndRotate(poseStack);
                 poseStack.mulPose(Axis.YP.rotationDegrees(netHeadYaw));
-                poseStack.translate(0.0d, 0.52d, -0.76d - thrust * 0.45f);
+                poseStack.translate(0.0d, 0.94d, -0.54d - thrust * 0.45f);
             } else {
                 getParentModel().body.translateAndRotate(poseStack);
                 poseStack.translate(0.0d, 0.30d, 0.32d);
@@ -501,15 +501,21 @@ public final class SinevaPlaceholderVisuals {
                     frame, 0.006f, GLASS_R, GLASS_G, GLASS_B, 255);
         }
 
-        VertexConsumer glassConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
-        if (!firstPerson && !viewportBroken) {
+        if (!viewportBroken) {
+            VertexConsumer glassConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
             renderRect(poseStack, glassConsumer, viewportX, viewportY, viewportWidth, viewportHeight,
-                    0.008f, GLASS_R, GLASS_G, GLASS_B, 90);
-        }
-        if (!firstPerson && !viewportBroken) {
+                    0.008f, GLASS_R, GLASS_G, GLASS_B, firstPerson ? 112 : 90);
             renderRect(poseStack, glassConsumer, viewportX - viewportWidth * 0.30f,
                     viewportY + viewportHeight * 0.24f, viewportWidth * 0.30f, 0.018f,
-                    0.010f, 214, 235, 238, 130);
+                    0.010f, 214, 235, 238, firstPerson ? 170 : 130);
+            if (firstPerson) {
+                renderRect(poseStack, glassConsumer, viewportX + viewportWidth * 0.25f,
+                        viewportY - viewportHeight * 0.22f, viewportWidth * 0.24f, 0.014f,
+                        0.011f, 190, 222, 232, 128);
+                renderRect(poseStack, glassConsumer, viewportX - viewportWidth * 0.10f,
+                        viewportY - viewportHeight * 0.05f, viewportWidth * 0.52f, 0.012f,
+                        0.012f, 226, 246, 250, 94);
+            }
         }
     }
 
@@ -526,7 +532,7 @@ public final class SinevaPlaceholderVisuals {
             poseStack.translate(0.0D, -0.46D, 0.0D);
             poseStack.scale(1.90F, 1.04F, 1.0F);
         } else if (modelSpaceYDown) {
-            poseStack.translate(0.0D, 0.28D, 0.0D);
+            poseStack.translate(0.0D, 0.48D, 0.0D);
             poseStack.scale(1.0F, -1.0F, 1.0F);
         } else {
             poseStack.translate(0.0D, -0.78D, 0.0D);

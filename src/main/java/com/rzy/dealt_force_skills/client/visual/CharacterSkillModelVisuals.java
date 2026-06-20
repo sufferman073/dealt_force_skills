@@ -39,7 +39,7 @@ public final class CharacterSkillModelVisuals {
         if (spec == null && ClientManbaHudState.flashlightActive()) {
             spec = new ModelSpec(MANBA_FLASHLIGHT, "idle_hold",
                     (player.tickCount + event.getPartialTick()) / 20.0F,
-                    Placement.FLASHLIGHT, 0.72F, 0xFFFFFFFF, Set.of());
+                    Placement.FLASHLIGHT, 0.96F, 0xFFFFFFFF, Set.of());
         }
         if (spec == null || isNikaidouVisual(visual) || !rendersInFirstPerson(spec.placement())) {
             return;
@@ -137,7 +137,7 @@ public final class CharacterSkillModelVisuals {
         int remainingTicks = ClientSkillModelVisualState.remainingTicks(player);
         return switch (visual) {
             case MANBA_FLASHLIGHT_TOGGLE ->
-                    spec("manba_flashlight", "toggle_light", seconds, Placement.FLASHLIGHT, 0.72F, 0xFFFFFFFF);
+                    spec("manba_flashlight", "toggle_light", seconds, Placement.FLASHLIGHT, 0.96F, 0xFFFFFFFF);
             case MANBA_ELBOW ->
                     spec("manba_elbow", "elbow_strike", seconds, Placement.HAND, 0.76F, 0xFFFFFFFF);
             case NIKAIDOU_HOT_IRON ->
@@ -244,9 +244,10 @@ public final class CharacterSkillModelVisuals {
             return;
         }
         if (placement == Placement.FLASHLIGHT) {
-            poseStack.translate(0.36D, -0.16D, -0.76D);
-            poseStack.mulPose(Axis.YP.rotationDegrees(-5.0F));
-            poseStack.mulPose(Axis.XP.rotationDegrees(-4.0F));
+            poseStack.translate(0.58D, -0.58D, -0.96D);
+            poseStack.mulPose(Axis.YP.rotationDegrees(28.0F));
+            poseStack.mulPose(Axis.XP.rotationDegrees(12.0F));
+            poseStack.mulPose(Axis.ZP.rotationDegrees(-8.0F));
             poseStack.scale(scale, scale, scale);
             return;
         }
@@ -269,7 +270,7 @@ public final class CharacterSkillModelVisuals {
             applyRightHandAnchor(event, poseStack);
         } else if (placement == Placement.FLASHLIGHT) {
             applyRightHandAnchor(event, poseStack);
-            poseStack.translate(0.02D, 0.0D, -0.08D);
+            poseStack.translate(0.00D, 0.36D, -0.04D);
         } else if (placement == Placement.HAND_REACH_FRONT) {
             event.getRenderer().getModel().body.translateAndRotate(poseStack);
             poseStack.translate(0.0D, 0.72D, -0.92D);
@@ -279,7 +280,7 @@ public final class CharacterSkillModelVisuals {
             poseStack.translate(-0.34D, 0.48D, -0.34D);
         } else if (placement == Placement.HEAD_TOP) {
             event.getRenderer().getModel().head.translateAndRotate(poseStack);
-            poseStack.translate(0.0D, -0.68D, 0.0D);
+            poseStack.translate(0.0D, 1.82D, 0.0D);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
         } else if (placement == Placement.FIBER_COVER) {
             applyPlayerFiberCoverTransform(event, poseStack);
@@ -311,15 +312,23 @@ public final class CharacterSkillModelVisuals {
     }
 
     private static void applyBackGhostTransform(RenderPlayerEvent.Post event, PoseStack poseStack) {
-        event.getRenderer().getModel().body.translateAndRotate(poseStack);
-        poseStack.translate(0.0D, 0.24D, 0.96D);
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        applyBodyYawBackTransform(event, poseStack, 0.24D, 0.96D);
     }
 
     private static void applyKnightImpactShieldTransform(RenderPlayerEvent.Post event, PoseStack poseStack) {
+        Player player = event.getEntity();
+        float headYaw = Mth.rotLerp(event.getPartialTick(), player.yHeadRotO, player.yHeadRot);
+        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - headYaw));
         event.getRenderer().getModel().body.translateAndRotate(poseStack);
-        poseStack.translate(0.0D, 0.44D, -0.82D);
-        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F));
+        poseStack.translate(0.0D, 0.44D, 0.42D);
+    }
+
+    private static void applyBodyYawBackTransform(RenderPlayerEvent.Post event, PoseStack poseStack, double y, double z) {
+        Player player = event.getEntity();
+        float bodyYaw = Mth.rotLerp(event.getPartialTick(), player.yBodyRotO, player.yBodyRot);
+        poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - bodyYaw));
+        event.getRenderer().getModel().body.translateAndRotate(poseStack);
+        poseStack.translate(0.0D, y, z);
     }
 
     private static void applyPlayerFiberCoverTransform(RenderPlayerEvent.Post event, PoseStack poseStack) {
@@ -331,7 +340,7 @@ public final class CharacterSkillModelVisuals {
     private static void applyFiberCoverTransform(LivingEntity entity, PoseStack poseStack, float partialTick) {
         poseStack.translate(0.0D, entity.getBbHeight() * 0.86D, 0.0D);
         float headYaw = Mth.rotLerp(partialTick, entity.yHeadRotO, entity.yHeadRot);
-        poseStack.mulPose(Axis.YP.rotationDegrees(headYaw));
+        poseStack.mulPose(Axis.YP.rotationDegrees(-headYaw));
         poseStack.mulPose(Axis.XP.rotationDegrees(Mth.lerp(partialTick, entity.xRotO, entity.getXRot())));
         poseStack.translate(0.0D, -entity.getBbHeight() * 0.04D,
                 Math.max(0.46D, entity.getBbWidth() * 0.78D));

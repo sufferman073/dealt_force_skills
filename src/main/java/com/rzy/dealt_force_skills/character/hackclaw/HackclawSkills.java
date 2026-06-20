@@ -15,14 +15,14 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 public final class HackclawSkills {
-    private static final double QUICK_THROW_SPEED = 1.85D;
-    private static final double QUICK_THROW_LIFT = 0.08D;
-    private static final double HELD_KNIFE_THROW_SPEED = 1.55D;
-    private static final double HELD_KNIFE_THROW_LIFT = 0.30D;
-    private static final double FLASH_DRONE_THROW_SPEED = 1.35D;
-    private static final double FLASH_DRONE_THROW_LIFT = 0.05D;
-    private static final double HELD_FLASH_DRONE_THROW_SPEED = 1.45D;
-    private static final double HELD_FLASH_DRONE_THROW_LIFT = 0.10D;
+    private static final double QUICK_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_speed", 1.85D);
+    private static final double QUICK_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_lift", 0.08D);
+    private static final double HELD_KNIFE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_speed", 1.55D);
+    private static final double HELD_KNIFE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_lift", 0.30D);
+    private static final double FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_speed", 1.35D);
+    private static final double FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_lift", 0.05D);
+    private static final double HELD_FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_flash_drone_throw_speed", 1.45D);
+    private static final double HELD_FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_flash_drone_throw_lift", 0.10D);
 
     private HackclawSkills() {
     }

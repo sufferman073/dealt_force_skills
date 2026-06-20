@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.skill;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -12,8 +13,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 public final class SkillDamageHelper {
-    private static final float BONUS_PER_EXPERIENCE_LEVEL = 0.005f;
-    private static final float NON_PLAYER_TARGET_MULTIPLIER = 5.0f;
+    private static final float BONUS_PER_EXPERIENCE_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+            "experience_growth.general.skill_damage_per_level", 0.005f);
+    private static final float NON_PLAYER_TARGET_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("general.skilldamagehelper.non_player_target_multiplier", 5.0f);
 
     public static final ResourceKey<DamageType> TRUE_SKILL_DAMAGE = key("true_skill");
     public static final ResourceKey<DamageType> SINEVA_BLADE_WIRE = key("sineva_blade_wire");
@@ -58,7 +60,7 @@ public final class SkillDamageHelper {
         if (!(source instanceof Player player) || amount <= 0.0f) {
             return amount;
         }
-        return amount * (1.0f + Math.max(0, player.experienceLevel) * BONUS_PER_EXPERIENCE_LEVEL);
+        return amount * (1.0f + ModGameRules.effectiveExperienceLevel(player) * BONUS_PER_EXPERIENCE_LEVEL);
     }
 
     public static boolean hurt(LivingEntity target, DamageSource source, LivingEntity sourceEntity, float amount) {

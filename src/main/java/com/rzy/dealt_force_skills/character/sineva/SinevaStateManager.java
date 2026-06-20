@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.sineva;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
@@ -8,6 +9,7 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SinevaShieldStaminaConsume;
 import com.rzy.dealt_force_skills.network.S2C_SyncSinevaRenderState;
 import com.rzy.dealt_force_skills.network.S2C_SyncSinevaState;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import net.minecraft.nbt.CompoundTag;
@@ -23,23 +25,23 @@ import net.minecraft.world.entity.player.Player;
 import java.util.Optional;
 
 public final class SinevaStateManager {
-    public static final int BLADE_WIRE_MAX_CHARGES = 2;
-    public static final int BLADE_WIRE_RECHARGE_TICKS = 35 * 20;
-    public static final int GRAPPLE_COOLDOWN_TICKS = 8 * 20;
-    public static final int BOMB_SUIT_COOLDOWN_TICKS = 60 * 20;
-    public static final int BOMB_SUIT_EQUIP_TICKS = 30;
-    public static final int VIEWPORT_MAX_HEALTH = 250;
-    private static final double VIEWPORT_PRESSURE_DECAY_PER_TICK = 0.82D;
-    private static final double VIEWPORT_PRESSURE_GAIN_PER_HIT = 8.0D;
-    private static final double VIEWPORT_PRESSURE_GAIN_PER_DAMAGE = 0.005D;
-    private static final double VIEWPORT_PRESSURE_SCALE = 40.0D;
-    private static final double VIEWPORT_PRESSURE_POWER = 2.0D;
-    private static final double SHIELD_DAMAGE_SLOW_PER_HIT = 0.04D;
-    private static final double SHIELD_DAMAGE_SLOW_MAX = 0.95D;
-    private static final int SHIELD_BLOCK_STAMINA_COST_PERCENT = 2;
-    private static final int SHIELD_BLOCK_STAMINA_FLOOR_PERCENT = 40;
-    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_DELAY_TICKS = 20;
-    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_TICKS = 4 * 20;
+    public static final int BLADE_WIRE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_max_charges", 2);
+    public static final int BLADE_WIRE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_recharge_ticks", 35 * 20);
+    public static final int GRAPPLE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.grapple_cooldown_ticks", 8 * 20);
+    public static final int BOMB_SUIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_cooldown_ticks", 60 * 20);
+    public static final int BOMB_SUIT_EQUIP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_equip_ticks", 30);
+    public static final int VIEWPORT_MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.viewport_max_health", 250);
+    private static final double VIEWPORT_PRESSURE_DECAY_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_decay_per_tick", 0.82D);
+    private static final double VIEWPORT_PRESSURE_GAIN_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_gain_per_hit", 8.0D);
+    private static final double VIEWPORT_PRESSURE_GAIN_PER_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_gain_per_damage", 0.005D);
+    private static final double VIEWPORT_PRESSURE_SCALE = DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_scale", 40.0D);
+    private static final double VIEWPORT_PRESSURE_POWER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_power", 2.0D);
+    private static final double SHIELD_DAMAGE_SLOW_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.shield_damage_slow_per_hit", 0.04D);
+    private static final double SHIELD_DAMAGE_SLOW_MAX = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.shield_damage_slow_max", 0.95D);
+    private static final int SHIELD_BLOCK_STAMINA_COST_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_block_stamina_cost_percent", 2);
+    private static final int SHIELD_BLOCK_STAMINA_FLOOR_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_block_stamina_floor_percent", 40);
+    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_damage_slow_recovery_delay_ticks", 20);
+    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_damage_slow_recovery_ticks", 4 * 20);
     /** Keep the heavy suit cadence audible while walking without stacking every tick.
      *  Increased interval + random skip to avoid being too noisy. */
     public static final int BOMB_SUIT_WALK_SOUND_INTERVAL_TICKS = 26;
@@ -219,11 +221,12 @@ public final class SinevaStateManager {
     public static int calculateViewportMaxHealth(Player player) {
         float armor = (float) player.getAttributeValue(Attributes.ARMOR);
         float reduction = Math.min(0.8f, armor * 0.04f);
-        int level = player.experienceLevel;
+        int level = ModGameRules.effectiveExperienceLevel(player);
         float hp = player.getMaxHealth();
         int fullHealth = VIEWPORT_MAX_HEALTH + (int) (hp
                 * (1.0f + armor * 0.2f)
-                * (1.0f + level)
+                * (1.0f + level * com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+                "experience_growth.sineva.viewport_health_per_level", 1.0F))
                 * (1.0f + reduction * 5.0f));
         return Math.max(1, fullHealth / 2);
     }

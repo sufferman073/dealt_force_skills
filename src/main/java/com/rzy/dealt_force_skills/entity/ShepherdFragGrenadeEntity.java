@@ -33,17 +33,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = 70;
-    private static final double RADIUS = 8.0D;
-    private static final double WALL_BOUNCE_FACTOR = 0.50D;
-    private static final double GROUND_ROLL_FACTOR = 0.30D;
-    private static final int MAX_AUDIBLE_BOUNCES = 1;
-    private static final int MAX_ROLL_TICKS = 8;
-    private static final double SETTLE_SPEED_SQR = 0.018D;
-    private static final double ROLL_STOP_SPEED_SQR = 0.004D;
-    private static final float ARMOR_DAMAGE_SHARE = 0.65f;
-    private static final float HEALTH_DAMAGE_SHARE = 1.0f - ARMOR_DAMAGE_SHARE;
-    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = 10.0f;
+    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.default_fuse_ticks", 70);
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.radius", 8.0D);
+    private static final double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.wall_bounce_factor", 0.50D);
+    private static final double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.ground_roll_factor", 0.30D);
+    private static final int MAX_AUDIBLE_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_frag_grenade_entity.max_audible_bounces", 1);
+    private static final int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.max_roll_ticks", 8);
+    private static final double SETTLE_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.settle_speed_sqr", 0.018D);
+    private static final double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.roll_stop_speed_sqr", 0.004D);
+    private static final float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.armor_damage_share", 0.65f);
+    private static final float HEALTH_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.health_damage_share", 1.0f - ARMOR_DAMAGE_SHARE);
+    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.armor_durability_damage_per_point", 10.0f);
 
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
     private int audibleBounces;

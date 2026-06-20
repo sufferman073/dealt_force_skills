@@ -10,8 +10,8 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class QuickCoverBlockEntity extends BlockEntity {
-    private static final int MAX_HEALTH = 2500;
-    private static final int MAX_DAMAGE_PER_HIT = 100;
+    private static final int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_health", 2500);
+    private static final int MAX_DAMAGE_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_damage_per_hit", 100);
     private static final String ROOT = "Root";
     private static final String ROOT_POS = "RootPos";
     private static final String HEALTH = "Health";

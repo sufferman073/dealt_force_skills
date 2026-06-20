@@ -31,10 +31,10 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class StingerSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int GRENADE_LIFE_TICKS = 15 * 20;
-    public static final int DRONE_LIFE_TICKS = 25 * 20;
-    public static final double RADIUS = 7.0D;
-    public static final double ENHANCED_RADIUS = 9.0D;
+    public static final int GRENADE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.grenade_life_ticks", 15 * 20);
+    public static final int DRONE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.drone_life_ticks", 25 * 20);
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.radius", 7.0D);
+    public static final double ENHANCED_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.enhanced_radius", 9.0D);
     private static final EntityDataAccessor<Boolean> DATA_ENHANCED = SynchedEntityData.defineId(StingerSmokeCloudEntity.class, EntityDataSerializers.BOOLEAN);
     private static final DustParticleOptions GREEN_SMOKE = new DustParticleOptions(new Vector3f(0.35f, 1.0f, 0.46f), 1.7f);
 

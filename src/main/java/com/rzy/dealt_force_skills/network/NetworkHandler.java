@@ -10,7 +10,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 
 public class NetworkHandler {
-    private static final String PROTOCOL = "8";
+    private static final String PROTOCOL = "15";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(DealtForceSkillsMod.MODID, "main"),
@@ -35,6 +35,11 @@ public class NetworkHandler {
                     .encoder(C2S_BuyHaffShopItem::encode)
                     .decoder(C2S_BuyHaffShopItem::decode)
                     .consumerMainThread(C2S_BuyHaffShopItem::handle).add();
+
+            CHANNEL.messageBuilder(C2S_BuyGhrothArmoryItem.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_BuyGhrothArmoryItem::encode)
+                    .decoder(C2S_BuyGhrothArmoryItem::decode)
+                    .consumerMainThread(C2S_BuyGhrothArmoryItem::handle).add();
 
             CHANNEL.messageBuilder(C2S_LexNinjiaInput.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
                     .encoder(C2S_LexNinjiaInput::encode)
@@ -201,6 +206,26 @@ public class NetworkHandler {
                     .decoder(C2S_UndeadShopAction::decode)
                     .consumerMainThread(C2S_UndeadShopAction::handle).add();
 
+            CHANNEL.messageBuilder(C2S_SaeedRecruitAction.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_SaeedRecruitAction::encode)
+                    .decoder(C2S_SaeedRecruitAction::decode)
+                    .consumerMainThread(C2S_SaeedRecruitAction::handle).add();
+
+            CHANNEL.messageBuilder(C2S_SaeedFireArrowAction.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_SaeedFireArrowAction::encode)
+                    .decoder(C2S_SaeedFireArrowAction::decode)
+                    .consumerMainThread(C2S_SaeedFireArrowAction::handle).add();
+
+            CHANNEL.messageBuilder(C2S_OpenSaeedMonitor.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_OpenSaeedMonitor::encode)
+                    .decoder(C2S_OpenSaeedMonitor::decode)
+                    .consumerMainThread(C2S_OpenSaeedMonitor::handle).add();
+
+            CHANNEL.messageBuilder(C2S_SaeedGuardCommand.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
+                    .encoder(C2S_SaeedGuardCommand::encode)
+                    .decoder(C2S_SaeedGuardCommand::decode)
+                    .consumerMainThread(C2S_SaeedGuardCommand::handle).add();
+
             CHANNEL.messageBuilder(C2S_UndeadSkillInput.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_SERVER)
                     .encoder(C2S_UndeadSkillInput::encode)
                     .decoder(C2S_UndeadSkillInput::decode)
@@ -216,6 +241,11 @@ public class NetworkHandler {
                     .decoder(S2C_SyncSelectedCharacter::decode)
                     .consumerMainThread(S2C_SyncSelectedCharacter::handle).add();
 
+            CHANNEL.messageBuilder(S2C_SyncCharacterAvailability.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SyncCharacterAvailability::encode)
+                    .decoder(S2C_SyncCharacterAvailability::decode)
+                    .consumerMainThread(S2C_SyncCharacterAvailability::handle).add();
+
             CHANNEL.messageBuilder(S2C_SyncPlayerCharacterSkin.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_SyncPlayerCharacterSkin::encode)
                     .decoder(S2C_SyncPlayerCharacterSkin::decode)
@@ -230,6 +260,11 @@ public class NetworkHandler {
                     .encoder(S2C_OpenHaffShop::encode)
                     .decoder(S2C_OpenHaffShop::decode)
                     .consumerMainThread(S2C_OpenHaffShop::handle).add();
+
+            CHANNEL.messageBuilder(S2C_OpenGhrothArmory.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_OpenGhrothArmory::encode)
+                    .decoder(S2C_OpenGhrothArmory::decode)
+                    .consumerMainThread(S2C_OpenGhrothArmory::handle).add();
 
             CHANNEL.messageBuilder(S2C_SyncHaffCoins.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_SyncHaffCoins::encode)
@@ -490,6 +525,26 @@ public class NetworkHandler {
                     .encoder(S2C_OpenUndeadShop::encode)
                     .decoder(S2C_OpenUndeadShop::decode)
                     .consumerMainThread(S2C_OpenUndeadShop::handle).add();
+
+            CHANNEL.messageBuilder(S2C_OpenSaeedRecruitScreen.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_OpenSaeedRecruitScreen::encode)
+                    .decoder(S2C_OpenSaeedRecruitScreen::decode)
+                    .consumerMainThread(S2C_OpenSaeedRecruitScreen::handle).add();
+
+            CHANNEL.messageBuilder(S2C_OpenSaeedMonitorScreen.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_OpenSaeedMonitorScreen::encode)
+                    .decoder(S2C_OpenSaeedMonitorScreen::decode)
+                    .consumerMainThread(S2C_OpenSaeedMonitorScreen::handle).add();
+
+            CHANNEL.messageBuilder(S2C_SyncSaeedState.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SyncSaeedState::encode)
+                    .decoder(S2C_SyncSaeedState::decode)
+                    .consumerMainThread(S2C_SyncSaeedState::handle).add();
+
+            CHANNEL.messageBuilder(S2C_SyncGhrothState.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+                    .encoder(S2C_SyncGhrothState::encode)
+                    .decoder(S2C_SyncGhrothState::decode)
+                    .consumerMainThread(S2C_SyncGhrothState::handle).add();
 
             CHANNEL.messageBuilder(S2C_TempestStartRoll.class, id++, net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
                     .encoder(S2C_TempestStartRoll::encode)

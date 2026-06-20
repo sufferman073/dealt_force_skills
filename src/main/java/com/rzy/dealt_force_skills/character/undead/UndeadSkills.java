@@ -29,17 +29,18 @@ import java.util.List;
 import java.util.Optional;
 
 public final class UndeadSkills {
-    public static final int LONG_HOLD_TICKS = 5;
-    private static final double KNIGHT_LOCK_RANGE = 12.0D;
-    private static final double WARRIOR_LOCK_RANGE = 3.0D;
-    private static final double ROGUE_SUBDUE_LOCK_RANGE = 4.0D;
-    private static final double ROGUE_CORE_LOCK_RANGE = 2.5D;
-    private static final double SCHOLAR_STITCH_LOCK_RANGE = 2.0D;
-    private static final double SCHOLAR_RECORD_LOCK_RANGE = 6.0D;
-    private static final double KNIGHT_NON_PLAYER_LOCK_MULTIPLIER = 1.5D;
-    private static final double WARRIOR_NON_PLAYER_LOCK_MULTIPLIER = 2.0D;
-    private static final double ROGUE_NON_PLAYER_LOCK_MULTIPLIER = 3.0D;
-    private static final double SCHOLAR_NON_PLAYER_LOCK_MULTIPLIER = 3.0D;
+    public static final int LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.long_hold_ticks", 5);
+    private static final double KNIGHT_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.knight_lock_range", 12.0D);
+    private static final double WARRIOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.warrior_lock_range", 3.0D);
+    private static final double ROGUE_SUBDUE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_subdue_lock_range", 4.0D);
+    private static final double ROGUE_CORE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_core_lock_range", 2.5D);
+    private static final double SCHOLAR_STITCH_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_stitch_lock_range", 2.0D);
+    private static final double SCHOLAR_RECORD_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_record_lock_range", 6.0D);
+    private static final double KNIGHT_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.knight_non_player_lock_multiplier", 1.5D);
+    private static final double WARRIOR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.warrior_non_player_lock_multiplier", 2.0D);
+    private static final double ROGUE_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_non_player_lock_multiplier", 3.0D);
+    private static final double SCHOLAR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_non_player_lock_multiplier", 3.0D);
+    private static final float HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.hunter_reload_self_health_cost_fraction", 0.05F);
 
     private UndeadSkills() {
     }
@@ -164,7 +165,7 @@ public final class UndeadSkills {
             return true;
         }
         if (slot == SkillSlot.ACTIVE_2) {
-            if (!UndeadStateManager.consumeEnergy(player, 10.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.1.energy_cost", 10.0F))) {
                 return true;
             }
             SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_BARRIER,
@@ -178,10 +179,10 @@ public final class UndeadSkills {
             return true;
         }
         if (slot == SkillSlot.CORE) {
-            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, 60.0F)) {
+            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.2.energy_cost", 60.0F))) {
                 return true;
             }
-            UndeadStateManager.startCoreCooldown(player, UndeadProfession.KNIGHT, 90 * 20);
+            UndeadStateManager.startCoreCooldown(player, UndeadProfession.KNIGHT, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.0.cooldown_ticks", 90 * 20));
             SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_WALL,
                     SkillModelVisual.UNDEAD_KNIGHT_WALL.impactTick() + 20 * 20);
             SkillAnimationScheduler.schedule(
@@ -204,7 +205,7 @@ public final class UndeadSkills {
                 noTarget(player);
                 return true;
             }
-            if (!UndeadStateManager.consumeEnergy(player, 30.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.3.energy_cost", 30.0F))) {
                 return true;
             }
             LivingEntity locked = lockedTarget.orElse(null);
@@ -217,14 +218,14 @@ public final class UndeadSkills {
                         if (locked != null && locked.isAlive() && locked.level() == delayedPlayer.level()) {
                             locked.invulnerableTime = 0;
                             SkillDamageHelper.hurt(locked, delayedPlayer.damageSources().playerAttack(delayedPlayer),
-                                    delayedPlayer, 15.0F);
+                                    delayedPlayer, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.skill_hurt.0.damage", 15.0F));
                             particlesAt(delayedPlayer, locked, ParticleTypes.CRIT, 24, 0.45D);
                         } else {
                             for (LivingEntity target : targetsInCone(delayedPlayer, 3.0D, 110.0D)) {
                                 target.invulnerableTime = 0;
                                 SkillDamageHelper.hurt(target,
                                         delayedPlayer.damageSources().playerAttack(delayedPlayer),
-                                        delayedPlayer, 9.0F);
+                                        delayedPlayer, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.skill_hurt.1.damage", 9.0F));
                                 particlesAt(delayedPlayer, target, ParticleTypes.SWEEP_ATTACK, 3, 0.2D);
                             }
                         }
@@ -242,10 +243,10 @@ public final class UndeadSkills {
             return true;
         }
         if (slot == SkillSlot.CORE) {
-            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, 50.0F)) {
+            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.4.energy_cost", 50.0F))) {
                 return true;
             }
-            UndeadStateManager.startCoreCooldown(player, UndeadProfession.WARRIOR, 60 * 20);
+            UndeadStateManager.startCoreCooldown(player, UndeadProfession.WARRIOR, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.1.cooldown_ticks", 60 * 20));
             UndeadStateManager.startWarriorBloodlust(player);
             particles(player, ParticleTypes.FLAME, 36, 0.8D, 1.0D);
             play(player, SoundEvents.RAVAGER_ROAR, 0.8F, 1.25F);
@@ -256,7 +257,7 @@ public final class UndeadSkills {
 
     private static boolean useExplorer(ServerPlayer player, SkillSlot slot, int heldTicks) {
         if (slot == SkillSlot.ACTIVE_1) {
-            if (!UndeadStateManager.consumeEnergy(player, 20.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.5.energy_cost", 20.0F))) {
                 return true;
             }
             HitResult hit = player.pick(20.0D, 0.0F, false);
@@ -282,8 +283,8 @@ public final class UndeadSkills {
                             SkillDamageHelper.hurt(target, delayedPlayer.damageSources().magic(), delayedPlayer, damage);
                             target.addEffect(new MobEffectInstance(
                                     ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
-                                    8 * 20, 0, false, true, true), delayedPlayer);
-                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, 8 * 20, 0,
+                                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.raptor_electromagnetic_interference.0.duration_ticks", 8 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.raptor_electromagnetic_interference.0.amplifier", 0), false, true, true), delayedPlayer);
+                            target.addEffect(new MobEffectInstance(MobEffects.GLOWING, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.glowing.1.duration_ticks", 8 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.glowing.1.amplifier", 0),
                                     false, false, true), delayedPlayer);
                         }
                         delayedPlayer.serverLevel().sendParticles(ParticleTypes.ELECTRIC_SPARK,
@@ -305,10 +306,10 @@ public final class UndeadSkills {
                 play(player, SoundEvents.PORTAL_TRIGGER, 0.45F, 1.6F);
                 return true;
             }
-            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, 100.0F)) {
+            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.6.energy_cost", 100.0F))) {
                 return true;
             }
-            UndeadStateManager.startCoreCooldown(player, UndeadProfession.EXPLORER, 1);
+            UndeadStateManager.startCoreCooldown(player, UndeadProfession.EXPLORER, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.2.cooldown_ticks", 1));
             UndeadStateManager.startExplorerSpace(player);
             particles(player, ParticleTypes.PORTAL, 45, 0.8D, 1.0D);
             play(player, SoundEvents.PORTAL_TRAVEL, 0.45F, 1.5F);
@@ -319,7 +320,7 @@ public final class UndeadSkills {
 
     private static boolean useRogue(ServerPlayer player, SkillSlot slot, int heldTicks) {
         if (slot == SkillSlot.ACTIVE_1) {
-            if (!UndeadStateManager.consumeEnergy(player, 15.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.7.energy_cost", 15.0F))) {
                 return true;
             }
             UndeadStateManager.startRogueStealth(player);
@@ -337,7 +338,7 @@ public final class UndeadSkills {
                 noTarget(player);
                 return true;
             }
-            if (!UndeadStateManager.consumeEnergy(player, 30.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.8.energy_cost", 30.0F))) {
                 return true;
             }
             LivingEntity victim = target.get();
@@ -351,8 +352,8 @@ public final class UndeadSkills {
                         }
                         victim.invulnerableTime = 0;
                         SkillDamageHelper.hurt(victim, delayedPlayer.damageSources().playerAttack(delayedPlayer),
-                                delayedPlayer, 1.0F);
-                        victim.addEffect(new MobEffectInstance(ModEffects.STUN.get(), 5 * 20, 0,
+                                delayedPlayer, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.skill_hurt.3.damage", 1.0F));
+                        victim.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.stun.2.duration_ticks", 5 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.effect.stun.2.amplifier", 0),
                                 false, true, true), delayedPlayer);
                         particlesAt(delayedPlayer, victim, ParticleTypes.ELECTRIC_SPARK, 28, 0.45D);
                     });
@@ -376,10 +377,10 @@ public final class UndeadSkills {
                         "message.dealt_force_skills.undead.rogue_core_condition"), true);
                 return true;
             }
-            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, 50.0F)) {
+            if (!coreReady(player) || !UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.9.energy_cost", 50.0F))) {
                 return true;
             }
-            UndeadStateManager.startCoreCooldown(player, UndeadProfession.ROGUE, 40 * 20);
+            UndeadStateManager.startCoreCooldown(player, UndeadProfession.ROGUE, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.3.cooldown_ticks", 40 * 20));
             SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_ROGUE_BATON);
             SkillAnimationScheduler.schedule(
                     player,
@@ -391,7 +392,7 @@ public final class UndeadSkills {
                         if (victim instanceof Player victimPlayer) {
                             SkillDamageHelper.hurt(victim,
                                     delayedPlayer.damageSources().playerAttack(delayedPlayer),
-                                    delayedPlayer, 10.0F);
+                                    delayedPlayer, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.skill_hurt.4.damage", 10.0F));
                             stealEquipment(delayedPlayer, victimPlayer);
                         } else {
                             UndeadStateManager.executeRogueNonPlayer(delayedPlayer, victim);
@@ -412,7 +413,7 @@ public final class UndeadSkills {
                 noTarget(player);
                 return true;
             }
-            if (!UndeadStateManager.consumeEnergy(player, 20.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.10.energy_cost", 20.0F))) {
                 return true;
             }
             LivingEntity target = selected.get();
@@ -451,7 +452,7 @@ public final class UndeadSkills {
             return true;
         }
         if (slot == SkillSlot.ACTIVE_2) {
-            if (!UndeadStateManager.consumeEnergy(player, 20.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.11.energy_cost", 20.0F))) {
                 return true;
             }
             int ritualTicks = UndeadUpgradeManager.has(
@@ -496,7 +497,7 @@ public final class UndeadSkills {
 
     private static boolean useHunter(ServerPlayer player, SkillSlot slot) {
         if (slot == SkillSlot.ACTIVE_1) {
-            if (!UndeadStateManager.consumeEnergy(player, 20.0F)) {
+            if (!UndeadStateManager.consumeEnergy(player, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.energy.13.energy_cost", 20.0F))) {
                 return true;
             }
             UndeadStateManager.scheduleHunterBlast(player);
@@ -509,7 +510,7 @@ public final class UndeadSkills {
                         "message.dealt_force_skills.undead.reload_cooldown"), true);
                 return true;
             }
-            player.hurt(player.damageSources().magic(), player.getMaxHealth() * 0.05F);
+            player.hurt(player.damageSources().magic(), player.getMaxHealth() * HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION);
             UndeadStateManager.useHunterReload(player);
             particles(player, ParticleTypes.HAPPY_VILLAGER, 18, 0.55D, 0.8D);
             return true;

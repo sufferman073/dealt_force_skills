@@ -29,9 +29,9 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class VlinderRemoteSmokeRoundEntity extends Entity implements ItemSupplier {
-    public static final double SPEED = 0.30D;
-    private static final int LIFE_TICKS = 9 * 20;
-    private static final double GUIDE_DISTANCE = 42.0D;
+    public static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.speed", 0.30D);
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderremotesmokeroundentity.life_ticks", 9 * 20);
+    private static final double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.guide_distance", 42.0D);
     private static final DustParticleOptions TRAIL_DUST = new DustParticleOptions(new Vector3f(0.55f, 0.95f, 1.0f), 0.9f);
 
     private UUID ownerId;

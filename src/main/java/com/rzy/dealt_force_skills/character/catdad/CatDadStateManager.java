@@ -43,17 +43,17 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CatDadStateManager {
-    public static final int HISS_COOLDOWN_TICKS = 10 * 20;
-    public static final int BLOCK_RECHARGE_TICKS = 30 * 20;
-    public static final int BLOCK_MAX_CHARGES = 3;
-    public static final int BLOCK_WINDOW_TICKS = 3 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 45 * 20;
-    public static final int DOWNED_TICKS = 40 * 20;
-    public static final int SELF_RESCUE_TICKS = 4 * 20;
-    public static final int FATAL_DOWNED_MAX_USES = 9;
+    public static final int HISS_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.hiss_cooldown_ticks", 10 * 20);
+    public static final int BLOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_recharge_ticks", 30 * 20);
+    public static final int BLOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_max_charges", 3);
+    public static final int BLOCK_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_window_ticks", 3 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.core_cooldown_ticks", 45 * 20);
+    public static final int DOWNED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.downed_ticks", 40 * 20);
+    public static final int SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.self_rescue_ticks", 4 * 20);
+    public static final int FATAL_DOWNED_MAX_USES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.fatal_downed_max_uses", 9);
 
-    private static final double HISS_RANGE = 14.0D;
-    private static final double EMPOWERED_STRIKE_RANGE = 14.0D;
+    private static final double HISS_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.hiss_range", 14.0D);
+    private static final double EMPOWERED_STRIKE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.empowered_strike_range", 14.0D);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".catdad";
     private static final String INITIALIZED = "Initialized";
@@ -263,7 +263,7 @@ public final class CatDadStateManager {
         tag.putInt(SELF_RESCUE_PROGRESS, 0);
         player.setHealth(1.0F);
         player.stopUsingItem();
-        player.addEffect(new MobEffectInstance(ModEffects.CATDAD_DOWNED.get(), DOWNED_TICKS, 0, false, true, true));
+        player.addEffect(new MobEffectInstance(ModEffects.CATDAD_DOWNED.get(), DOWNED_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_downed.0.amplifier", 0), false, true, true));
         play(player, ModSounds.CATDAD_TRUCK_SELF_DOWNED.get(), 1.0F, 0.92F);
     }
 
@@ -349,11 +349,11 @@ public final class CatDadStateManager {
         };
         if (stage == 1) {
             target.addEffect(new MobEffectInstance(ModEffects.CATDAD_HISS_SLOW.get(),
-                    15 * 20, 0, false, true, true), player);
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_hiss_slow.1.duration_ticks", 15 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_hiss_slow.1.amplifier", 0), false, true, true), player);
             rememberHissTarget(player, target);
         } else if (stage == 2) {
             target.addEffect(new MobEffectInstance(ModEffects.CATDAD_ARMOR_REDUCED.get(),
-                    9 * 20, 0, false, true, true), player);
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_armor_reduced.2.duration_ticks", 9 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_armor_reduced.2.amplifier", 0), false, true, true), player);
             rememberHissTarget(player, target);
         } else {
             forceLookAtCaster(target, player);
@@ -464,7 +464,7 @@ public final class CatDadStateManager {
             return;
         }
         if (!player.hasEffect(ModEffects.CATDAD_DOWNED.get())) {
-            player.addEffect(new MobEffectInstance(ModEffects.CATDAD_DOWNED.get(), remaining, 0, false, true, true));
+            player.addEffect(new MobEffectInstance(ModEffects.CATDAD_DOWNED.get(), remaining, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_downed.3.amplifier", 0), false, true, true));
         }
         player.stopUsingItem();
         player.setSprinting(false);

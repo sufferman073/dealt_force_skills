@@ -82,7 +82,7 @@ public class HealingMedicineItem extends DfsUseItem {
             if (remainingDurability > painReliefExtraCost) {
                 stack.hurtAndBreak(painReliefExtraCost, player,
                         broken -> broken.broadcastBreakEvent(player.getUsedItemHand()));
-                player.addEffect(new MobEffectInstance(ModEffects.PAIN_RELIEF.get(), 30 * 20, 0,
+                player.addEffect(new MobEffectInstance(ModEffects.PAIN_RELIEF.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.healing_medicine_item.effect.pain_relief.0.duration_ticks", 30 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.healing_medicine_item.effect.pain_relief.0.amplifier", 0),
                         false, true, true), player);
             }
         }

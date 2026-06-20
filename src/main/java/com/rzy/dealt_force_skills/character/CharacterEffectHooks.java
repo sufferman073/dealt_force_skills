@@ -3,11 +3,13 @@ package com.rzy.dealt_force_skills.character;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.manba.ManbaStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
 import com.rzy.dealt_force_skills.character.sineva.SinevaSkills;
 import com.rzy.dealt_force_skills.character.sineva.SinevaStateManager;
@@ -24,7 +26,7 @@ public final class CharacterEffectHooks {
     }
 
     public static void onCharacterSelected(ServerPlayer player, CharacterDefinition character) {
-        player.addEffect(new MobEffectInstance(ModEffects.CHARACTER_FRAMEWORK.get(), 40, 0, false, false, false));
+        player.addEffect(new MobEffectInstance(ModEffects.CHARACTER_FRAMEWORK.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.character_effect_hooks.effect.character_framework.0.duration_ticks", 40), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.character_effect_hooks.effect.character_framework.0.amplifier", 0), false, false, false));
     }
 
     public static void onCharacterDeselected(ServerPlayer player, CharacterDefinition character) {
@@ -69,6 +71,12 @@ public final class CharacterEffectHooks {
         }
         if (ModCharacters.LEX_NINJIA_ID.equals(character.id())) {
             LexNinjiaStateManager.onDeselected(player);
+        }
+        if (ModCharacters.SAEED_ID.equals(character.id())) {
+            SaeedStateManager.clearState(player);
+        }
+        if (ModCharacters.GHROTH_ID.equals(character.id())) {
+            GhrothStateManager.clearState(player);
         }
         player.removeEffect(ModEffects.CHARACTER_FRAMEWORK.get());
     }

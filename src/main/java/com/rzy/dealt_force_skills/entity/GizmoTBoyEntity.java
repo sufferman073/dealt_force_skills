@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -40,14 +41,14 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
             SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_DIR_Z =
             SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
-    private static final int LIFE_TICKS = 30 * 20;
-    private static final int AIM_TICKS = 6;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.life_ticks", 30 * 20);
+    private static final int AIM_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.aim_ticks", 6);
     private static final int CRAWL_SOUND_INTERVAL_TICKS = 7;
-    private static final double SPEED = 0.40D;
-    private static final double CHASE_RADIUS = 7.0D;
-    private static final double STOP_RADIUS = 1.5D;
-    private static final double WEB_LENGTH = 2.5D;
-    private static final double WEB_HALF_WIDTH = 0.75D;
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.speed", 0.40D);
+    private static final double CHASE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.chase_radius", 7.0D);
+    private static final double STOP_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.stop_radius", 1.5D);
+    private static final double WEB_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmo_t_boy_entity.web_length", 2.5D);
+    private static final double WEB_HALF_WIDTH = DealtForceConfig.doubleValue("entities.gizmo_t_boy_entity.web_half_width", 0.75D);
     private static final DustParticleOptions RED_MARKER = new DustParticleOptions(new Vector3f(1.0f, 0.05f, 0.02f), 1.2f);
 
     private UUID ownerId;
@@ -280,7 +281,7 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
             if (!webHitsTarget(target, origin, direction)) {
                 continue;
             }
-            target.addEffect(new MobEffectInstance(ModEffects.WEBBED.get(), GizmoStateManager.WEBBED_DURATION_TICKS, 0, false, true, true));
+            target.addEffect(new MobEffectInstance(ModEffects.WEBBED.get(), GizmoStateManager.WEBBED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_t_boy_entity.effect.webbed.0.amplifier", 0), false, true, true));
             hit = true;
         }
 

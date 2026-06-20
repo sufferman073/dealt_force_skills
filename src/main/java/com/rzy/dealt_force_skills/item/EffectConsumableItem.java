@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.item;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.effect.MobEffect;
@@ -23,7 +24,15 @@ public class EffectConsumableItem extends DfsUseItem {
                                 String finishMessageKey,
                                 List<EffectEntry> effects) {
         super(properties, quality, tooltipKey, useTicks, startSound, finishSound, startMessageKey, finishMessageKey);
-        this.effects = effects;
+        java.util.ArrayList<EffectEntry> configured = new java.util.ArrayList<>();
+        for (int i = 0; i < effects.size(); i++) {
+            EffectEntry entry = effects.get(i);
+            String key = configKey() + ".effects.effect_" + i;
+            configured.add(new EffectEntry(entry.effect(),
+                    DealtForceConfig.intValue(key + ".duration_ticks", entry.durationTicks()),
+                    DealtForceConfig.intValue(key + ".amplifier", entry.amplifier())));
+        }
+        this.effects = List.copyOf(configured);
     }
 
     @Override

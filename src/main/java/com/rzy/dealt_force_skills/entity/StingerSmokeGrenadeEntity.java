@@ -27,8 +27,8 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_FLIGHT_TICKS = 80;
-    private static final double BOUNCE_FACTOR = 0.7D;
+    private static final int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokegrenadeentity.max_flight_ticks", 80);
+    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokegrenadeentity.bounce_factor", 0.7D);
 
     private UUID ownerId;
 

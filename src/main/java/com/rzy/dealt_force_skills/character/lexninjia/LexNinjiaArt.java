@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.lexninjia;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -117,12 +118,13 @@ public enum LexNinjiaArt {
                  LexNinjiaReleaseTrigger releaseTrigger, List<LexNinjiaComboInput> combo) {
         this.id = id;
         this.school = school;
-        this.leicraCost = leicraCost;
-        this.mindCost = mindCost;
-        this.price = price;
+        String key = "characters.lex_ninjia.arts." + id;
+        this.leicraCost = DealtForceConfig.intValue(key + ".leicra_cost", leicraCost);
+        this.mindCost = DealtForceConfig.intValue(key + ".mind_cost", mindCost);
+        this.price = DealtForceConfig.longValue(key + ".price", price);
         this.defaultKnown = defaultKnown;
         this.hamForbidden = hamForbidden;
-        this.requiredMaxLeicra = requiredMaxLeicra;
+        this.requiredMaxLeicra = DealtForceConfig.intValue(key + ".required_max_leicra", requiredMaxLeicra);
         this.releaseTrigger = releaseTrigger;
         this.combo = List.copyOf(combo);
     }

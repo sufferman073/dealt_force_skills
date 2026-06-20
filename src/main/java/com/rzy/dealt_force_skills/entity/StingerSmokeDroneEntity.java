@@ -27,11 +27,11 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class StingerSmokeDroneEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = 10 * 20;
-    private static final int SMOKE_INTERVAL_TICKS = 8;
-    private static final double SPEED = 0.42D;
-    private static final double GUIDE_DISTANCE = 32.0D;
-    private static final double GUIDE_ARRIVAL_DISTANCE_SQR = 1.6D * 1.6D;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.life_ticks", 10 * 20);
+    private static final int SMOKE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.smoke_interval_ticks", 8);
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.speed", 0.42D);
+    private static final double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.guide_distance", 32.0D);
+    private static final double GUIDE_ARRIVAL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.guide_arrival_distance_sqr", 1.6D * 1.6D);
     private static final DustParticleOptions DRONE_DUST = new DustParticleOptions(new Vector3f(0.45f, 1.0f, 0.62f), 1.1f);
 
     private UUID ownerId;

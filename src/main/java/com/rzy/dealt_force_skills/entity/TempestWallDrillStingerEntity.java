@@ -53,9 +53,10 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
             SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_CHARGE_TICKS =
             SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.INT);
-    private static final int CHARGE_TICKS = 3 * 20;
-    private static final double RELEASE_RANGE = 10.0D;
-    private static final double RELEASE_HALF_WIDTH = 1.0D;
+    private static final int CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.tempestwalldrillstingerentity.charge_ticks", 3 * 20);
+    private static final double RELEASE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.tempestwalldrillstingerentity.release_range", 10.0D);
+    private static final double RELEASE_HALF_WIDTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+            "summons.tempest_wall_drill_stinger.release_half_width", 1.0D);
     private static final DustParticleOptions DRILL_DUST = new DustParticleOptions(new Vector3f(0.62f, 1.0f, 0.45f), 1.15f);
 
     private UUID ownerId;
@@ -354,7 +355,7 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
             return false;
         }
         target.addEffect(new MobEffectInstance(ModEffects.TEMPEST_DISARMED.get(),
-                TempestStateManager.DISARMED_TICKS, 0, false, true, true), owner);
+                TempestStateManager.DISARMED_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.tempest_wall_drill_stinger_entity.effect.tempest_disarmed.0.amplifier", 0), false, true, true), owner);
         level.playSound(null, target.blockPosition(), ModSounds.TEMPEST_WALL_DRILL_DISARM_HIT.get(),
                 SoundSource.PLAYERS, 0.56F, 1.0F);
         return true;

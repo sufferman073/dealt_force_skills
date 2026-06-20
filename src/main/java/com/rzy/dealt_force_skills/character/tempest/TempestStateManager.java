@@ -42,23 +42,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class TempestStateManager {
-    public static final int ROLL_COOLDOWN_TICKS = 20 * 20;
-    public static final int WALL_MAX_CHARGES = 2;
-    public static final int WALL_RECHARGE_TICKS = 35 * 20;
-    public static final int CORE_COOLDOWN_TICKS = 110 * 20;
-    public static final int EXPLOSIVE_SPINE_TICKS = 2 * 20;
-    public static final int DISARMED_TICKS = 3 * 20;
-    public static final int DOWNED_SELF_RESCUE_TICKS = 5 * 20;
-    public static final double ROPE_MAX_LENGTH = 300.0D;
-    public static final double RECALL_SPEED_PER_TICK = 0.8D;
+    public static final int ROLL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_cooldown_ticks", 20 * 20);
+    public static final int WALL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_max_charges", 2);
+    public static final int WALL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_recharge_ticks", 35 * 20);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.core_cooldown_ticks", 110 * 20);
+    public static final int EXPLOSIVE_SPINE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.explosive_spine_ticks", 2 * 20);
+    public static final int DISARMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.disarmed_ticks", 3 * 20);
+    public static final int DOWNED_SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.downed_self_rescue_ticks", 5 * 20);
+    public static final double ROPE_MAX_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.rope_max_length", 300.0D);
+    public static final double RECALL_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.recall_speed_per_tick", 0.8D);
 
-    private static final double PATH_NODE_DISTANCE = 1.0D;
-    private static final double NEAR_MISS_RADIUS = 2.0D;
-    private static final double RECALL_POSITION_TOLERANCE_SQR = 0.65D * 0.65D;
-    private static final int RECALL_MAX_TICKS = 30 * 20;
-    private static final int RECALL_MAX_STALLED_TICKS = 40;
-    private static final int ROLL_BOOST_TICKS_TOTAL = 9;
-    private static final double ROLL_BOOST_SPEED_PER_TICK = 2.75D;
+    private static final double PATH_NODE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.path_node_distance", 1.0D);
+    private static final double NEAR_MISS_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.near_miss_radius", 2.0D);
+    private static final double RECALL_POSITION_TOLERANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.recall_position_tolerance_sqr", 0.65D * 0.65D);
+    private static final int RECALL_MAX_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_ticks", 30 * 20);
+    private static final int RECALL_MAX_STALLED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_stalled_ticks", 40);
+    private static final int ROLL_BOOST_TICKS_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_boost_ticks_total", 9);
+    private static final double ROLL_BOOST_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.roll_boost_speed_per_tick", 2.75D);
     private static final DustParticleOptions SPINE_DUST = new DustParticleOptions(new Vector3f(0.48f, 1.0f, 0.36f), 1.1f);
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".tempest";
     private static final String INITIALIZED = "Initialized";
@@ -326,7 +326,7 @@ public final class TempestStateManager {
         }
         boolean refresh = player.hasEffect(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get());
         player.addEffect(new MobEffectInstance(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get(),
-                EXPLOSIVE_SPINE_TICKS, 0, false, true, true));
+                EXPLOSIVE_SPINE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_explosive_spine.0.amplifier", 0), false, true, true));
         SoundEvent toPlay = refresh ? ModSounds.TEMPEST_SPEED_REFRESH.get() : sound;
         player.level().playSound(null, player.blockPosition(), toPlay, SoundSource.PLAYERS, 0.72F, refresh ? 1.18F : 1.0F);
         if (player.level() instanceof ServerLevel level) {
@@ -619,7 +619,7 @@ public final class TempestStateManager {
         tag.putInt(SELF_RESCUE_TICKS, 0);
         player.setHealth(Math.max(1.0F, Math.min(player.getHealth(), player.getMaxHealth())));
         player.addEffect(new MobEffectInstance(ModEffects.TEMPEST_EMERGENCY_DOWNED.get(),
-                60 * 20, 0, false, true, true));
+                com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_emergency_downed.1.duration_ticks", 60 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_emergency_downed.1.amplifier", 0), false, true, true));
         player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_DOWNED.get(),
                 SoundSource.PLAYERS, 0.95F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.downed"), true);
@@ -643,7 +643,7 @@ public final class TempestStateManager {
         if (player.getEffect(ModEffects.TEMPEST_EMERGENCY_DOWNED.get()) == null
                 || player.getEffect(ModEffects.TEMPEST_EMERGENCY_DOWNED.get()).getDuration() < remaining - 5) {
             player.addEffect(new MobEffectInstance(ModEffects.TEMPEST_EMERGENCY_DOWNED.get(),
-                    remaining, 0, false, true, true));
+                    remaining, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_emergency_downed.2.amplifier", 0), false, true, true));
         }
         player.stopUsingItem();
         player.setSprinting(false);

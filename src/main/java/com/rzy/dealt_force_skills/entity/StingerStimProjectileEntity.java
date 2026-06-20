@@ -31,8 +31,8 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class StingerStimProjectileEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFE_TICKS = 120;
-    private static final double SPEED = 2.25D;
+    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingerstimprojectileentity.max_life_ticks", 120);
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingerstimprojectileentity.speed", 2.25D);
 
     private UUID targetId;
     private StingerStimMode mode = StingerStimMode.HEAL;
@@ -156,7 +156,7 @@ public class StingerStimProjectileEntity extends Projectile implements ItemSuppl
             StingerStateManager.applyStimHeal(target);
         } else {
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(serverLevel, this, owner), owner, 4.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(serverLevel, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.stinger_stim_projectile_entity.skill_hurt.0.damage", 4.0f));
             StingerStateManager.applyStimSuppression(target);
         }
         RangedSoundHelper.playThrottled(serverLevel, target.position(), ModSounds.STINGER_STIM_HIT.get(),

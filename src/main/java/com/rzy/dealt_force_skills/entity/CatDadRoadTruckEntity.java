@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -30,13 +31,13 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CatDadRoadTruckEntity extends Entity {
-    public static final int WARNING_TICKS = 30;
-    public static final double SPEED_PER_TICK = 22.0D / 20.0D;
-    private static final double TRUCK_HALF_LENGTH = 3.2D;
-    private static final double TRUCK_VERTICAL_BOTTOM = -2.4D;
-    private static final double TRUCK_VERTICAL_TOP = 12.0D;
-    private static final int TRUCK_BLOCK_MIN_Y = -2;
-    private static final int TRUCK_BLOCK_MAX_Y = 13;
+    public static final int WARNING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.catdadroadtruckentity.warning_ticks", 30);
+    public static final double SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.catdadroadtruckentity.speed_per_tick", 22.0D / 20.0D);
+    private static final double TRUCK_HALF_LENGTH = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_half_length", 3.2D);
+    private static final double TRUCK_VERTICAL_BOTTOM = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_bottom", -2.4D);
+    private static final double TRUCK_VERTICAL_TOP = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_top", 12.0D);
+    private static final int TRUCK_BLOCK_MIN_Y = DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_min_y", -2);
+    private static final int TRUCK_BLOCK_MAX_Y = DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_max_y", 13);
 
     private static final EntityDataAccessor<Float> START_X =
             SynchedEntityData.defineId(CatDadRoadTruckEntity.class, EntityDataSerializers.FLOAT);
@@ -218,7 +219,7 @@ public class CatDadRoadTruckEntity extends Entity {
                 SkillDamageHelper.hurt(target,
                         truckSource,
                         owner,
-                        10000.0F);
+                        com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.cat_dad_road_truck_entity.skill_hurt.0.damage", 10000.0F));
             } else {
                 truckSource = target.damageSources().genericKill();
                 target.hurt(truckSource, Float.MAX_VALUE);

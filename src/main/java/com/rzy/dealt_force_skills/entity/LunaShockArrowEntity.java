@@ -43,9 +43,9 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
             SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_FORWARD_Z =
             SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
-    private static final int MAX_PULSE_TICKS = 5 * 20;
-    private static final int PULSE_INTERVAL_TICKS = 10;
-    private static final double PULSE_RADIUS = 4.0D;
+    private static final int MAX_PULSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.max_pulse_ticks", 5 * 20);
+    private static final int PULSE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.pulse_interval_ticks", 10);
+    private static final double PULSE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunashockarrowentity.pulse_radius", 4.0D);
     private static final Map<UUID, Integer> PULL_TICKS = new HashMap<>();
 
     private boolean bounceEnabled;
@@ -216,7 +216,7 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
             stuckEntityId = living.getUUID();
             if (level() instanceof ServerLevel serverLevel) {
                 living.invulnerableTime = 0;
-                SkillDamageHelper.hurt(living, SkillDamageHelper.lunaShockArrow(serverLevel, this, getOwner()), getOwner() instanceof LivingEntity owner ? owner : null, 10.0f);
+                SkillDamageHelper.hurt(living, SkillDamageHelper.lunaShockArrow(serverLevel, this, getOwner()), getOwner() instanceof LivingEntity owner ? owner : null, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.luna_shock_arrow_entity.skill_hurt.0.damage", 10.0f));
                 RangedSoundHelper.playThrottled(serverLevel, living.position(), ModSounds.LUNA_SHOCK_ARROW_PULSE.get(),
                         SoundSource.PLAYERS, 0.9f, 1.2f, 16.0D, 4, 3.0D);
             }
@@ -277,7 +277,7 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
                 continue;
             }
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.lunaShockArrow(serverLevel, this, owner), owner, 4.0f);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.lunaShockArrow(serverLevel, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.luna_shock_arrow_entity.skill_hurt.1.damage", 4.0f));
         }
     }
 

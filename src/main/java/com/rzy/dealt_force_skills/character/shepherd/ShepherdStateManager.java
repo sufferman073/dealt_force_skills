@@ -21,13 +21,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ShepherdStateManager {
-    public static final int SONIC_TRAP_MAX_CHARGES = 2;
-    public static final int SONIC_TRAP_RECHARGE_TICKS = 45 * 20;
-    public static final int SONIC_TRAP_ACTIVE_LIMIT = 2;
-    public static final int FRAG_GRENADE_MAX_CHARGES = 2;
-    public static final int FRAG_GRENADE_RECHARGE_TICKS = 45 * 20;
-    public static final int FRAG_GRENADE_FUSE_TICKS = 70;
-    public static final int CORE_COOLDOWN_TICKS = 90 * 20;
+    public static final int SONIC_TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_max_charges", 2);
+    public static final int SONIC_TRAP_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_recharge_ticks", 45 * 20);
+    public static final int SONIC_TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_active_limit", 2);
+    public static final int FRAG_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_max_charges", 2);
+    public static final int FRAG_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_recharge_ticks", 45 * 20);
+    public static final int FRAG_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_fuse_ticks", 70);
+    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.core_cooldown_ticks", 90 * 20);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".shepherd";
     private static final String INITIALIZED = "Initialized";

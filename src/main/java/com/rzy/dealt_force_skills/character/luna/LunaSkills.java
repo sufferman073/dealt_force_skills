@@ -17,8 +17,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 public final class LunaSkills {
-    private static final int BOW_RELEASE_TICKS = 3;
-    private static final int BOW_ARROW_SPAWN_TICK = 2;
+    private static final int BOW_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_release_ticks", 3);
+    private static final int BOW_ARROW_SPAWN_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_arrow_spawn_tick", 2);
 
     private LunaSkills() {
     }

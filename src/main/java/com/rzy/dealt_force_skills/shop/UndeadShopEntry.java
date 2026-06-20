@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.undead.UndeadProfession;
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -75,8 +76,9 @@ public enum UndeadShopEntry {
     ) {
         this.id = id;
         this.category = category;
-        this.price = price;
-        this.maxLevel = maxLevel;
+        String key = "shop.undead." + id;
+        this.price = DealtForceConfig.longValue(key + ".price", price);
+        this.maxLevel = DealtForceConfig.intValue(key + ".max_level", maxLevel);
         this.refundable = refundable;
         this.profession = profession;
     }
@@ -96,15 +98,18 @@ public enum UndeadShopEntry {
     public long priceForLevel(int currentLevel) {
         int level = Math.max(0, currentLevel);
         if (this == TALENT_CAPACITY) {
-            return saturatingAdd(price, level * 600L);
+            long step = DealtForceConfig.longValue("shop.undead.talent_capacity.price_step", 600L);
+            return saturatingAdd(price, level * step);
         }
         if (this == THOUSAND_TEMPERING) {
             long value = price;
+            long multiplier = Math.max(1L,
+                    DealtForceConfig.longValue("shop.undead.thousand_tempering.price_multiplier", 2L));
             for (int i = 0; i < level; i++) {
-                if (value > Long.MAX_VALUE / 2L) {
+                if (value > Long.MAX_VALUE / multiplier) {
                     return Long.MAX_VALUE;
                 }
-                value *= 2L;
+                value *= multiplier;
             }
             return value;
         }

@@ -20,13 +20,13 @@ import java.util.Comparator;
 import java.util.List;
 
 public final class StingerSkills {
-    private static final double STIM_LOCK_RANGE = 64.0D;
-    private static final double STIM_LOCK_MIN_ALIGNMENT = 0.78D;
-    private static final double STIM_LOCK_DIRECT_ALIGNMENT = 0.975D;
-    private static final double STIM_LOCK_MAX_OFF_AXIS = 2.0D;
-    private static final int STIM_LOCK_SYNC_INTERVAL_TICKS = 5;
-    private static final int STIM_LOCK_STATUS_TICKS = 8;
-    private static final double STIM_PROJECTILE_SPEED = 2.25D;
+    private static final double STIM_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_range", 64.0D);
+    private static final double STIM_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_min_alignment", 0.78D);
+    private static final double STIM_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_direct_alignment", 0.975D);
+    private static final double STIM_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_max_off_axis", 2.0D);
+    private static final int STIM_LOCK_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_sync_interval_ticks", 5);
+    private static final int STIM_LOCK_STATUS_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_status_ticks", 8);
+    private static final double STIM_PROJECTILE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_projectile_speed", 2.25D);
 
     private StingerSkills() {
     }

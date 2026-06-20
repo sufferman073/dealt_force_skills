@@ -30,10 +30,10 @@ import java.util.UUID;
 
 public class GizmoSpiderNestTrapEntity extends Entity implements ItemSupplier {
     private static final int READY_SOUND_INTERVAL_TICKS = 8;
-    private static final double TRIGGER_RADIUS = 6.0D;
-    private static final double MAX_OWNER_DISTANCE = 50.0D;
-    private static final int MAX_SPAWNS = 3;
-    private static final int SPAWN_INTERVAL_TICKS = 20;
+    private static final double TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospidernesttrapentity.trigger_radius", 6.0D);
+    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospidernesttrapentity.max_owner_distance", 50.0D);
+    private static final int MAX_SPAWNS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmospidernesttrapentity.max_spawns", 3);
+    private static final int SPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmospidernesttrapentity.spawn_interval_ticks", 20);
 
     private UUID ownerId;
     private boolean triggered;

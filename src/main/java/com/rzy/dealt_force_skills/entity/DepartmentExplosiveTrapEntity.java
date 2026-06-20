@@ -45,11 +45,11 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(DepartmentExplosiveTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 45;
-    private static final int AUTO_DETONATION_DELAY_TICKS = 20;
-    private static final double AUTO_TRIGGER_RADIUS = 4.0D;
-    private static final double AUTO_DAMAGE_RADIUS = 4.0D;
-    private static final double MANUAL_DAMAGE_RADIUS = 6.0D;
-    private static final double MAX_OWNER_DISTANCE = 50.0D;
+    private static final int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentexplosivetrapentity.auto_detonation_delay_ticks", 20);
+    private static final double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_trigger_radius", 4.0D);
+    private static final double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_damage_radius", 4.0D);
+    private static final double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.manual_damage_radius", 6.0D);
+    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.max_owner_distance", 50.0D);
     private static final DustParticleOptions TRAP_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.36F, 0.05F), 1.25F);
 
     private UUID ownerId;
@@ -235,7 +235,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
             target.setDeltaMovement(before.add(target.position().subtract(position()).normalize().scale(manual ? 0.55D : 0.35D)));
             target.hurtMarked = true;
             if (manual) {
-                target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), 6 * 20, 0, false, true, true), owner);
+                target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.department_explosive_trap_entity.effect.sonic_shock.0.duration_ticks", 6 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.department_explosive_trap_entity.effect.sonic_shock.0.amplifier", 0), false, true, true), owner);
             }
         }
         spawnChargedCreeper(level);

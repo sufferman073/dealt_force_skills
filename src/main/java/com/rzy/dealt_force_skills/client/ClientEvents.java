@@ -1,7 +1,10 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothTaczEnhancement;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientCatDadHudState;
 import com.rzy.dealt_force_skills.client.character.ClientDWolfHudState;
@@ -18,6 +21,7 @@ import com.rzy.dealt_force_skills.client.character.ClientMorseHudState;
 import com.rzy.dealt_force_skills.client.character.ClientNikaidouHiroHudState;
 import com.rzy.dealt_force_skills.client.character.ClientNoxHudState;
 import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
+import com.rzy.dealt_force_skills.client.character.ClientSaeedHudState;
 import com.rzy.dealt_force_skills.client.character.ClientShepherdHudState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaRenderState;
@@ -38,6 +42,7 @@ import com.rzy.dealt_force_skills.client.renderer.BlockbenchProjectileRenderer;
 import com.rzy.dealt_force_skills.client.renderer.DWolfHandCannonGrenadeRenderer;
 import com.rzy.dealt_force_skills.client.renderer.GrappleHookRenderer;
 import com.rzy.dealt_force_skills.client.renderer.NoxDecoyRenderer;
+import com.rzy.dealt_force_skills.client.renderer.SaeedGuardRenderer;
 import com.rzy.dealt_force_skills.client.renderer.TempestRecallAnchorRenderer;
 import com.rzy.dealt_force_skills.client.renderer.VyronMagneticBombRenderer;
 import com.rzy.dealt_force_skills.client.renderer.VyronTigerCannonProjectileRenderer;
@@ -58,12 +63,14 @@ import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModBlockEntities;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModParticles;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.particle.ParticleEngine;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -77,6 +84,7 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -86,8 +94,8 @@ import java.lang.reflect.Method;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public class ClientEvents {
-    private static final int CORE_LONG_HOLD_TICKS = 15;
-    private static final int SHEPHERD_CORE_LONG_HOLD_TICKS = 15;
+    private static final int CORE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.client_events.core_long_hold_ticks", 15);
+    private static final int SHEPHERD_CORE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.client_events.shepherd_core_long_hold_ticks", 15);
 
     private static int coreKeyHeldTicks = 0;
     private static boolean coreKeyWasDown = false;
@@ -103,7 +111,7 @@ public class ClientEvents {
     private static final String TRICK_UNTIL = "dealt_force_skills.trick_until";
     private static final String DICH9_STACKS = "dealt_force_skills.dich9_stacks";
     private static final String DICH9_UNTIL = "dealt_force_skills.dich9_until";
-    private static final double MASK1_LOCK_RANGE = 64.0D;
+    private static final double MASK1_LOCK_RANGE = DealtForceConfig.doubleValue("client.client_events.mask1_lock_range", 64.0D);
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onClientTickTaczAdrenaline(TickEvent.ClientTickEvent e) {
@@ -117,6 +125,28 @@ public class ClientEvents {
         tickSuppressHurtAnimation(mc.player);
         accelerateTaczAdrenalineClient(mc.player);
         delayTaczMorseShockClient(mc.player);
+    }
+
+    @SubscribeEvent
+    public static void onGhrothHvkTooltip(ItemTooltipEvent event) {
+        ItemStack stack = event.getItemStack();
+        if (GhrothTaczEnhancement.isEnhancedGun(stack)) {
+            event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_gun_core")
+                    .withStyle(ChatFormatting.GOLD));
+            if (GhrothTaczEnhancement.gunId(stack).map(GhrothTaczEnhancement::isLikelySniper).orElse(false)) {
+                event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_gun_sniper")
+                        .withStyle(ChatFormatting.GOLD));
+            }
+            event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_gun_ballistics")
+                    .withStyle(ChatFormatting.AQUA));
+            event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_gun_handling")
+                    .withStyle(ChatFormatting.AQUA));
+            event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_gun_refit")
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+        } else if (GhrothTaczEnhancement.isEnhancedAttachment(stack)) {
+            event.getToolTip().add(Component.translatable("tooltip.dealt_force_skills.ghroth.hvk_attachment")
+                    .withStyle(ChatFormatting.GOLD));
+        }
     }
 
     public static void suppressLocalHurtAnimation(int ticks) {
@@ -145,10 +175,14 @@ public class ClientEvents {
             long fireExtraMillis = extraTaczMillis(multipliers.fireRate());
             long reloadExtraMillis = extraTaczMillis(multipliers.reload());
             long aimExtraMillis = extraTaczMillis(multipliers.aim());
+            long boltExtraMillis = extraTaczMillis(multipliers.bolt());
             long aimPenaltyMillis = extraTaczMillis(multipliers.aimPenalty());
             shiftLongFieldIfNonNegative(dataHolder, "clientShootTimestamp", -fireExtraMillis);
             shiftLongFieldIfNonNegative(dataHolder, "clientLastShootTimestamp", -fireExtraMillis);
-            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, reloadExtraMillis));
+            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, Math.max(reloadExtraMillis, boltExtraMillis)));
+            if (booleanField(dataHolder, "isBolting")) {
+                shiftLongFieldIfNonNegative(dataHolder, "boltTimestamp", -boltExtraMillis);
+            }
             if (booleanField(dataHolder, "clientIsAiming")) {
                 shiftLongFieldIfNonNegative(dataHolder, "clientAimingTimestamp", -aimExtraMillis + aimPenaltyMillis);
                 boostFloatField(dataHolder, "clientAimingProgress", adrenalineAimProgressBoost(multipliers.aim()), 0.0F, 1.0F);
@@ -174,12 +208,50 @@ public class ClientEvents {
     private static TaczSpeedMultipliers taczSpeedMultipliers(net.minecraft.client.player.LocalPlayer player) {
         double adrenaline = ToxikStateManager.adrenalineSpeedMultiplier(player);
         double equipment = equipmentTaczAssaultMultiplier(player);
+        double ghrothFireRate = ghrothClientFireRateMultiplier(player);
+        double ghrothReload = ghrothClientReloadMultiplier(player);
+        double ghrothAim = ghrothClientAimMultiplier(player);
+        double ghrothBolt = ghrothClientBoltMultiplier(player);
         return new TaczSpeedMultipliers(
-                adrenaline * equipment * ModItemEffectHelper.medicineTaczFireRateMultiplier(player),
-                adrenaline * ModItemEffectHelper.medicineTaczReloadMultiplier(player),
-                adrenaline * equipment * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(player),
+                adrenaline * equipment * ghrothFireRate * ModItemEffectHelper.medicineTaczFireRateMultiplier(player),
+                adrenaline * ghrothReload * ModItemEffectHelper.medicineTaczReloadMultiplier(player),
+                adrenaline * equipment * ghrothAim * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(player),
+                adrenaline * ghrothBolt,
                 ModItemEffectHelper.medicineTaczAimPenaltyMultiplier(player)
         );
+    }
+
+    private static double ghrothClientFireRateMultiplier(net.minecraft.client.player.LocalPlayer player) {
+        if (!ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+            return 1.0D;
+        }
+        return isGhrothEnhancedGun(player.getMainHandItem()) ? 2.0D : 1.0D;
+    }
+
+    private static double ghrothClientReloadMultiplier(net.minecraft.client.player.LocalPlayer player) {
+        if (!ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+            return 1.0D;
+        }
+        return isGhrothEnhancedGun(player.getMainHandItem()) ? 2.0D : 1.0D;
+    }
+
+    private static double ghrothClientAimMultiplier(net.minecraft.client.player.LocalPlayer player) {
+        if (!ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+            return 1.0D;
+        }
+        return isGhrothEnhancedGun(player.getMainHandItem()) ? 16.0D : 1.0D;
+    }
+
+    private static double ghrothClientBoltMultiplier(net.minecraft.client.player.LocalPlayer player) {
+        if (!ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+            return 1.0D;
+        }
+        return isGhrothEnhancedGun(player.getMainHandItem()) ? 4.0D : 1.0D;
+    }
+
+    private static boolean isGhrothEnhancedGun(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        return tag != null && tag.getBoolean(GhrothTaczEnhancement.ENHANCED_TAG);
     }
 
     private static double equipmentTaczAssaultMultiplier(net.minecraft.client.player.LocalPlayer player) {
@@ -211,9 +283,9 @@ public class ClientEvents {
         return multiplier <= 1.0001D ? 0.0F : (float) Math.min(0.8D, 0.08D * (multiplier - 1.0D));
     }
 
-    private record TaczSpeedMultipliers(double fireRate, double reload, double aim, double aimPenalty) {
+    private record TaczSpeedMultipliers(double fireRate, double reload, double aim, double bolt, double aimPenalty) {
         boolean hasChange() {
-            return fireRate > 1.0001D || reload > 1.0001D || aim > 1.0001D || aimPenalty > 1.0001D;
+            return fireRate > 1.0001D || reload > 1.0001D || aim > 1.0001D || bolt > 1.0001D || aimPenalty > 1.0001D;
         }
     }
 
@@ -339,6 +411,7 @@ public class ClientEvents {
         ClientCharacterSelectionState.openInitialSelectionIfNeeded();
         reduceAdrenalinePlacementDelay(mc);
         tickMask1LockOn(mc);
+        tickGhrothLockOn(mc);
         tickForcedCharacterSpin(mc.player);
         ClientSinevaHudState.tick();
         ClientUluruHudState.tick();
@@ -361,6 +434,7 @@ public class ClientEvents {
         ClientRaptorHudState.tick();
         ClientVlinderHudState.tick();
         ClientTempestHudState.tick();
+        ClientSaeedHudState.tick();
         ManbaFlashlightBeamRenderer.tick(mc);
         ClientSinevaRenderState.tick(mc);
         ClientHackclawCoreVisualState.tick(mc);
@@ -390,6 +464,8 @@ public class ClientEvents {
         RaptorInputHandler.tick(mc);
         VlinderInputHandler.tick(mc);
         TempestInputHandler.tick(mc);
+        SaeedInputHandler.tick(mc);
+        SaeedGuardViewController.tick(mc);
         UluruMissileController.tick(mc);
         RaptorFalconController.tick(mc);
         UluruGhostEntityManager.tick(mc);
@@ -411,6 +487,10 @@ public class ClientEvents {
             drainMissileControlLockedKeys(mc);
             return;
         }
+        if (SaeedGuardViewController.isControlling()) {
+            drainMissileControlLockedKeys(mc);
+            return;
+        }
 
         // Unified tool-equipped key drain: when any character has a pseudo-tool active,
         // suppress vanilla attack/use/pick to prevent accidental interactions leaking through.
@@ -422,13 +502,15 @@ public class ClientEvents {
             drainKey(mc.options.keySwapOffhand);
         }
 
-        if (!UndeadInputHandler.ownsSelectionKey() && !LexNinjiaInputHandler.ownsSelectionKey()) {
+        if (!UndeadInputHandler.ownsSelectionKey() && !LexNinjiaInputHandler.ownsSelectionKey()
+                && !SaeedInputHandler.ownsSelectionKey()) {
             while (KeybindRegister.CHARACTER_SELECT != null && KeybindRegister.CHARACTER_SELECT.consumeClick()) {
                 NetworkHandler.sendToServer(new C2S_OpenSelectionOrShop());
             }
         }
 
         while (!UndeadInputHandler.ownsSkillKeys()
+                && !LexNinjiaInputHandler.ownsSkillKeys()
                 && KeybindRegister.ACTIVE_SKILL_1 != null
                 && KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
             // Sineva handles ACTIVE_1 exclusively in SinevaInputHandler; other characters use this.
@@ -444,6 +526,7 @@ public class ClientEvents {
         }
 
         while (!UndeadInputHandler.ownsSkillKeys()
+                && !LexNinjiaInputHandler.ownsSkillKeys()
                 && KeybindRegister.ACTIVE_SKILL_2 != null
                 && KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
             if (!ClientVyronHudState.shouldRender() && !ClientStingerHudState.shouldRender()
@@ -461,7 +544,7 @@ public class ClientEvents {
             }
         }
 
-        if (UndeadInputHandler.ownsSkillKeys()
+        if (UndeadInputHandler.ownsSkillKeys() || LexNinjiaInputHandler.ownsSkillKeys()
                 || DWolfInputHandler.ownsCoreSkill() || StingerInputHandler.ownsCoreSkill()
                 || NoxInputHandler.ownsCoreSkill() || ManbaInputHandler.ownsCoreSkill()
                 || MorseInputHandler.ownsCoreSkill()
@@ -522,8 +605,43 @@ public class ClientEvents {
         }
     }
 
+    private static void tickGhrothLockOn(Minecraft mc) {
+        LocalPlayer player = mc.player;
+        if (player == null || mc.level == null || player.isSpectator()
+                || !ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+            return;
+        }
+        if (!isTaczGunStack(player.getMainHandItem()) || !isTaczClientAiming(player)) {
+            return;
+        }
+        LivingEntity target = player.isShiftKeyDown() ? nearestGhrothPlayerTarget(player) : nearestGhrothNonPlayerTarget(player);
+        if (target != null) {
+            aimLocalPlayerAt(player, target.getEyePosition());
+        }
+    }
+
     private static LivingEntity nearestMask1LockTarget(LocalPlayer player) {
         return player.isShiftKeyDown() ? nearestMask1AttackableTarget(player) : nearestMask1PlayerTarget(player);
+    }
+
+    private static Player nearestGhrothPlayerTarget(LocalPlayer player) {
+        return nearestMask1PlayerTarget(player);
+    }
+
+    private static LivingEntity nearestGhrothNonPlayerTarget(LocalPlayer player) {
+        LivingEntity nearest = null;
+        double bestDistance = MASK1_LOCK_RANGE * MASK1_LOCK_RANGE;
+        for (LivingEntity candidate : player.level().getEntitiesOfClass(LivingEntity.class,
+                player.getBoundingBox().inflate(MASK1_LOCK_RANGE),
+                entity -> entity != player && !(entity instanceof Player) && entity.isAlive() && !entity.isSpectator()
+                        && entity.isAttackable() && entity.attackable())) {
+            double distance = candidate.distanceToSqr(player);
+            if (distance < bestDistance) {
+                nearest = candidate;
+                bestDistance = distance;
+            }
+        }
+        return nearest;
     }
 
     private static Player nearestMask1PlayerTarget(LocalPlayer player) {
@@ -747,6 +865,9 @@ public class ClientEvents {
         if (ClientTempestHudState.hasEquippedTool()) {
             return true;
         }
+        if (ClientSaeedHudState.hasCrossbowEquipped()) {
+            return true;
+        }
         return false;
     }
 
@@ -939,6 +1060,10 @@ public class ClientEvents {
             e.registerEntityRenderer(ModEntities.DEPARTMENT_EXPLOSIVE_TRAP.get(), ctx -> new BlockbenchProjectileRenderer<>(
                     ctx, model("department_explosive_trap"), "flip_open", "idle_hold", 1.2F,
                     BlockbenchProjectileRenderer.Alignment.NONE));
+            e.registerEntityRenderer(ModEntities.SAEED_GUARD.get(), SaeedGuardRenderer::new);
+            e.registerEntityRenderer(ModEntities.SAEED_FIRE_ARROW.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.SAEED_HAKIM_MISSILE.get(), ctx -> new ThrownItemRenderer<>(ctx));
+            e.registerEntityRenderer(ModEntities.SAEED_FIRE_FIELD.get(), ctx -> new ThrownItemRenderer<>(ctx));
         }
 
         @SubscribeEvent

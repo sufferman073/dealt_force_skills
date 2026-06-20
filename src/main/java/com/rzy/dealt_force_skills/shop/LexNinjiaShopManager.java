@@ -11,11 +11,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class LexNinjiaShopManager {
-    private static final long MIND_EXPANSION_BASE_PRICE = 1500L;
-    private static final long MIND_EXPANSION_PRICE_STEP = 650L;
-    private static final long SCIENTIFIC_TOOL_PURCHASE_PRICE = 6000L;
-    private static final long SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE = 3000L;
-    private static final long SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP = 1500L;
+    private static final long MIND_EXPANSION_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_base_price", 1500L);
+    private static final long MIND_EXPANSION_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_price_step", 650L);
+    private static final long SCIENTIFIC_TOOL_PURCHASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_purchase_price", 6000L);
+    private static final long SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_upgrade_base_price", 3000L);
+    private static final long SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_upgrade_price_step", 1500L);
 
     private LexNinjiaShopManager() {
     }

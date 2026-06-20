@@ -7,6 +7,7 @@ public enum CharacterRole {
     SUPPORT("character.dealt_force_skills.role.support"),
     ENGINEER("character.dealt_force_skills.role.engineer"),
     RECON("character.dealt_force_skills.role.recon"),
+    BOSS("character.dealt_force_skills.role.boss"),
     SPECIAL("character.dealt_force_skills.role.special");
 
     public static final List<CharacterRole> DISPLAY_ORDER = List.of(
@@ -14,6 +15,7 @@ public enum CharacterRole {
             SUPPORT,
             ENGINEER,
             RECON,
+            BOSS,
             SPECIAL
     );
 

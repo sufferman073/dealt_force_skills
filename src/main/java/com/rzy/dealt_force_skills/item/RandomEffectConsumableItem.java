@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.item;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.effect.MobEffect;
@@ -23,7 +24,20 @@ public class RandomEffectConsumableItem extends DfsUseItem {
                                       String finishMessageKey,
                                       List<List<EffectConsumableItem.EffectEntry>> outcomes) {
         super(properties, quality, tooltipKey, useTicks, startSound, finishSound, startMessageKey, finishMessageKey);
-        this.outcomes = outcomes;
+        java.util.ArrayList<List<EffectConsumableItem.EffectEntry>> configuredOutcomes = new java.util.ArrayList<>();
+        for (int outcomeIndex = 0; outcomeIndex < outcomes.size(); outcomeIndex++) {
+            List<EffectConsumableItem.EffectEntry> outcome = outcomes.get(outcomeIndex);
+            java.util.ArrayList<EffectConsumableItem.EffectEntry> configuredEffects = new java.util.ArrayList<>();
+            for (int effectIndex = 0; effectIndex < outcome.size(); effectIndex++) {
+                EffectConsumableItem.EffectEntry entry = outcome.get(effectIndex);
+                String key = configKey() + ".outcomes.outcome_" + outcomeIndex + ".effect_" + effectIndex;
+                configuredEffects.add(new EffectConsumableItem.EffectEntry(entry.effect(),
+                        DealtForceConfig.intValue(key + ".duration_ticks", entry.durationTicks()),
+                        DealtForceConfig.intValue(key + ".amplifier", entry.amplifier())));
+            }
+            configuredOutcomes.add(List.copyOf(configuredEffects));
+        }
+        this.outcomes = List.copyOf(configuredOutcomes);
     }
 
     @Override

@@ -22,10 +22,11 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = 8 * 20;
-    public static final double RADIUS = 7.5D;
+    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfsmokecloudentity.life_ticks", 8 * 20);
+    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfsmokecloudentity.radius", 7.5D);
 
     private UUID ownerId;
+    private int lifeTicks = LIFE_TICKS;
 
     public DWolfSmokeCloudEntity(EntityType<? extends DWolfSmokeCloudEntity> type, Level level) {
         super(type, level);
@@ -35,6 +36,10 @@ public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
     public DWolfSmokeCloudEntity(EntityType<? extends DWolfSmokeCloudEntity> type, Level level, UUID ownerId) {
         this(type, level);
         this.ownerId = ownerId;
+    }
+
+    public void setLifeTicks(int lifeTicks) {
+        this.lifeTicks = Math.max(1, lifeTicks);
     }
 
     @Override
@@ -57,7 +62,7 @@ public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
         if (level() instanceof ServerLevel serverLevel) {
             suppressTargetsThroughSmoke(serverLevel);
         }
-        if (tickCount >= LIFE_TICKS) {
+        if (tickCount >= lifeTicks) {
             discard();
         }
     }
@@ -65,6 +70,7 @@ public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        lifeTicks = tag.contains("LifeTicks") ? Math.max(1, tag.getInt("LifeTicks")) : LIFE_TICKS;
     }
 
     @Override
@@ -72,6 +78,7 @@ public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
         if (ownerId != null) {
             tag.putUUID("Owner", ownerId);
         }
+        tag.putInt("LifeTicks", lifeTicks);
     }
 
     @Override

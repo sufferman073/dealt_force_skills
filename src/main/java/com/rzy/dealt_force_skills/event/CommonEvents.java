@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.event;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.block.BladeWireBlockEntity;
 import com.rzy.dealt_force_skills.block.QuickCoverBlock;
 import com.rzy.dealt_force_skills.block.QuickCoverBlockEntity;
@@ -12,6 +13,8 @@ import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfTool;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoTool;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothTaczEnhancement;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
@@ -24,6 +27,8 @@ import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroTool;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
+import com.rzy.dealt_force_skills.character.saeed.SaeedGuardType;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdTool;
 import com.rzy.dealt_force_skills.character.uluru.UluruTool;
@@ -57,6 +62,7 @@ import com.rzy.dealt_force_skills.effect.MorseFlashedEffect;
 import com.rzy.dealt_force_skills.effect.ToxikTearGasBlindEffect;
 import com.rzy.dealt_force_skills.effect.ToxikFireflyInterferenceEffect;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
+import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
@@ -66,6 +72,7 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_CharacterHitFeedback;
 import com.rzy.dealt_force_skills.registry.ModBlocks;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModItems;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.shop.HaffCoinManager;
@@ -157,6 +164,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -169,16 +177,18 @@ public class CommonEvents {
     private static final String TACZ_GUN_RELOAD_EVENT = "com.tacz.guns.api.event.common.GunReloadEvent";
     private static final String TACZ_GUN_SHOOT_EVENT = "com.tacz.guns.api.event.common.GunShootEvent";
     private static final String TACZ_GUN_FIRE_EVENT = "com.tacz.guns.api.event.common.GunFireEvent";
+    private static final String TACZ_ENTITY_HURT_BY_GUN_PRE_EVENT = "com.tacz.guns.api.event.common.EntityHurtByGunEvent$Pre";
+    private static final String TACZ_ATTACHMENT_PROPERTY_EVENT = "com.tacz.guns.api.event.common.AttachmentPropertyEvent";
     private static final String TACZ_GUN_MELEE_EVENT = "com.tacz.guns.api.event.common.GunMeleeEvent";
     private static final String TACZ_GUN_FIRE_SELECT_EVENT = "com.tacz.guns.api.event.common.GunFireSelectEvent";
     private static final String TACZ_GUN_OPERATOR = "com.tacz.guns.api.entity.IGunOperator";
     private static final String TACZ_CLIENT_GUN_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
     private static final TagKey<DamageType> TACZ_BULLETS_TAG = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.tryBuild("tacz", "bullets"));
-    private static final int EFFECT_REAPPLY_GRACE_TICKS = 2;
-    private static final double SHIELD_DEPLOYED_SLOW_AMOUNT = -0.1;
-    private static final double SHIELD_DAMAGE_SLOW_MAX_TOTAL = 0.95D;
-    private static final double EQUIPMENT_PROJECTILE_NEAR_INFLATE = 0.75D;
-    private static final double EQUIPMENT_RANGED_TRACE_INFLATE = 0.25D;
+    private static final int EFFECT_REAPPLY_GRACE_TICKS = DealtForceConfig.intValue("events.common_events.effect_reapply_grace_ticks", 2);
+    private static final double SHIELD_DEPLOYED_SLOW_AMOUNT = DealtForceConfig.doubleValue("events.common_events.shield_deployed_slow_amount", -0.1);
+    private static final double SHIELD_DAMAGE_SLOW_MAX_TOTAL = DealtForceConfig.doubleValue("events.common_events.shield_damage_slow_max_total", 0.95D);
+    private static final double EQUIPMENT_PROJECTILE_NEAR_INFLATE = DealtForceConfig.doubleValue("events.common_events.equipment_projectile_near_inflate", 0.75D);
+    private static final double EQUIPMENT_RANGED_TRACE_INFLATE = DealtForceConfig.doubleValue("events.common_events.equipment_ranged_trace_inflate", 0.25D);
     private static final String EQUIPMENT_FATAL_GUARD_UNTIL = "dealt_force_skills.equipment_fatal_guard_until";
     private static final String ASARA_SET_FATAL_GUARD_UNTIL = "dealt_force_skills.asara_set_fatal_guard_until";
     private static final String GLOBAL_FORCES_LOCK_TARGET = "dealt_force_skills.global_forces_lock_target";
@@ -207,17 +217,21 @@ public class CommonEvents {
     private static final String EQUIPMENT_LAST_Y = "dealt_force_skills.equipment_last_y";
     private static final String EQUIPMENT_LAST_Z = "dealt_force_skills.equipment_last_z";
     private static final String EQUIPMENT_STATIONARY_DAMAGE_TICKS = "dealt_force_skills.equipment_stationary_damage_ticks";
-    private static final double PREMIUM_COFFEE_FAILURE_BASE = 0.95D;
-    private static final double PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL = 0.15D;
-    private static final double PREMIUM_COFFEE_DROP_BASE = 0.01D;
-    private static final double PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL = 0.01D;
-    private static final double NEW_RECRUIT_MINING_DUPLICATE_CHANCE = 0.25D;
-    private static final int GLOBAL_FORCES_LOCK_TICKS_REQUIRED = 4 * 20;
-    private static final double GLOBAL_FORCES_ALLY_RANGE = 20.0D;
-    private static final double GLOBAL_FORCES_LOCK_RAY_RADIUS = 1.0D;
-    private static final double GTI_OVERLOAD_LIMIT_MULTIPLIER = 2.0D;
-    private static final int MHS_FURY_DURATION_TICKS = 15 * 20;
-    private static final double MHS_FURY_TRIGGER_RANGE = 2.0D;
+    private static final float H09_STATIONARY_MIN_SELF_DAMAGE = DealtForceConfig.floatValue("events.common_events.h09_stationary_min_self_damage", 0.5F);
+    private static final float H09_STATIONARY_SELF_DAMAGE_MAX_HEALTH_FRACTION = DealtForceConfig.floatValue("events.common_events.h09_stationary_self_damage_max_health_fraction", 0.01F);
+    private static final double PREMIUM_COFFEE_FAILURE_BASE = DealtForceConfig.doubleValue("events.common_events.premium_coffee_failure_base", 0.95D);
+    private static final double PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL = DealtForceConfig.doubleValue("events.common_events.premium_coffee_failure_reduction_per_level", 0.15D);
+    private static final double PREMIUM_COFFEE_DROP_BASE = DealtForceConfig.doubleValue("events.common_events.premium_coffee_drop_base", 0.01D);
+    private static final double PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL = DealtForceConfig.doubleValue("events.common_events.premium_coffee_drop_bonus_per_level", 0.01D);
+    private static final double NEW_RECRUIT_MINING_DUPLICATE_CHANCE = DealtForceConfig.doubleValue("events.common_events.new_recruit_mining_duplicate_chance", 0.25D);
+    private static final int GLOBAL_FORCES_LOCK_TICKS_REQUIRED = DealtForceConfig.intValue("events.common_events.global_forces_lock_ticks_required", 4 * 20);
+    private static final double GLOBAL_FORCES_ALLY_RANGE = DealtForceConfig.doubleValue("events.common_events.global_forces_ally_range", 20.0D);
+    private static final double GLOBAL_FORCES_LOCK_RAY_RADIUS = DealtForceConfig.doubleValue("events.common_events.global_forces_lock_ray_radius", 1.0D);
+    private static final double SAEED_HAKIM_ROCKET_DAMAGE_RADIUS = DealtForceConfig.doubleValue("events.common_events.saeed_hakim_rocket_damage_radius", 3.0D);
+    private static final float SAEED_HAKIM_ROCKET_DAMAGE = DealtForceConfig.floatValue("events.common_events.saeed_hakim_rocket_damage", 40.0F);
+    private static final double GTI_OVERLOAD_LIMIT_MULTIPLIER = DealtForceConfig.doubleValue("events.common_events.gti_overload_limit_multiplier", 2.0D);
+    private static final int MHS_FURY_DURATION_TICKS = DealtForceConfig.intValue("events.common_events.mhs_fury_duration_ticks", 15 * 20);
+    private static final double MHS_FURY_TRIGGER_RANGE = DealtForceConfig.doubleValue("events.common_events.mhs_fury_trigger_range", 2.0D);
     private static final String KING_KONG_COOLDOWN_UNTIL = "dealt_force_skills.king_kong_cooldown_until";
     private static final String KING_KONG_TARGET_ID = "dealt_force_skills.king_kong_target_id";
     private static final String KING_KONG_STRIKE_TICK = "dealt_force_skills.king_kong_strike_tick";
@@ -228,6 +242,9 @@ public class CommonEvents {
     private static final Map<UUID, Integer> TEMPEST_ACTION_LOCKED_SELECTED_SLOTS = new HashMap<>();
     private static final Map<UUID, LockedLook> WEBBED_LOOK_LOCKS = new HashMap<>();
     private static final Map<UUID, TaczAmmoSnapshot> MHS_TACTICAL_AMMO_SNAPSHOTS = new HashMap<>();
+    private static final Map<UUID, GhrothDamageFloor> GHROTH_DAMAGE_FLOORS = new HashMap<>();
+    private static final Map<UUID, LinkedList<GhrothStarsPendingShot>> GHROTH_STARS_PENDING_SHOTS = new HashMap<>();
+    private static final Map<UUID, LinkedList<GhrothNoonPendingCopy>> GHROTH_NOON_PENDING_COPIES = new HashMap<>();
     private static final Set<VillagerProfession> BLUEPRINT_PROFESSIONS = Set.of(
             VillagerProfession.ARMORER,
             VillagerProfession.CARTOGRAPHER,
@@ -241,6 +258,7 @@ public class CommonEvents {
     private static final int[] BLUEPRINT_TRADE_LEVELS = {3, 4, 5};
     private static boolean taczReloadBridgeChecked;
     private static boolean taczReloadBridgeAvailable;
+    private static boolean ghrothNoonCopyingDamage;
     private static Method taczFromLivingEntity;
     private static Method taczCancelReload;
     private static final String UNDEAD_EXPLORER_LOOT_CLAIMED =
@@ -250,6 +268,12 @@ public class CommonEvents {
     public static void onLivingAttack(LivingAttackEvent event) {
         DamageSource source = event.getSource();
         if (UndeadSupportManager.shouldCancelFriendlyFire(event.getEntity(), source)) {
+            event.setCanceled(true);
+            return;
+        }
+        if (event.getEntity() instanceof Player targetPlayer
+                && source.getEntity() instanceof Player attackerPlayer
+                && GhrothStateManager.shouldCancelCeasefire(targetPlayer, attackerPlayer)) {
             event.setCanceled(true);
             return;
         }
@@ -271,6 +295,11 @@ public class CommonEvents {
             return;
         }
         if (!(event.getEntity() instanceof Player player)) return;
+
+        if (GhrothStateManager.isTacticalImmune(player) || GhrothStateManager.shouldDodge(player, source)) {
+            event.setCanceled(true);
+            return;
+        }
 
         if (StingerStateManager.isDowned(player)
                 && !StingerStateManager.isExecutingDownedDeath(player)
@@ -368,6 +397,41 @@ public class CommonEvents {
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
         LivingEntity hurtEntity = event.getEntity();
+        DamageSource source = event.getSource();
+        if (SaeedStateManager.shouldCancelTeamDamage(hurtEntity, source)) {
+            event.setCanceled(true);
+            event.setAmount(0.0f);
+            return;
+        }
+        if (hurtEntity instanceof Player targetPlayer
+                && source.getEntity() instanceof Player attackerPlayer
+                && GhrothStateManager.shouldCancelCeasefire(targetPlayer, attackerPlayer)) {
+            event.setCanceled(true);
+            event.setAmount(0.0F);
+            return;
+        }
+        if (hurtEntity instanceof Player player && GhrothStateManager.isTacticalImmune(player)) {
+            event.setCanceled(true);
+            event.setAmount(0.0F);
+            return;
+        }
+        if (hurtEntity instanceof Player player && event.getAmount() > 0.0F) {
+            float ghrothMultiplier = GhrothStateManager.incomingDamageMultiplier(player, damageSourceEntity(source));
+            if (ghrothMultiplier <= 0.0F) {
+                event.setCanceled(true);
+                event.setAmount(0.0F);
+                return;
+            }
+            if (ghrothMultiplier < 1.0F) {
+                event.setAmount(event.getAmount() * ghrothMultiplier);
+            }
+        }
+        if (event.getAmount() > 0.0f) {
+            float guardMultiplier = SaeedStateManager.guardOutgoingDamageMultiplier(source, hurtEntity);
+            if (guardMultiplier != 1.0F) {
+                event.setAmount(event.getAmount() * guardMultiplier);
+            }
+        }
         MobEffectInstance corrosion = activeEffectInstance(hurtEntity, ModEffects.CORROSION.get());
         if (corrosion != null && event.getAmount() > 0.0f) {
             int stacks = corrosion.getAmplifier() + 1;
@@ -414,11 +478,26 @@ public class CommonEvents {
             event.setAmount(UndeadStateManager.handleOutgoingHurt(
                     attacker, hurtEntity, event.getSource(), event.getAmount()));
         }
+        if (event.getAmount() > 0.0f) {
+            SaeedStateManager.ownerFromDamageEntity(source.getEntity())
+                    .filter(attacker -> SaeedStateManager.shouldExecutePassiveTarget(attacker, hurtEntity))
+                    .ifPresent(attacker -> event.setAmount(Math.max(
+                            event.getAmount(), hurtEntity.getHealth() + hurtEntity.getAbsorptionAmount() + 1.0F)));
+        }
+
+        if (hurtEntity instanceof SaeedGuardEntity guard && event.getAmount() > 0.0f) {
+            float adjusted = handleSaeedGuardInheritedDefense(guard, source, event.getAmount());
+            if (adjusted <= 0.0f) {
+                event.setAmount(0.0f);
+                return;
+            }
+            event.setAmount(adjusted);
+        }
 
         if (!(hurtEntity instanceof Player player)) {
             if (event.getAmount() > 0.0f) {
-                ManbaStateManager.addAffectionForDamagedTarget(hurtEntity, event.getSource(), event.getAmount());
-                NoxStateManager.tryApplyDelayedWound(event.getSource(), hurtEntity, event.getAmount());
+                ManbaStateManager.addAffectionForDamagedTarget(hurtEntity, source, event.getAmount());
+                NoxStateManager.tryApplyDelayedWound(source, hurtEntity, event.getAmount());
             }
             return;
         }
@@ -443,7 +522,6 @@ public class CommonEvents {
             return;
         }
 
-        DamageSource source = event.getSource();
         if (suppressesPotionDamage(player, source)) {
             event.setAmount(0.0f);
             return;
@@ -597,6 +675,123 @@ public class CommonEvents {
             NoxStateManager.tryApplyDelayedWound(source, hurtEntity, event.getAmount());
         }
 
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingHurtGhrothDamageFloor(LivingHurtEvent event) {
+        LivingEntity target = event.getEntity();
+        GhrothDamageFloor floor = GHROTH_DAMAGE_FLOORS.get(target.getUUID());
+        if (floor == null) {
+            return;
+        }
+        long now = target.level().getGameTime();
+        if (now > floor.expiresAt()) {
+            GHROTH_DAMAGE_FLOORS.remove(target.getUUID());
+            return;
+        }
+        if (!(damageSourceRootPlayer(event.getSource()) instanceof ServerPlayer attacker)
+                || !floor.attackerId().equals(attacker.getUUID())) {
+            return;
+        }
+        if (event.getAmount() <= 0.0F) {
+            return;
+        }
+        GHROTH_DAMAGE_FLOORS.remove(target.getUUID());
+        if (event.getAmount() < floor.amount()) {
+            event.setAmount(floor.amount());
+        }
+        if (floor.starsBonus() && target.level().getServer() != null) {
+            float starsDamage = event.getAmount();
+            consumeGhrothStarsPendingShot(attacker);
+            target.level().getServer().execute(
+                    () -> GhrothStateManager.handleStarsTaczHit(attacker, target, starsDamage));
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onLivingHurtGhrothNoonDamageCopy(LivingHurtEvent event) {
+        LivingEntity target = event.getEntity();
+        if (target.level().isClientSide || event.getAmount() <= 0.0F || ghrothNoonCopyingDamage) {
+            return;
+        }
+        if (!(damageSourceRootPlayer(event.getSource()) instanceof ServerPlayer attacker)
+                || attacker == target
+                || !GhrothStateManager.isGhroth(attacker)) {
+            return;
+        }
+        if (target instanceof Player targetPlayer && GhrothStateManager.shouldCancelCeasefire(attacker, targetPlayer)) {
+            return;
+        }
+        float damage = event.getAmount();
+        int copies = GhrothStateManager.consumeNoonDamageCopiesForHit(attacker);
+        if (!Float.isFinite(damage) || copies <= 0) {
+            return;
+        }
+        startGhrothNoonDamageCopies(attacker, target, damage, copies);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onPlayerTickGhrothNoonDamageCopies(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {
+            return;
+        }
+        tickGhrothNoonDamageCopyQueue(player);
+    }
+
+    private static void startGhrothNoonDamageCopies(ServerPlayer attacker, LivingEntity target, float damage, int copies) {
+        int remaining = Math.max(0, copies);
+        if (GhrothStateManager.tryMarkNoonDamageCopyTick(attacker)) {
+            applyGhrothNoonDamageCopy(attacker, target, damage);
+            remaining--;
+        }
+        if (remaining > 0) {
+            GHROTH_NOON_PENDING_COPIES
+                    .computeIfAbsent(attacker.getUUID(), ignored -> new LinkedList<>())
+                    .add(new GhrothNoonPendingCopy(target.getId(), damage, remaining));
+        }
+    }
+
+    private static void tickGhrothNoonDamageCopyQueue(ServerPlayer attacker) {
+        LinkedList<GhrothNoonPendingCopy> queue = GHROTH_NOON_PENDING_COPIES.get(attacker.getUUID());
+        if (queue == null) {
+            return;
+        }
+        while (!queue.isEmpty()) {
+            GhrothNoonPendingCopy pending = queue.peek();
+            Entity entity = attacker.level().getEntity(pending.targetId());
+            if (!(entity instanceof LivingEntity target)
+                    || target == attacker
+                    || !target.isAlive()
+                    || target.isSpectator()
+                    || (target instanceof Player targetPlayer && GhrothStateManager.shouldCancelCeasefire(attacker, targetPlayer))) {
+                queue.poll();
+                continue;
+            }
+            if (!GhrothStateManager.tryMarkNoonDamageCopyTick(attacker)) {
+                return;
+            }
+            applyGhrothNoonDamageCopy(attacker, target, pending.damage());
+            queue.poll();
+            if (pending.copiesRemaining() > 1) {
+                queue.addFirst(new GhrothNoonPendingCopy(pending.targetId(), pending.damage(), pending.copiesRemaining() - 1));
+            }
+            break;
+        }
+        if (queue.isEmpty()) {
+            GHROTH_NOON_PENDING_COPIES.remove(attacker.getUUID());
+        }
+    }
+
+    private static void applyGhrothNoonDamageCopy(ServerPlayer attacker, LivingEntity target, float damage) {
+        target.invulnerableTime = 0;
+        ghrothNoonCopyingDamage = true;
+        try {
+            SkillDamageHelper.hurtUnscaled(target,
+                    SkillDamageHelper.trueDamage(attacker.serverLevel(), attacker, attacker),
+                    damage);
+        } finally {
+            ghrothNoonCopyingDamage = false;
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -1109,6 +1304,9 @@ public class CommonEvents {
             VlinderStateManager.clearRuntimeOnDeath(serverPlayer);
             TempestStateManager.clearRuntimeOnDeath(serverPlayer);
             LexNinjiaStateManager.clearRuntimeOnDeath(serverPlayer);
+            SaeedStateManager.clearRuntimeOnDeath(serverPlayer);
+            GhrothStateManager.clearRuntimeOnDeath(serverPlayer);
+            GHROTH_NOON_PENDING_COPIES.remove(serverPlayer.getUUID());
             WEBBED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
             TEMPEST_ACTION_LOCKED_SELECTED_SLOTS.remove(serverPlayer.getUUID());
             WEBBED_LOOK_LOCKS.remove(serverPlayer.getUUID());
@@ -1126,12 +1324,19 @@ public class CommonEvents {
                 && wolf.getOwner() instanceof ServerPlayer owner) {
             LexNinjiaStateManager.onHamBeastKill(owner, wolf);
         }
+        if (attacker instanceof SaeedGuardEntity guard) {
+            guard.owner().ifPresent(owner -> SaeedStateManager.awardKill(owner, entity));
+        }
         if (!(attacker instanceof ServerPlayer player) || attacker == event.getEntity()) {
             return;
         }
         HaffCoinManager.awardKill(player, entity);
         UndeadSoulManager.awardKill(player, entity);
         LexNinjiaCurrencyManager.awardKill(player, entity);
+        SaeedStateManager.awardKill(player, entity);
+        if (GhrothStateManager.isGhroth(player)) {
+            GhrothStateManager.recordJusticeKill(player, entity);
+        }
         if (DWolfStateManager.isOverloadActive(player)) {
             DWolfSkills.handleOverloadKill(player);
         }
@@ -1180,8 +1385,13 @@ public class CommonEvents {
             if (UndeadStateManager.consumeRogueExecutionMarker(entity, killer)) {
                 extraCopies += 4;
             }
+            extraCopies += SaeedStateManager.extraLootCopies(killer, entity);
             duplicateLivingDrops(event, extraCopies);
             tryDropHumanoidEquipment(event, entity);
+        } else {
+            SaeedStateManager.ownerFromDamageEntity(event.getSource().getEntity())
+                    .ifPresent(owner -> duplicateLivingDrops(event,
+                            SaeedStateManager.extraLootCopies(owner, entity)));
         }
         if (entity.getType() != EntityType.VINDICATOR) {
             return;
@@ -1293,6 +1503,9 @@ public class CommonEvents {
         tryAwardPremiumCoffeeBeans(player, level, event.getState(), fortune);
         tryDuplicateNewRecruitMiningDrops(player, level, event.getState(), event.getPos());
         tryDuplicateUndeadExplorerMiningDrops(player, level, event.getState(), event.getPos());
+        if (player instanceof ServerPlayer serverPlayer && level instanceof ServerLevel serverLevel) {
+            SaeedStateManager.onOwnerBreakBlock(serverPlayer, serverLevel, event.getPos(), event.getState());
+        }
     }
 
     @SubscribeEvent
@@ -1340,6 +1553,9 @@ public class CommonEvents {
     public static void onOceanBucketUse(PlayerInteractEvent.RightClickBlock event) {
         if (event.getLevel().isClientSide) {
             return;
+        }
+        if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            SaeedStateManager.onOwnerInteractBlock(serverPlayer, event.getPos());
         }
         tryDuplicateUndeadExplorerContainerLoot(event);
         if (!event.getItemStack().is(Items.BUCKET)) {
@@ -1770,7 +1986,9 @@ public class CommonEvents {
         Entity directSource = event.getExplosion().getDirectSourceEntity();
         boolean departmentChargedCreeper =
                 DepartmentOfTransportationStateManager.isDepartmentChargedCreeper(directSource);
-        if (!departmentChargedCreeper) {
+        SaeedGuardEntity hakimRocketOwner = saeedHakimGuardFromRocketExplosion(directSource);
+        boolean hakimRocket = hakimRocketOwner != null;
+        if (!departmentChargedCreeper && !hakimRocket) {
             UluruExplosionHelper.destroyQuickCovers(serverLevel, event.getExplosion().getPosition(), 6.0);
         }
         TempestStateManager.triggerExplosionSpineForNearby(serverLevel,
@@ -1778,6 +1996,10 @@ public class CommonEvents {
         if (departmentChargedCreeper) {
             event.getAffectedBlocks().clear();
             DepartmentOfTransportationStateManager.handleDepartmentChargedCreeperExplosion(serverLevel, directSource);
+        } else if (hakimRocket) {
+            event.getAffectedBlocks().clear();
+            preventSaeedHakimRocketKnockback(serverLevel, hakimRocketOwner,
+                    event.getExplosion().getPosition(), event.getAffectedEntities());
         }
         for (BlockPos pos : event.getAffectedBlocks()) {
             if (serverLevel.getBlockState(pos).is(ModBlocks.QUICK_COVER.get())) {
@@ -1798,9 +2020,54 @@ public class CommonEvents {
         }
     }
 
+    private static SaeedGuardEntity saeedHakimGuardFromRocketExplosion(Entity directSource) {
+        if (directSource instanceof SaeedGuardEntity guard && guard.guardType() == SaeedGuardType.HAKIM) {
+            return guard;
+        }
+        if (directSource instanceof Projectile projectile
+                && projectile.getOwner() instanceof SaeedGuardEntity guard
+                && guard.guardType() == SaeedGuardType.HAKIM) {
+            return guard;
+        }
+        return null;
+    }
+
+    private static void preventSaeedHakimRocketKnockback(ServerLevel level, SaeedGuardEntity owner, Vec3 center,
+                                                         List<Entity> affectedEntities) {
+        affectedEntities.removeIf(entity -> {
+            if (!(entity instanceof ServerPlayer || entity instanceof SaeedGuardEntity)) {
+                return false;
+            }
+            if (!(entity instanceof LivingEntity living) || !living.isAlive()) {
+                return true;
+            }
+            Vec3 entityCenter = living.position().add(0.0D, living.getBbHeight() * 0.5D, 0.0D);
+            double distance = entityCenter.distanceTo(center);
+            if (distance <= SAEED_HAKIM_ROCKET_DAMAGE_RADIUS
+                    && UluruExplosionHelper.hasExplosionLineOfSight(level, center, living)) {
+                float damage = SAEED_HAKIM_ROCKET_DAMAGE * Math.max(0.0F, 1.0F - (float) distance * 0.25F);
+                if (damage > 0.0F) {
+                    living.invulnerableTime = 0;
+                    SkillDamageHelper.hurt(living, SkillDamageHelper.uluruMissile(level, owner, owner), owner, damage);
+                }
+            }
+            living.setDeltaMovement(Vec3.ZERO);
+            living.hurtMarked = true;
+            return true;
+        });
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onAnyForgeEvent(Event event) {
         String eventName = event.getClass().getName();
+        if (TACZ_ATTACHMENT_PROPERTY_EVENT.equals(eventName)) {
+            handleGhrothAttachmentProperty(event);
+            return;
+        }
+        if (TACZ_ENTITY_HURT_BY_GUN_PRE_EVENT.equals(eventName)) {
+            handleGhrothTaczPreDamage(event);
+            return;
+        }
         if (TACZ_GUN_RELOAD_EVENT.equals(eventName)) {
             recordMorseTaczAction(event);
             if (cancelLexNinjiaTaczAction(event) || cancelUndeadTaczAction(event) || cancelDownedTaczAction(event)) {
@@ -1824,6 +2091,9 @@ public class CommonEvents {
                 return;
             }
             snapshotMhsTaczAmmo(eventName, event);
+            if (TACZ_GUN_FIRE_EVENT.equals(eventName)) {
+                handleGhrothStarsGunFire(event);
+            }
         }
 
         if (!TACZ_AMMO_HIT_BLOCK_EVENT.equals(eventName)) {
@@ -1856,6 +2126,384 @@ public class CommonEvents {
         }
     }
 
+
+    private static void handleGhrothTaczPreDamage(Event event) {
+        try {
+            Object attackerObject = event.getClass().getMethod("getAttacker").invoke(event);
+            Object hurtObject = event.getClass().getMethod("getHurtEntity").invoke(event);
+            if (!(attackerObject instanceof ServerPlayer attacker)
+                    || !GhrothStateManager.isGhroth(attacker)
+                    || !(hurtObject instanceof LivingEntity target)) {
+                return;
+            }
+            if (target instanceof Player targetPlayer && GhrothStateManager.shouldCancelCeasefire(attacker, targetPlayer)) {
+                if (event.isCancelable()) {
+                    event.setCanceled(true);
+                }
+                return;
+            }
+            ItemStack gun = attacker.getMainHandItem();
+            if (!isTaczGunStack(gun)) {
+                return;
+            }
+            ResourceLocation gunId = null;
+            Object gunIdObject = event.getClass().getMethod("getGunId").invoke(event);
+            if (gunIdObject instanceof ResourceLocation resourceLocation) {
+                gunId = resourceLocation;
+            }
+            float baseAmount = reflectedFloat(event, "getBaseAmount", 0.0F);
+            float headshotMultiplier = reflectedFloat(event, "getHeadshotMultiplier", 1.0F);
+            boolean headshot = reflectedBoolean(event, "isHeadShot", false);
+            double newBaseAmountValue = baseAmount * GhrothTaczEnhancement.levelDamageMultiplier(attacker);
+            if (GhrothTaczEnhancement.isEnhancedGun(gun)) {
+                newBaseAmountValue = Math.max(newBaseAmountValue,
+                        GhrothTaczEnhancement.estimatedShotDamage(attacker, gun, gunId));
+            }
+            float newBaseAmount = GhrothTaczEnhancement.clampEnhancedDamage(newBaseAmountValue);
+            float newHeadshotMultiplier = GhrothTaczEnhancement.headshotMultiplier(headshotMultiplier, gun, gunId);
+            event.getClass().getMethod("setBaseAmount", float.class).invoke(event, newBaseAmount);
+            event.getClass().getMethod("setHeadshotMultiplier", float.class).invoke(event, newHeadshotMultiplier);
+            if (GhrothTaczEnhancement.isEnhancedGun(gun)) {
+                replaceGhrothTaczDamageSources(event, attacker);
+            }
+            float floor = headshot ? newBaseAmount * newHeadshotMultiplier : newBaseAmount;
+            recordGhrothDamageFloor(target, attacker, floor, GhrothStateManager.isStarsActive(attacker));
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // TaCZ event internals differ between versions; Ghroth falls back to LivingHurt handling.
+        }
+    }
+
+    private static void handleGhrothAttachmentProperty(Event event) {
+        try {
+            Object gunObject = event.getClass().getMethod("getGunItem").invoke(event);
+            if (!(gunObject instanceof ItemStack gun)) {
+                return;
+            }
+            boolean enhancedGun = GhrothTaczEnhancement.isEnhancedGun(gun);
+            int enhancedAttachmentCount = GhrothTaczEnhancement.enhancedAttachmentCountInstalled(gun);
+            if (!enhancedGun && enhancedAttachmentCount <= 0) {
+                return;
+            }
+            Object cache = event.getClass().getMethod("getCacheProperty").invoke(event);
+            if (cache == null) {
+                return;
+            }
+            if (enhancedGun) {
+                ResourceLocation gunId = GhrothTaczEnhancement.gunId(gun).orElse(null);
+                multiplyDamageCache(cache, GhrothTaczEnhancement.enhancedGunDamageMultiplier(gun, gunId));
+                multiplyFloatCache(cache, "HEADSHOT_MULTIPLIER",
+                        (float) GhrothTaczEnhancement.enhancedHeadshotMultiplier(gun, gunId));
+                multiplyFloatCache(cache, "EFFECTIVE_RANGE", 2.0F);
+                multiplyFloatCache(cache, "AMMO_SPEED", 2.0F);
+                addFloatCache(cache, "ARMOR_IGNORE", 1.0F);
+                multiplyIntegerCache(cache, "ROUNDS_PER_MINUTE", 2.0D);
+                multiplyIntegerCache(cache, "PIERCE", 2.0D);
+                zeroFloatCache(cache, "ADS_TIME");
+                zeroFloatCache(cache, "WEIGHT");
+                zeroInaccuracyMapCache(cache, "INACCURACY");
+                zeroInaccuracyMapCache(cache, "AIM_INACCURACY");
+                maximizeRecoilControlCache(cache);
+            }
+            if (enhancedAttachmentCount > 0) {
+                double multiplier = GhrothTaczEnhancement.enhancedAttachmentPropertyMultiplier(enhancedAttachmentCount);
+                boostPositiveDamageCache(cache, multiplier);
+                boostPositiveFloatCache(cache, "HEADSHOT_MULTIPLIER", multiplier, 1.0F, 1_000_000.0F);
+                boostPositiveFloatCache(cache, "EFFECTIVE_RANGE", multiplier, 1.0F, 1_000_000.0F);
+                boostPositiveFloatCache(cache, "ARMOR_IGNORE", multiplier, 1.0F, 100.0F);
+                boostPositiveIntegerCache(cache, "ROUNDS_PER_MINUTE", multiplier, 1, 1_000_000);
+                boostPositiveIntegerCache(cache, "PIERCE", multiplier, 1, 1_000_000);
+                zeroFloatCache(cache, "ADS_TIME");
+                zeroFloatCache(cache, "WEIGHT");
+                zeroInaccuracyMapCache(cache, "INACCURACY");
+                zeroInaccuracyMapCache(cache, "AIM_INACCURACY");
+                maximizeRecoilControlCache(cache);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // TaCZ is optional; changed property internals should not break the mod.
+        }
+    }
+
+    private static void multiplyDamageCache(Object cache, double multiplier) throws ReflectiveOperationException {
+        Object property = gunProperty("DAMAGE");
+        Object value = cacheGet(cache, property);
+        if (!(value instanceof Iterable<?> pairs)) {
+            return;
+        }
+        Class<?> pairClass = Class.forName("com.tacz.guns.resource.pojo.data.gun.ExtraDamage$DistanceDamagePair");
+        Method getDistance = pairClass.getMethod("getDistance");
+        Method getDamage = pairClass.getMethod("getDamage");
+        LinkedList<Object> adjusted = new LinkedList<>();
+        for (Object pair : pairs) {
+            if (pair == null || !pairClass.isAssignableFrom(pair.getClass())) {
+                continue;
+            }
+            Object distanceValue = getDistance.invoke(pair);
+            Object damageValue = getDamage.invoke(pair);
+            if (!(distanceValue instanceof Number distance) || !(damageValue instanceof Number damage)) {
+                continue;
+            }
+            adjusted.add(pairClass.getConstructor(float.class, float.class).newInstance(
+                    distance.floatValue(),
+                    GhrothTaczEnhancement.clampEnhancedDamage(damage.doubleValue() * multiplier)
+            ));
+        }
+        if (!adjusted.isEmpty()) {
+            cacheSet(cache, property, adjusted);
+        }
+    }
+
+    private static void multiplyFloatCache(Object cache, String propertyName, float multiplier) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (value instanceof Number number) {
+            cacheSet(cache, property, number.floatValue() * multiplier);
+        }
+    }
+
+    private static void boostPositiveDamageCache(Object cache, double multiplier) throws ReflectiveOperationException {
+        Object property = gunProperty("DAMAGE");
+        Object value = cacheGet(cache, property);
+        if (!(value instanceof Iterable<?> pairs)) {
+            return;
+        }
+        Class<?> pairClass = Class.forName("com.tacz.guns.resource.pojo.data.gun.ExtraDamage$DistanceDamagePair");
+        Method getDistance = pairClass.getMethod("getDistance");
+        Method getDamage = pairClass.getMethod("getDamage");
+        LinkedList<Object> adjusted = new LinkedList<>();
+        for (Object pair : pairs) {
+            if (pair == null || !pairClass.isAssignableFrom(pair.getClass())) {
+                continue;
+            }
+            Object distanceValue = getDistance.invoke(pair);
+            Object damageValue = getDamage.invoke(pair);
+            if (!(distanceValue instanceof Number distance) || !(damageValue instanceof Number damage)) {
+                continue;
+            }
+            adjusted.add(pairClass.getConstructor(float.class, float.class).newInstance(
+                    distance.floatValue(),
+                    (float) positiveBoostValue(damage.doubleValue(), multiplier, 1.0D,
+                            GhrothTaczEnhancement.ENHANCED_DAMAGE_LIMIT)
+            ));
+        }
+        if (!adjusted.isEmpty()) {
+            cacheSet(cache, property, adjusted);
+        }
+    }
+
+    private static void boostPositiveFloatCache(Object cache, String propertyName, double multiplier,
+                                                float fallbackValue, float maxValue) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (value instanceof Number number) {
+            cacheSet(cache, property, (float) positiveBoostValue(number.doubleValue(), multiplier, fallbackValue, maxValue));
+        }
+    }
+
+    private static void boostPositiveIntegerCache(Object cache, String propertyName, double multiplier,
+                                                  int fallbackValue, int maxValue) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (value instanceof Number number) {
+            double boosted = positiveBoostValue(number.doubleValue(), multiplier, fallbackValue, maxValue);
+            cacheSet(cache, property, Math.max(fallbackValue, (int) Math.min(maxValue, Math.round(boosted))));
+        }
+    }
+
+    private static double positiveBoostValue(double value, double multiplier, double fallbackValue, double maxValue) {
+        double base = value > 0.0D && Double.isFinite(value) ? value : Math.max(fallbackValue, Math.abs(value));
+        if (!Double.isFinite(base) || base <= 0.0D) {
+            base = fallbackValue;
+        }
+        double boosted = base * Math.max(1.0D, multiplier);
+        if (!Double.isFinite(boosted)) {
+            boosted = maxValue;
+        }
+        return Math.max(0.0D, Math.min(maxValue, boosted));
+    }
+
+    private static void addFloatCache(Object cache, String propertyName, float addend) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (value instanceof Number number) {
+            cacheSet(cache, property, number.floatValue() + addend);
+        }
+    }
+
+    private static void multiplyIntegerCache(Object cache, String propertyName, double multiplier) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (value instanceof Number number) {
+            cacheSet(cache, property, Math.max(0, (int) Math.round(number.doubleValue() * multiplier)));
+        }
+    }
+
+    private static void zeroFloatCache(Object cache, String propertyName) throws ReflectiveOperationException {
+        cacheSet(cache, gunProperty(propertyName), 0.0F);
+    }
+
+    private static void zeroInaccuracyMapCache(Object cache, String propertyName) throws ReflectiveOperationException {
+        Object property = gunProperty(propertyName);
+        Object value = cacheGet(cache, property);
+        if (!(value instanceof Map<?, ?> map)) {
+            return;
+        }
+        Map<Object, Float> zeroed = new HashMap<>();
+        for (Object key : map.keySet()) {
+            zeroed.put(key, 0.0F);
+        }
+        cacheSet(cache, property, zeroed);
+    }
+
+    private static void maximizeRecoilControlCache(Object cache) throws ReflectiveOperationException {
+        try {
+            Object property = gunProperty("RECOIL");
+            Object current = cacheGet(cache, property);
+            float pitchDefault = recoilDefaultValue(current, true);
+            float yawDefault = recoilDefaultValue(current, false);
+            List<Object> pitchModifiers = new ArrayList<>();
+            List<Object> yawModifiers = new ArrayList<>();
+            pitchModifiers.add(taczMultiplierModifier(0.0D));
+            yawModifiers.add(taczMultiplierModifier(0.0D));
+            Object pair = Class.forName("com.tacz.guns.api.modifier.ParameterizedCachePair")
+                    .getMethod("of", List.class, List.class, Object.class, Object.class)
+                    .invoke(null, pitchModifiers, yawModifiers, pitchDefault, yawDefault);
+            cacheSet(cache, property, pair);
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // Recoil cache type is version-sensitive; other property boosts remain valid.
+        }
+    }
+
+    private static float recoilDefaultValue(Object recoilPair, boolean pitch) throws ReflectiveOperationException {
+        if (recoilPair == null) {
+            return 0.0F;
+        }
+        Object parameterizedCache = recoilPair.getClass().getMethod(pitch ? "left" : "right").invoke(recoilPair);
+        Object value = parameterizedCache.getClass().getMethod("getDefaultValue").invoke(parameterizedCache);
+        return value instanceof Number number ? number.floatValue() : 0.0F;
+    }
+
+    private static Object taczMultiplierModifier(double multiplier) throws ReflectiveOperationException {
+        Object modifier = Class.forName("com.tacz.guns.resource.pojo.data.attachment.Modifier")
+                .getConstructor()
+                .newInstance();
+        Field multiplierField = modifier.getClass().getDeclaredField("multiplier");
+        multiplierField.setAccessible(true);
+        multiplierField.setDouble(modifier, multiplier);
+        return modifier;
+    }
+
+    private static Object gunProperty(String name) throws ReflectiveOperationException {
+        return Class.forName("com.tacz.guns.api.GunProperties").getField(name).get(null);
+    }
+
+    private static Object cacheGet(Object cache, Object property) throws ReflectiveOperationException {
+        Class<?> gunPropertyClass = Class.forName("com.tacz.guns.api.GunProperty");
+        return cache.getClass().getMethod("getCache", gunPropertyClass).invoke(cache, property);
+    }
+
+    private static void cacheSet(Object cache, Object property, Object value) throws ReflectiveOperationException {
+        Class<?> gunPropertyClass = Class.forName("com.tacz.guns.api.GunProperty");
+        cache.getClass().getMethod("setCache", gunPropertyClass, Object.class).invoke(cache, property, value);
+    }
+
+    private static void replaceGhrothTaczDamageSources(Event event, ServerPlayer attacker) {
+        try {
+            Object bulletObject = event.getClass().getMethod("getBullet").invoke(event);
+            Entity bullet = bulletObject instanceof Entity entity ? entity : attacker;
+            DamageSource trueSource = SkillDamageHelper.trueDamage(attacker.serverLevel(), bullet, attacker);
+            Class<?> partClass = Class.forName("com.tacz.guns.api.event.common.GunDamageSourcePart");
+            Method setDamageSource = event.getClass().getMethod("setDamageSource", partClass, DamageSource.class);
+            for (Object part : partClass.getEnumConstants()) {
+                setDamageSource.invoke(event, part, trueSource);
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // DamageSource replacement is best-effort; base damage and floor compensation still apply.
+        }
+    }
+
+    private static void recordGhrothDamageFloor(LivingEntity target, ServerPlayer attacker, float amount, boolean starsBonus) {
+        if (amount <= 0.0F || !Float.isFinite(amount)) {
+            return;
+        }
+        long expiresAt = target.level().getGameTime() + 2L;
+        GHROTH_DAMAGE_FLOORS.put(target.getUUID(),
+                new GhrothDamageFloor(attacker.getUUID(), amount, expiresAt, starsBonus));
+    }
+
+    private static void handleGhrothStarsGunFire(Event event) {
+        LivingEntity shooter = taczEventEntity(event);
+        if (!(shooter instanceof ServerPlayer attacker)
+                || !GhrothStateManager.isGhroth(attacker)
+                || !GhrothStateManager.isStarsActive(attacker)) {
+            return;
+        }
+        ItemStack gun = taczEventGunItem(event);
+        if (!isTaczGunStack(gun)) {
+            return;
+        }
+        Optional<LivingEntity> target = GhrothStateManager.findStarsAimTarget(attacker);
+        if (target.isEmpty()) {
+            return;
+        }
+        float damage = GhrothTaczEnhancement.estimatedShotDamage(attacker, gun);
+        if (damage <= 0.0F || !Float.isFinite(damage)) {
+            return;
+        }
+        GhrothStarsPendingShot shot = new GhrothStarsPendingShot(
+                target.get().getId(),
+                damage,
+                attacker.level().getGameTime() + 4L);
+        GHROTH_STARS_PENDING_SHOTS
+                .computeIfAbsent(attacker.getUUID(), ignored -> new LinkedList<>())
+                .add(shot);
+        attacker.serverLevel().getServer().tell(new TickTask(attacker.serverLevel().getServer().getTickCount() + 1,
+                () -> resolveGhrothStarsPendingShot(attacker, shot)));
+    }
+
+    private static void consumeGhrothStarsPendingShot(ServerPlayer attacker) {
+        LinkedList<GhrothStarsPendingShot> shots = GHROTH_STARS_PENDING_SHOTS.get(attacker.getUUID());
+        if (shots == null) {
+            return;
+        }
+        shots.poll();
+        if (shots.isEmpty()) {
+            GHROTH_STARS_PENDING_SHOTS.remove(attacker.getUUID());
+        }
+    }
+
+    private static void resolveGhrothStarsPendingShot(ServerPlayer attacker, GhrothStarsPendingShot shot) {
+        if (!removeGhrothStarsPendingShot(attacker.getUUID(), shot)) {
+            return;
+        }
+        if (!attacker.isAlive() || attacker.level().getGameTime() > shot.expiresAt()) {
+            return;
+        }
+        Entity targetEntity = attacker.level().getEntity(shot.targetId());
+        if (targetEntity instanceof LivingEntity target) {
+            GhrothStateManager.handleStarsGuaranteedShot(attacker, target, shot.damage());
+        }
+    }
+
+    private static boolean removeGhrothStarsPendingShot(UUID attackerId, GhrothStarsPendingShot shot) {
+        LinkedList<GhrothStarsPendingShot> shots = GHROTH_STARS_PENDING_SHOTS.get(attackerId);
+        if (shots == null || !shots.remove(shot)) {
+            return false;
+        }
+        if (shots.isEmpty()) {
+            GHROTH_STARS_PENDING_SHOTS.remove(attackerId);
+        }
+        return true;
+    }
+
+    private static float reflectedFloat(Event event, String methodName, float fallback) throws ReflectiveOperationException {
+        Object value = event.getClass().getMethod(methodName).invoke(event);
+        return value instanceof Number number ? number.floatValue() : fallback;
+    }
+
+    private static boolean reflectedBoolean(Event event, String methodName, boolean fallback) throws ReflectiveOperationException {
+        Object value = event.getClass().getMethod(methodName).invoke(event);
+        return value instanceof Boolean bool ? bool : fallback;
+    }
 
     private static void accelerateTaczAdrenalineTimers(Player player) {
         TaczSpeedMultipliers multipliers = taczSpeedMultipliers(player);
@@ -1904,10 +2552,15 @@ public class CommonEvents {
     private static TaczSpeedMultipliers taczSpeedMultipliers(LivingEntity entity) {
         double adrenaline = ToxikStateManager.adrenalineSpeedMultiplier(entity);
         double equipment = equipmentTaczAssaultMultiplier(entity);
+        double ghrothFireRate = GhrothTaczEnhancement.fireRateMultiplier(entity);
+        double ghrothReload = GhrothTaczEnhancement.reloadMultiplier(entity);
+        double ghrothAim = GhrothTaczEnhancement.aimMultiplier(entity);
+        double ghrothBolt = GhrothTaczEnhancement.boltMultiplier(entity);
         return new TaczSpeedMultipliers(
-                adrenaline * equipment * ModItemEffectHelper.medicineTaczFireRateMultiplier(entity),
-                adrenaline * ModItemEffectHelper.medicineTaczReloadMultiplier(entity),
-                adrenaline * equipment * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(entity),
+                adrenaline * equipment * ghrothFireRate * ModItemEffectHelper.medicineTaczFireRateMultiplier(entity),
+                adrenaline * ghrothReload * ModItemEffectHelper.medicineTaczReloadMultiplier(entity),
+                adrenaline * equipment * ghrothAim * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(entity),
+                adrenaline * ghrothBolt,
                 ModItemEffectHelper.medicineTaczAimPenaltyMultiplier(entity)
         );
     }
@@ -1920,17 +2573,18 @@ public class CommonEvents {
             long fireExtraMillis = extraTaczMillis(multipliers.fireRate());
             long reloadExtraMillis = extraTaczMillis(multipliers.reload());
             long aimExtraMillis = extraTaczMillis(multipliers.aim());
+            long boltExtraMillis = extraTaczMillis(multipliers.bolt());
             long aimPenaltyMillis = extraTaczMillis(multipliers.aimPenalty());
             // 射速：TaCZ 用 shootTimestamp 计算冷却，时间戳往过去推等价于冷却更快结束。
             shiftLongFieldIfNonNegative(dataHolder, "shootTimestamp", -fireExtraMillis);
             shiftLongFieldIfNonNegative(dataHolder, "lastShootTimestamp", -fireExtraMillis);
-            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, reloadExtraMillis));
+            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, Math.max(reloadExtraMillis, boltExtraMillis)));
             // 换弹/拉栓/切枪：这些也是时间戳驱动，正在进行时加速推进。
             if (isTaczReloading(dataHolder)) {
                 shiftLongFieldIfNonNegative(dataHolder, "reloadTimestamp", -reloadExtraMillis);
             }
             if (booleanField(dataHolder, "isBolting")) {
-                shiftLongFieldIfNonNegative(dataHolder, "boltTimestamp", -reloadExtraMillis);
+                shiftLongFieldIfNonNegative(dataHolder, "boltTimestamp", -boltExtraMillis);
             }
             shiftLongFieldIfNonNegative(dataHolder, "drawTimestamp", -Math.max(0L, reloadExtraMillis / 2L));
             // 开镜：只改时间戳在部分事件顺序下体感不明显，所以额外直接推进 aimingProgress。
@@ -1962,12 +2616,16 @@ public class CommonEvents {
             long fireExtraMillis = extraTaczMillis(multipliers.fireRate());
             long reloadExtraMillis = extraTaczMillis(multipliers.reload());
             long aimExtraMillis = extraTaczMillis(multipliers.aim());
+            long boltExtraMillis = extraTaczMillis(multipliers.bolt());
             long aimPenaltyMillis = extraTaczMillis(multipliers.aimPenalty());
             // 客户端射速判定读取 clientShootTimestamp；服务端读取 shootTimestamp，两边都要推。
             shiftLongFieldIfNonNegative(dataHolder, "clientShootTimestamp", -fireExtraMillis);
             shiftLongFieldIfNonNegative(dataHolder, "clientLastShootTimestamp", -fireExtraMillis);
             // 客户端状态锁会挡住连射/换弹表现，也要同步加速释放。
-            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, reloadExtraMillis));
+            shiftLongFieldIfNonNegative(dataHolder, "lockTimestamp", -Math.max(fireExtraMillis, Math.max(reloadExtraMillis, boltExtraMillis)));
+            if (booleanField(dataHolder, "isBolting")) {
+                shiftLongFieldIfNonNegative(dataHolder, "boltTimestamp", -boltExtraMillis);
+            }
             // 开镜表现读取 clientAimingProgress。参考牧羊人“周期性打断开镜”的反向思路，
             // 这里直接推进进度，避免只改 timestamp 但视觉仍然慢。
             if (booleanField(dataHolder, "clientIsAiming")) {
@@ -2003,13 +2661,22 @@ public class CommonEvents {
         return multiplier <= 1.0001D ? 0.0F : (float) Math.min(0.8D, 0.08D * (multiplier - 1.0D));
     }
 
-    private record TaczSpeedMultipliers(double fireRate, double reload, double aim, double aimPenalty) {
+    private record TaczSpeedMultipliers(double fireRate, double reload, double aim, double bolt, double aimPenalty) {
         boolean hasChange() {
-            return fireRate > 1.0001D || reload > 1.0001D || aim > 1.0001D || aimPenalty > 1.0001D;
+            return fireRate > 1.0001D || reload > 1.0001D || aim > 1.0001D || bolt > 1.0001D || aimPenalty > 1.0001D;
         }
     }
 
     private record TaczAmmoSnapshot(String gunId, int ammoCount, boolean bulletInBarrel, long expiresAt) {
+    }
+
+    private record GhrothDamageFloor(UUID attackerId, float amount, long expiresAt, boolean starsBonus) {
+    }
+
+    private record GhrothStarsPendingShot(int targetId, float damage, long expiresAt) {
+    }
+
+    private record GhrothNoonPendingCopy(int targetId, float damage, int copiesRemaining) {
     }
 
     private static void shiftLongFieldIfNonNegative(Object target, String fieldName, long delta) throws ReflectiveOperationException {
@@ -2595,6 +3262,53 @@ public class CommonEvents {
         return adjusted;
     }
 
+    private static float handleSaeedGuardInheritedDefense(SaeedGuardEntity guard, DamageSource source, float amount) {
+        Optional<ServerPlayer> owner = guard.owner();
+        if (owner.isEmpty() || isEquipmentBypassDamage(source)) {
+            return amount;
+        }
+
+        ServerPlayer player = owner.get();
+        ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        Profile chestProfile = DfsEquipmentItem.profile(chest);
+        Profile headProfile = DfsEquipmentItem.profile(head);
+        if (chestProfile == null && headProfile == null) {
+            return amount;
+        }
+
+        if (tryRedOwlMaskDodge(player, source, headProfile)) {
+            return 0.0F;
+        }
+
+        if (isMhsFuryActive(player)) {
+            amount *= 0.05F;
+            if (amount <= 0.0F) {
+                return 0.0F;
+            }
+        }
+
+        boolean chestCovered = chestProfile != null && isEquipmentCoveredHit(guard, source, chestProfile);
+        boolean headCovered = headProfile != null && isEquipmentCoveredHit(guard, source, headProfile);
+        if (!chestCovered && !headCovered) {
+            return amount;
+        }
+
+        float adjusted = applyEquipmentPassiveReductions(player, source, amount, chestProfile, chestCovered,
+                headProfile, headCovered);
+        if (adjusted <= 0.0F) {
+            return 0.0F;
+        }
+
+        if (headCovered) {
+            adjusted = absorbWithEquipment(player, head, headProfile, adjusted);
+        }
+        if (chestCovered) {
+            adjusted = absorbWithEquipment(player, chest, chestProfile, adjusted);
+        }
+        return Math.max(0.0F, adjusted);
+    }
+
     private static boolean tryEquipmentHurtTriggers(ServerPlayer player, DamageSource source, float amount,
                                                     ItemStack chest, Profile chestProfile, boolean chestCovered,
                                                     ItemStack head, Profile headProfile, boolean headCovered) {
@@ -2716,10 +3430,14 @@ public class CommonEvents {
     }
 
     private static float absorbWithEquipment(ServerPlayer player, ItemStack stack, Profile profile, float amount) {
-        if (amount <= 0.0F || stack.isEmpty() || !stack.isDamageableItem()) {
+        if (amount <= 0.0F || stack.isEmpty()) {
             return amount;
         }
-        boolean noDurabilityLoss = profile.ability() == SpecialAbility.NO_DURABILITY_LOSS;
+        boolean noDurabilityLoss = profile.ability() == SpecialAbility.NO_DURABILITY_LOSS
+                || stack.hasTag() && stack.getTag().getBoolean("Unbreakable");
+        if (!noDurabilityLoss && !stack.isDamageableItem()) {
+            return amount;
+        }
         boolean broken = DfsEquipmentItem.isBroken(stack);
         boolean gtiOverload = canGtiOverloadEquipment(player, stack);
         if (!noDurabilityLoss && broken && !gtiOverload) {
@@ -2876,6 +3594,7 @@ public class CommonEvents {
             head.getOrCreateTag().remove(DICH9_STACKS);
         }
         tickMhsFury(player, head, headProfile);
+        GhrothTaczEnhancement.tickEnhancedGunRuntime(player);
         updateEquipmentMovementBonus(player, chest, chestProfile, head, headProfile);
         tickKingKongExecution(player);
     }
@@ -3100,7 +3819,8 @@ public class CommonEvents {
             return;
         }
         tag.putInt(EQUIPMENT_STATIONARY_DAMAGE_TICKS, 0);
-        player.hurt(player.damageSources().generic(), Math.max(0.5F, player.getMaxHealth() * 0.01F));
+        player.hurt(player.damageSources().generic(), Math.max(H09_STATIONARY_MIN_SELF_DAMAGE,
+                player.getMaxHealth() * H09_STATIONARY_SELF_DAMAGE_MAX_HEALTH_FRACTION));
     }
 
     private static void tickEnduranceHelmetTransform(ServerPlayer player, ItemStack head) {
@@ -3432,11 +4152,11 @@ public class CommonEvents {
                 || source.is(DamageTypes.INDIRECT_MAGIC);
     }
 
-    private static boolean isEquipmentCoveredHit(Player player, DamageSource source, Profile profile) {
+    private static boolean isEquipmentCoveredHit(LivingEntity entity, DamageSource source, Profile profile) {
         if (profile == null) {
             return false;
         }
-        Double ratio = estimateEquipmentHitHeightRatio(player, source);
+        Double ratio = estimateEquipmentHitHeightRatio(entity, source);
         if (ratio == null) {
             return false;
         }
@@ -3451,26 +4171,26 @@ public class CommonEvents {
         };
     }
 
-    private static Double estimateEquipmentHitHeightRatio(Player player, DamageSource source) {
+    private static Double estimateEquipmentHitHeightRatio(LivingEntity entity, DamageSource source) {
         if (isMeleeDamage(source, source.getEntity())) {
             return 0.55D;
         }
 
         Vec3 impact = source.getSourcePosition();
-        if (impact != null && isNearPlayerHitbox(player, impact, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
-            return playerHeightRatio(player, impact.y);
+        if (impact != null && isNearPlayerHitbox(entity, impact, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
+            return playerHeightRatio(entity, impact.y);
         }
 
         Entity direct = source.getDirectEntity();
-        if (direct instanceof Projectile && direct != player) {
-            Double ratio = estimateProjectileHitHeightRatio(player, source, direct);
+        if (direct instanceof Projectile && direct != entity) {
+            Double ratio = estimateProjectileHitHeightRatio(entity, source, direct);
             if (ratio != null) {
                 return ratio;
             }
         }
 
         if (isLikelyRangedDamage(source)) {
-            Double ratio = estimateRangedAttackerHitHeightRatio(player, source);
+            Double ratio = estimateRangedAttackerHitHeightRatio(entity, source);
             if (ratio != null) {
                 return ratio;
             }
@@ -3478,38 +4198,38 @@ public class CommonEvents {
         return null;
     }
 
-    private static Double estimateProjectileHitHeightRatio(Player player, DamageSource source, Entity projectile) {
+    private static Double estimateProjectileHitHeightRatio(LivingEntity entity, DamageSource source, Entity projectile) {
         Vec3 projectileCenter = projectile.getBoundingBox().getCenter();
-        if (isNearPlayerHitbox(player, projectileCenter, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
-            return playerHeightRatio(player, projectileCenter.y);
+        if (isNearPlayerHitbox(entity, projectileCenter, EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
+            return playerHeightRatio(entity, projectileCenter.y);
         }
 
         Vec3 motion = projectile.getDeltaMovement();
         if (motion.lengthSqr() > 0.000001D) {
-            Double ratio = rayHitHeightRatio(player, projectileCenter.subtract(motion), projectileCenter.add(motion), EQUIPMENT_RANGED_TRACE_INFLATE);
+            Double ratio = rayHitHeightRatio(entity, projectileCenter.subtract(motion), projectileCenter.add(motion), EQUIPMENT_RANGED_TRACE_INFLATE);
             if (ratio != null) {
                 return ratio;
             }
         }
 
         Entity attacker = source.getEntity();
-        if (attacker != null && attacker != player && attacker != projectile) {
-            return rayHitHeightRatio(player, entityAimOrigin(attacker), projectileCenter, EQUIPMENT_RANGED_TRACE_INFLATE);
+        if (attacker != null && attacker != entity && attacker != projectile) {
+            return rayHitHeightRatio(entity, entityAimOrigin(attacker), projectileCenter, EQUIPMENT_RANGED_TRACE_INFLATE);
         }
         return null;
     }
 
-    private static Double estimateRangedAttackerHitHeightRatio(Player player, DamageSource source) {
+    private static Double estimateRangedAttackerHitHeightRatio(LivingEntity entity, DamageSource source) {
         Entity attacker = source.getEntity();
-        if (!(attacker instanceof LivingEntity) || attacker == player) {
+        if (!(attacker instanceof LivingEntity) || attacker == entity) {
             return null;
         }
 
         Vec3 from = entityAimOrigin(attacker);
         Vec3 look = attacker.getLookAngle();
         if (look.lengthSqr() > 0.000001D) {
-            double distance = Math.max(6.0D, from.distanceTo(player.getBoundingBox().getCenter()) + 2.0D);
-            Double ratio = rayHitHeightRatio(player, from, from.add(look.normalize().scale(distance)), EQUIPMENT_RANGED_TRACE_INFLATE);
+            double distance = Math.max(6.0D, from.distanceTo(entity.getBoundingBox().getCenter()) + 2.0D);
+            Double ratio = rayHitHeightRatio(entity, from, from.add(look.normalize().scale(distance)), EQUIPMENT_RANGED_TRACE_INFLATE);
             if (ratio != null) {
                 return ratio;
             }
@@ -3517,32 +4237,32 @@ public class CommonEvents {
 
         Vec3 impact = source.getSourcePosition();
         if (impact != null && impact.distanceToSqr(from) > 0.01D) {
-            return rayHitHeightRatio(player, from, impact, EQUIPMENT_RANGED_TRACE_INFLATE);
+            return rayHitHeightRatio(entity, from, impact, EQUIPMENT_RANGED_TRACE_INFLATE);
         }
         return null;
     }
 
-    private static boolean isNearPlayerHitbox(Player player, Vec3 pos, double inflate) {
-        return player.getBoundingBox().inflate(inflate).contains(pos);
+    private static boolean isNearPlayerHitbox(LivingEntity entity, Vec3 pos, double inflate) {
+        return entity.getBoundingBox().inflate(inflate).contains(pos);
     }
 
-    private static Double rayHitHeightRatio(Player player, Vec3 from, Vec3 target) {
-        return rayHitHeightRatio(player, from, target, 0.08D);
+    private static Double rayHitHeightRatio(LivingEntity entity, Vec3 from, Vec3 target) {
+        return rayHitHeightRatio(entity, from, target, 0.08D);
     }
 
-    private static Double rayHitHeightRatio(Player player, Vec3 from, Vec3 target, double inflate) {
+    private static Double rayHitHeightRatio(LivingEntity entity, Vec3 from, Vec3 target, double inflate) {
         Vec3 delta = target.subtract(from);
         double length = delta.length();
         if (length < 0.0001D) {
             return null;
         }
         Vec3 end = from.add(delta.scale((length + 1.0D) / length));
-        Optional<Vec3> hit = player.getBoundingBox().inflate(inflate).clip(from, end);
-        return hit.map(vec3 -> playerHeightRatio(player, vec3.y)).orElse(null);
+        Optional<Vec3> hit = entity.getBoundingBox().inflate(inflate).clip(from, end);
+        return hit.map(vec3 -> playerHeightRatio(entity, vec3.y)).orElse(null);
     }
 
-    private static double playerHeightRatio(Player player, double y) {
-        return Mth.clamp((y - player.getY()) / Math.max(0.001D, player.getBbHeight()), 0.0D, 1.0D);
+    private static double playerHeightRatio(LivingEntity entity, double y) {
+        return Mth.clamp((y - entity.getY()) / Math.max(0.001D, entity.getBbHeight()), 0.0D, 1.0D);
     }
 
     private static boolean isLikelyHeadDamage(Player player, DamageSource source) {
@@ -3704,6 +4424,19 @@ public class CommonEvents {
         return attacker != null ? attacker : source.getEntity();
     }
 
+    private static Player damageSourceRootPlayer(DamageSource source) {
+        if (source.getEntity() instanceof Player player) {
+            return player;
+        }
+        if (source.getDirectEntity() instanceof Player player) {
+            return player;
+        }
+        if (source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player player) {
+            return player;
+        }
+        return null;
+    }
+
     private static boolean isPlayerSourcedDamage(DamageSource source) {
         if (source.getEntity() instanceof Player || source.getDirectEntity() instanceof Player) {
             return true;
@@ -3803,6 +4536,7 @@ public class CommonEvents {
                 || player.isCreative()
                 || !UndeadStateManager.isUndead(player)
                 || UndeadStateManager.profession(player) != UndeadProfession.EXPLORER
+                || !serverLevel.getGameRules().getBoolean(ModGameRules.DEALT_UNDEAD_EXTRA_DROP)
                 || !serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
             return;
         }

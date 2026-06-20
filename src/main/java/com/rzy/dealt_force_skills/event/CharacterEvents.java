@@ -1,12 +1,15 @@
 package com.rzy.dealt_force_skills.event;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.CharacterAvailability;
+import com.rzy.dealt_force_skills.character.CharacterBanManager;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.CharacterSkinSync;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
@@ -15,6 +18,7 @@ import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
 import com.rzy.dealt_force_skills.character.sineva.SinevaStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
@@ -31,6 +35,7 @@ import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
 import com.rzy.dealt_force_skills.shop.UndeadSoulManager;
 import com.rzy.dealt_force_skills.skill.HeldToolVisualSync;
 import com.rzy.dealt_force_skills.skill.SkillDispatcher;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -63,6 +68,8 @@ public class CharacterEvents {
         VlinderStateManager.copyState(event.getOriginal(), event.getEntity());
         TempestStateManager.copyState(event.getOriginal(), event.getEntity());
         LexNinjiaStateManager.copyState(event.getOriginal(), event.getEntity());
+        SaeedStateManager.copyState(event.getOriginal(), event.getEntity());
+        GhrothStateManager.copyState(event.getOriginal(), event.getEntity());
         HaffCoinManager.copy(event.getOriginal(), event.getEntity());
         UndeadSoulManager.copy(event.getOriginal(), event.getEntity());
         LexNinjiaCurrencyManager.copy(event.getOriginal(), event.getEntity());
@@ -75,6 +82,7 @@ public class CharacterEvents {
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             String selectedCharacterId = CharacterSelectionManager.getSelectedCharacterId(player).orElse("");
+            CharacterAvailability.syncToClient(player);
             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(selectedCharacterId), player);
             CharacterSkinSync.syncAllTo(player);
             CharacterSkinSync.syncToTracking(player);
@@ -82,8 +90,17 @@ public class CharacterEvents {
             UndeadSoulManager.sync(player);
             LexNinjiaCurrencyManager.sync(player);
 
-            CharacterSelectionManager.getSelectedCharacter(player)
-                    .ifPresent(character -> SkillDispatcher.onCharacterSelected(player, character));
+            CharacterSelectionManager.getSelectedCharacter(player).ifPresent(character -> {
+                if (player.getServer() != null
+                        && (CharacterBanManager.isServerBanned(player.getServer(), character.id())
+                        || CharacterBanManager.isPlayerBanned(player, character.id()))) {
+                    CharacterSelectionManager.forceReselectionIfSelected(player, character.id(), Component.translatable(
+                            "message.dealt_force_skills.selection.force_reselect",
+                            Component.translatable(character.nameTranslationKey())));
+                    return;
+                }
+                SkillDispatcher.onCharacterSelected(player, character);
+            });
         }
     }
 
@@ -127,6 +144,8 @@ public class CharacterEvents {
             VlinderStateManager.syncToClient(player);
             TempestStateManager.syncToClient(player);
             LexNinjiaStateManager.syncToClient(player);
+            SaeedStateManager.tick(player);
+            GhrothStateManager.syncToClient(player);
             HeldToolVisualSync.sync(player);
         }
     }

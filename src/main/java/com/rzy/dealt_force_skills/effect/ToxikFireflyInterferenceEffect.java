@@ -23,9 +23,9 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
     private static final String SLOW_UUID = "ac9182cc-1ec1-4d09-b286-28fe2424c0c6";
     private static final UUID MAX_HEALTH_MODIFIER_UUID = UUID.fromString("d2b91f85-b6f8-4c63-82b8-ef8b9c89beea");
     private static final String MAX_HEALTH_MODIFIER_NAME = "Toxik firefly temporary max health reduction";
-    private static final double MAX_REDUCTION_RATIO = 0.9999D;
-    private static final double PER_LEVEL_REDUCTION_PER_SECOND = 0.01D;
-    private static final int REDUCTION_INTERVAL_TICKS = 5;
+    private static final double MAX_REDUCTION_RATIO = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("effects.toxikfireflyinterferenceeffect.max_reduction_ratio", 0.9999D);
+    private static final double PER_LEVEL_REDUCTION_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("effects.toxikfireflyinterferenceeffect.per_level_reduction_per_second", 0.01D);
+    private static final int REDUCTION_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("effects.toxikfireflyinterferenceeffect.reduction_interval_ticks", 5);
 
     public ToxikFireflyInterferenceEffect() {
         super(MobEffectCategory.NEUTRAL, 0xA6FF3D);

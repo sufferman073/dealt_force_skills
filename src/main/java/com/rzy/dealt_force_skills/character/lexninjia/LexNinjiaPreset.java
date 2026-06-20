@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record LexNinjiaPreset(String name, List<LexNinjiaComboInput> inputs) {
-    public static final int MAX_NAME_LENGTH = 32;
+    public static final int MAX_NAME_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.lexninjia.lex_ninjia_preset.max_name_length", 32);
 
     public LexNinjiaPreset {
         name = sanitizeName(name);

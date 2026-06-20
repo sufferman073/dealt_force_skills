@@ -1,7 +1,9 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.client.character.ClientLexNinjiaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaInputAction;
@@ -19,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LexNinjiaInputHandler {
-    private static final int LONG_HOLD_TICKS = 10;
+    private static final int LONG_HOLD_TICKS = DealtForceConfig.intValue("client.lex_ninjia_input_handler.long_hold_ticks", 10);
     private static boolean sneakWasDown;
     private static boolean useWasDown;
     private static boolean jumpWasDown;
@@ -34,11 +36,16 @@ public final class LexNinjiaInputHandler {
         return ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.LEX_NINJIA_ID);
     }
 
+    public static boolean ownsSkillKeys() {
+        return ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.LEX_NINJIA_ID);
+    }
+
     public static void tick(Minecraft minecraft) {
-        if (!ClientLexNinjiaHudState.shouldRender() || minecraft.player == null || minecraft.screen != null) {
+        if (!ownsSelectionKey() || minecraft.player == null || minecraft.screen != null) {
             reset();
             return;
         }
+        tickFoundationKeys();
         boolean sneakDown = minecraft.options.keyShift.isDown();
         if (sneakDown && !sneakWasDown) {
             send(LexNinjiaInputAction.SNEAK_PRESS);
@@ -61,6 +68,18 @@ public final class LexNinjiaInputHandler {
         }
         jumpWasDown = jumpDown;
         tickShopKey(minecraft);
+    }
+
+    private static void tickFoundationKeys() {
+        while (KeybindRegister.ACTIVE_SKILL_1 != null && KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_1);
+        }
+        while (KeybindRegister.ACTIVE_SKILL_2 != null && KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+        }
+        while (KeybindRegister.CORE_SKILL != null && KeybindRegister.CORE_SKILL.consumeClick()) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.CORE);
+        }
     }
 
     private static void tickShopKey(Minecraft minecraft) {

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client;
 
+import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.vyron.VyronTool;
 import com.rzy.dealt_force_skills.character.vyron.VyronToolAction;
@@ -23,8 +24,8 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VyronInputHandler {
-    private static final int BOMB_HOLD_EQUIP_TICKS = 8;
-    private static final int BOMB_FIRE_TICKS = 5;
+    private static final int BOMB_HOLD_EQUIP_TICKS = DealtForceConfig.intValue("client.vyron_input_handler.bomb_hold_equip_ticks", 8);
+    private static final int BOMB_FIRE_TICKS = DealtForceConfig.intValue("client.vyron_input_handler.bomb_fire_ticks", 5);
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean sentBombEquip;
@@ -116,7 +117,12 @@ public final class VyronInputHandler {
     @SubscribeEvent
     public static void onComputeFov(ViewportEvent.ComputeFov event) {
         if (ClientVyronHudState.shouldRender() && ClientVyronHudState.dashTicks() > 0) {
-            event.setFOV(event.getFOV() * 1.33D);
+            double maximum = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+                    "client.fov.maximum_degrees", 120.0D);
+            double cappedMaximum = Math.max(1.0D, maximum);
+            if (event.getFOV() > cappedMaximum) {
+                event.setFOV(cappedMaximum);
+            }
         }
     }
 

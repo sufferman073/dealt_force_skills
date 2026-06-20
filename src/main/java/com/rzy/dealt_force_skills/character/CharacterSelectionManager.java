@@ -1,6 +1,10 @@
 package com.rzy.dealt_force_skills.character;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.S2C_OpenCharacterSelection;
+import com.rzy.dealt_force_skills.network.S2C_SyncSelectedCharacter;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -61,6 +65,25 @@ public final class CharacterSelectionManager {
             CharacterSkinSync.syncToTracking(player);
             return character;
         });
+    }
+
+    public static boolean forceReselectionIfSelected(ServerPlayer player, String characterId, Component reason) {
+        Optional<CharacterDefinition> selected = getSelectedCharacter(player);
+        if (selected.isEmpty() || !selected.get().id().equals(characterId)) {
+            return false;
+        }
+
+        CharacterEffectHooks.onCharacterDeselected(player, selected.get());
+        player.getPersistentData().remove(SELECTED_CHARACTER_TAG);
+        grantCharacterReselection(player);
+        CharacterSkinSync.syncToTracking(player);
+        CharacterAvailability.syncToClient(player);
+        NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(""), player);
+        NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(true), player);
+        if (reason != null) {
+            player.displayClientMessage(reason, false);
+        }
+        return true;
     }
 
     public static void copySelectedCharacter(Player original, Player target) {

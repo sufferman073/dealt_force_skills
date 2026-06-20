@@ -34,7 +34,7 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class VyronMagneticBombEntity extends Projectile implements ItemSupplier {
-    private static final double RADIUS = 7.0D;
+    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vyronmagneticbombentity.radius", 7.0D);
     private static final EntityDataAccessor<Boolean> DATA_STUCK =
             SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DATA_NORMAL_X =

@@ -41,12 +41,13 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
             SynchedEntityData.defineId(GizmoSpiderlingEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_DIR_Z =
             SynchedEntityData.defineId(GizmoSpiderlingEntity.class, EntityDataSerializers.FLOAT);
-    private static final int LIFE_TICKS = 15 * 20;
+    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmospiderlingentity.life_ticks", 15 * 20);
     private static final int CRAWL_SOUND_INTERVAL_TICKS = 13;
-    private static final double SPEED = 0.20D;
-    private static final double EXPLOSION_RADIUS = 1.5D;
-    private static final double PLAYER_TARGET_RADIUS = 4.0D;
-    private static final double WALL_CLIMB_MAX_HEIGHT = 7.5D;
+    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.speed", 0.20D);
+    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.explosion_radius", 1.5D);
+    private static final double PLAYER_TARGET_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.player_target_radius", 4.0D);
+    private static final double WALL_CLIMB_MAX_HEIGHT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+            "summons.gizmo_spiderling.wall_climb_max_height", 7.5D);
     private static final DustParticleOptions RED_MARKER = new DustParticleOptions(new Vector3f(1.0f, 0.05f, 0.02f), 1.0f);
 
     private UUID ownerId;
@@ -274,7 +275,7 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
     private void addCorrosion(LivingEntity target) {
         MobEffectInstance existing = target.getEffect(ModEffects.CORROSION.get());
         int amplifier = existing == null ? 0 : existing.getAmplifier() + 1;
-        target.addEffect(new MobEffectInstance(ModEffects.CORROSION.get(), 20 * 20, amplifier, false, true, true));
+        target.addEffect(new MobEffectInstance(ModEffects.CORROSION.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_spiderling_entity.effect.corrosion.0.duration_ticks", 20 * 20), amplifier, false, true, true));
     }
 
     private void revealToNearbyPlayers(ServerLevel level) {
