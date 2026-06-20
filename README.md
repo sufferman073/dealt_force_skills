@@ -1,4 +1,4 @@
-# dealt_force_skills
+# delta_force_skills
 
 A Minecraft Forge mod that adds special-force inspired characters, skills, equipment, and combat mechanics.
 
