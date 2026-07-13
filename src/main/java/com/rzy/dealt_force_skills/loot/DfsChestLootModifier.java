@@ -5,10 +5,13 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
+import com.rzy.dealt_force_skills.item.EternalLoveBlessingItem;
 import com.rzy.dealt_force_skills.registry.ModItems;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModLootModifiers;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
@@ -27,10 +30,16 @@ public class DfsChestLootModifier extends LootModifier {
     public static final Codec<DfsChestLootModifier> CODEC = RecordCodecBuilder.create(instance ->
             codecStart(instance).apply(instance, DfsChestLootModifier::new));
 
-    private static final float SPECIAL_EQUIPMENT_SUPPLY_CHANCE = DealtForceConfig.floatValue("loot.dfs_chest_loot_modifier.special_equipment_supply_chance", 0.03F);
-    private static final float PROGRAMMABLE_PROCESSOR_BASE_CHANCE = DealtForceConfig.floatValue("loot.dfs_chest_loot_modifier.programmable_processor_base_chance", 0.06F);
-    private static final float PROGRAMMABLE_PROCESSOR_LUCK_BONUS = DealtForceConfig.floatValue("loot.dfs_chest_loot_modifier.programmable_processor_luck_bonus", 0.04F);
-
+    private static volatile float SPECIAL_EQUIPMENT_SUPPLY_CHANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPECIAL_EQUIPMENT_SUPPLY_CHANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "loot.dfs_chest_loot_modifier.special_equipment_supply_chance", 0.03F
+   ));
+    private static volatile float PROGRAMMABLE_PROCESSOR_BASE_CHANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PROGRAMMABLE_PROCESSOR_BASE_CHANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "loot.dfs_chest_loot_modifier.programmable_processor_base_chance", 0.06F
+   ));
+    private static volatile float PROGRAMMABLE_PROCESSOR_LUCK_BONUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PROGRAMMABLE_PROCESSOR_LUCK_BONUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "loot.dfs_chest_loot_modifier.programmable_processor_luck_bonus", 0.04F
+   ));
+    private static volatile float ETERNAL_LOVE_BLESSING_CHANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ETERNAL_LOVE_BLESSING_CHANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("loot.dfs_chest_loot_modifier.eternal_love_blessing_chance", 1.0E-4F));
     public DfsChestLootModifier(LootItemCondition[] conditions) {
         super(conditions);
     }
@@ -43,6 +52,9 @@ public class DfsChestLootModifier extends LootModifier {
         }
 
         Entity entity = context.getParamOrNull(LootContextParams.THIS_ENTITY);
+        if (entity instanceof Player player) {
+            HvkTreasureProgress.recordOpenedChestLoot(player);
+        }
         if (entity instanceof Player player && hasGtiEquipment(player)) {
             for (ItemStack stack : new ArrayList<>(generatedLoot)) {
                 if (!stack.isEmpty()) {
@@ -61,10 +73,20 @@ public class DfsChestLootModifier extends LootModifier {
             generatedLoot.add(new ItemStack(ModItems.PROGRAMMABLE_PROCESSOR.get(), 1 + context.getRandom().nextInt(3)));
         }
 
+        if (context.getRandom().nextFloat() < ETERNAL_LOVE_BLESSING_CHANCE) {
+            generatedLoot.add(new ItemStack(ModItems.ETERNAL_LOVE_BLESSING.get()));
+            if (entity instanceof ServerPlayer player) {
+                EternalLoveBlessingItem.playObtainSound(player);
+            }
+        }
+
         return generatedLoot;
     }
 
     private static boolean hasGtiEquipment(Player player) {
+        if (!ModGameRules.areArmorSpecialsEnabled(player)) {
+            return false;
+        }
         DfsEquipmentItem.Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
         if (chest != null && chest.faction() == Faction.GTI) {
             return true;

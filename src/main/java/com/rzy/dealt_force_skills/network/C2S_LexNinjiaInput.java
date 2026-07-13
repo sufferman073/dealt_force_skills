@@ -25,7 +25,7 @@ public record C2S_LexNinjiaInput(LexNinjiaInputAction action) {
     public static void handle(C2S_LexNinjiaInput msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
+            if (player != null && !player.isSpectator()) {
                 LexNinjiaStateManager.handleInput(player, msg.action);
             }
         });

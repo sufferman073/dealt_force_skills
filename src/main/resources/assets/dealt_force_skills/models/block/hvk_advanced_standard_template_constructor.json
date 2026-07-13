@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_front",
+    "down": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_bottom",
+    "up": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_top",
+    "north": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_front",
+    "south": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_back",
+    "west": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_left",
+    "east": "dealt_force_skills:block/hvk_advanced_standard_template_constructor_right"
+  }
+}

@@ -25,7 +25,7 @@ public class C2S_ToxikPullout {
     public static void handle(C2S_ToxikPullout msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
+            if (player != null && !player.isSpectator()) {
                 ToxikStateManager.setFireflyPulloutActive(player, msg.active);
             }
         });

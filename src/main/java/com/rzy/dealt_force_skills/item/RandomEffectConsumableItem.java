@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.item;
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.item.ItemStack;
@@ -55,5 +56,13 @@ public class RandomEffectConsumableItem extends DfsUseItem {
                     false, true, true), player);
         }
         return true;
+    }
+
+    public List<EffectConsumableItem.EffectEntry> blessingPreviewOutcome(RandomSource random) {
+        if (outcomes.isEmpty()) {
+            return List.of();
+        }
+        RandomSource safeRandom = random == null ? RandomSource.create() : random;
+        return outcomes.get(safeRandom.nextInt(outcomes.size()));
     }
 }

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.morse.MorseMarkerType;
 import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
 import com.rzy.dealt_force_skills.character.morse.MorseWorldMarker;
@@ -46,16 +47,16 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, Bl
             SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_FACING_Z =
             SynchedEntityData.defineId(MorseSonarDetectorEntity.class, EntityDataSerializers.FLOAT);
-    public static final double RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morsesonardetectorentity.range", 75.0D);
+    public static volatile double RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morsesonardetectorentity.range", 75.0));
     private static final double HALF_ANGLE_COS = Math.cos(Math.toRadians(
             com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
                     "summons.morse_sonar_detector.half_angle_degrees", 55.0D)));
-    private static final int SCAN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.scan_ticks", 4 * 20);
-    private static final int IDLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.idle_ticks", 6 * 20);
-    private static final int CYCLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.cycle_ticks", SCAN_TICKS + IDLE_TICKS);
-    private static final int TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.total_ticks", SCAN_TICKS * 3 + IDLE_TICKS * 2);
-    private static final int REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.reveal_ticks", 45);
-    private static final int DETECTOR_MARKER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.detector_marker_ticks", 18);
+    private static volatile int SCAN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCAN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.scan_ticks", 80));
+    private static volatile int IDLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("IDLE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.idle_ticks", 120));
+    private static volatile int CYCLE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CYCLE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.cycle_ticks", SCAN_TICKS + IDLE_TICKS));
+    private static volatile int TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TOTAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.total_ticks", SCAN_TICKS * 3 + IDLE_TICKS * 2));
+    private static volatile int REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.reveal_ticks", 45));
+    private static volatile int DETECTOR_MARKER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DETECTOR_MARKER_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morsesonardetectorentity.detector_marker_ticks", 18));
     private static final DustParticleOptions SONAR_DUST = new DustParticleOptions(new Vector3f(0.28f, 0.72f, 1.0f), 1.0f);
     private static final Map<UUID, MorseSonarDetectorEntity> ACTIVE = new HashMap<>();
 
@@ -217,14 +218,20 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, Bl
             if (owner == null || owner == actor || !detector.inCone(actor)) {
                 continue;
             }
+            // Recon must not treat teammates as revealed hostiles.
+            if (!com.rzy.dealt_force_skills.util.PositionRevealHelper.isValidReconTarget(owner, actor)) {
+                continue;
+            }
             if (!ReconRevealThrottle.tryStart(actor, REVEAL_TICKS)) {
                 continue;
             }
-            NetworkHandler.sendToPlayer(new S2C_MorseMarkers(List.of(
-                    new MorseWorldMarker(MorseMarkerType.SONAR_REVEAL, actor.getId(), actor.position(), REVEAL_TICKS)
-            )), owner);
+            com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(owner,
+                    new S2C_MorseMarkers(List.of(
+                            new MorseWorldMarker(MorseMarkerType.SONAR_REVEAL, actor.getId(), actor.position(), REVEAL_TICKS)
+                    )));
             actor.addEffect(new MobEffectInstance(ModEffects.MORSE_SONAR_REVEALED.get(),
                     com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morse_sonar_detector_entity.effect.morse_sonar_revealed.0.duration_ticks", 2 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morse_sonar_detector_entity.effect.morse_sonar_revealed.0.amplifier", 0), false, true, true), owner);
+            DfsAchievements.recordMorseSonarActionReveal(owner, actor);
             owner.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.sonar_action_owner",
                     actor.getDisplayName()), true);
             actor.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.sonar_action_target"), true);
@@ -259,7 +266,8 @@ public class MorseSonarDetectorEntity extends Entity implements ItemSupplier, Bl
                 .map(target -> new MorseWorldMarker(MorseMarkerType.SONAR_REVEAL, target.getId(), target.position(), REVEAL_TICKS))
                 .toList();
         if (!markers.isEmpty()) {
-            NetworkHandler.sendToPlayer(new S2C_MorseMarkers(markers), owner);
+            com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(
+                    owner, new S2C_MorseMarkers(markers));
         }
     }
 

@@ -1,8 +1,15 @@
 package com.rzy.dealt_force_skills;
 
+import com.rzy.dealt_force_skills.config.DealtBossesConfig;
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
+import com.rzy.dealt_force_skills.config.DealtForcePlayerConfig;
+import com.rzy.dealt_force_skills.config.DealtForceShopConfig;
+import com.rzy.dealt_force_skills.config.DealtShopSetConfig;
+import com.rzy.dealt_force_skills.config.GamblerArenaConfig;
+import com.rzy.dealt_force_skills.character.CharacterBranchPackManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
+import com.rzy.dealt_force_skills.entity.BeaconBossEntity;
 import com.rzy.dealt_force_skills.entity.NoxDecoyEntity;
 import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -31,8 +38,18 @@ public class DealtForceSkillsMod {
     public static final String MODID = "dealt_force_skills";
 
     public DealtForceSkillsMod() {
+        this(FMLJavaModLoadingContext.get().getModEventBus());
+    }
+
+    public DealtForceSkillsMod(IEventBus modBus) {
         DealtForceConfig.bootstrap();
-        IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
+        DealtBossesConfig.bootstrap();
+        DealtForcePlayerConfig.bootstrap();
+        DealtForceShopConfig.bootstrap();
+        DealtShopSetConfig.bootstrap();
+        GamblerArenaConfig.bootstrap();
+        CharacterBranchPackManager.bootstrapDefaults();
+        CharacterBranchPackManager.reload();
 
         ModSounds.SOUNDS.register(modBus);
         ModItems.ITEMS.register(modBus);
@@ -49,23 +66,36 @@ public class DealtForceSkillsMod {
         modBus.addListener(this::onCommonSetup);
         modBus.addListener(this::registerEntityAttributes);
         DealtForceConfig.flush();
+        DealtBossesConfig.flush();
+        DealtForcePlayerConfig.flush();
+        DealtForceShopConfig.flush();
+        DealtShopSetConfig.flush();
+        GamblerArenaConfig.flush();
     }
 
     private void onCommonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             ModBrewingRecipes.register();
             DealtForceConfig.populateGameplayDefaults();
+            DealtBossesConfig.populateDefaults();
             ModCharacters.all();
+            CharacterBranchPackManager.reload();
             ElectronicInterferenceManager.populateConfigDefaults();
             DfsShopCatalog.entries();
             GhrothArmoryCatalog.entries();
             UndeadShopEntry.values();
             DealtForceConfig.finishInitialPopulation();
+            DealtBossesConfig.finishInitialPopulation();
+            DealtForcePlayerConfig.finishInitialPopulation();
+            DealtForceShopConfig.finishInitialPopulation();
+            DealtShopSetConfig.flush();
+            GamblerArenaConfig.flush();
         });
     }
 
     private void registerEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.NOX_DECOY.get(), NoxDecoyEntity.createAttributes().build());
         event.put(ModEntities.SAEED_GUARD.get(), SaeedGuardEntity.createAttributes().build());
+        event.put(ModEntities.BEACON_BOSS.get(), BeaconBossEntity.createAttributes().build());
     }
 }

@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
@@ -10,6 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -34,15 +37,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class LunaCompositeGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.default_fuse_ticks", 100);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.radius", 8.0D);
-    private static final double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.wall_bounce_factor", 0.55D);
-    private static final double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.ground_roll_factor", 0.36D);
-    private static final double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.roll_stop_speed_sqr", 0.004D);
-    private static final int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.max_roll_ticks", 12);
-    private static final float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.lunacompositegrenadeentity.armor_damage_share", 0.50f);
-    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.lunacompositegrenadeentity.armor_durability_damage_per_point", 10.0f);
-
+    private static volatile int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.default_fuse_ticks", 100));
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.radius", 8.0));
+    private static volatile double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WALL_BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.wall_bounce_factor", 0.55));
+    private static volatile double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GROUND_ROLL_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.ground_roll_factor", 0.36));
+    private static volatile double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_STOP_SPEED_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunacompositegrenadeentity.roll_stop_speed_sqr", 0.004));
+    private static volatile int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_ROLL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunacompositegrenadeentity.max_roll_ticks", 12));
+    private static volatile float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMOR_DAMAGE_SHARE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.lunacompositegrenadeentity.armor_damage_share", 0.5F));
+    private static volatile float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMOR_DURABILITY_DAMAGE_PER_POINT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "summons.lunacompositegrenadeentity.armor_durability_damage_per_point", 10.0F
+   ));
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
     private int rollingTicks;
     private boolean rolling;
@@ -164,7 +168,8 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
         }
 
         Vec3 bounced = bounce(direction, motion);
-        if (direction != Direction.UP && bounced.lengthSqr() > 0.02D) {
+        if (bounced.lengthSqr() > 0.02D
+                && (direction != Direction.UP || bounced.y > 0.07D)) {
             setDeltaMovement(bounced);
             return;
         }
@@ -179,11 +184,8 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * WALL_BOUNCE_FACTOR, motion.y * 0.75D, motion.z * WALL_BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * WALL_BOUNCE_FACTOR, -motion.y * 0.35D, motion.z * WALL_BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * WALL_BOUNCE_FACTOR, motion.y * 0.75D, -motion.z * WALL_BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, WALL_BOUNCE_FACTOR, 0.35D, 0.75D);
     }
 
     private void settle() {
@@ -199,6 +201,7 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
         }
 
         LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
         RangedSoundHelper.playThrottled(serverLevel, center, ModSounds.LUNA_GRENADE_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.25f, 1.0f, 26.0D, 3, 4.0D);
         serverLevel.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.2D, center.z,
@@ -220,6 +223,9 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
             }
 
             ArmorDamageResult armorResult = damageArmor(target, baseDamage * ARMOR_DAMAGE_SHARE, owner);
+            if (ownerPlayer != null) {
+                DfsAchievements.recordLunaCompositeArmorBreak(ownerPlayer, target, armorResult.brokenPieces);
+            }
             float healthDamage = baseDamage * (1.0f - ARMOR_DAMAGE_SHARE) + armorResult.overflowHealthDamage;
             if (!armorResult.hadDamageableArmor) {
                 healthDamage += baseDamage * ARMOR_DAMAGE_SHARE;
@@ -239,6 +245,8 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
                         0.84f + target.getRandom().nextFloat() * 0.32f);
             }
         }
+        SuperbWarfareCompat.damageVehicles(serverLevel, center, RADIUS,
+                SkillDamageHelper.shepherdFragGrenade(serverLevel, this, owner), this, 1.0F, true);
         discard();
     }
 
@@ -256,13 +264,13 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
             }
         }
         if (slots.isEmpty()) {
-            return new ArmorDamageResult(false, 0.0f);
+            return new ArmorDamageResult(false, 0.0f, 0);
         }
 
         int requestedLoss = Math.max(1, Mth.ceil(armorDamage * ARMOR_DURABILITY_DAMAGE_PER_POINT));
         int overflowLoss = Math.max(0, requestedLoss - totalRemainingDurability);
         int totalLoss = Math.min(requestedLoss, totalRemainingDurability);
-        boolean brokeArmor = false;
+        int brokenPieces = 0;
         int remainingSlots = slots.size();
         for (EquipmentSlot slot : slots) {
             ItemStack stack = target.getItemBySlot(slot);
@@ -279,15 +287,15 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
             totalLoss -= loss;
             remainingSlots--;
             if (damageArmorStack(target, slot, stack, loss)) {
-                brokeArmor = true;
+                brokenPieces++;
             }
         }
 
-        if (brokeArmor && level() instanceof ServerLevel serverLevel) {
+        if (brokenPieces > 0 && level() instanceof ServerLevel serverLevel) {
             playImportantFeedback(serverLevel, target, owner, ModSounds.LUNA_ARMOR_BREAK.get(), 4.0f,
                     0.86f + target.getRandom().nextFloat() * 0.28f);
         }
-        return new ArmorDamageResult(true, overflowLoss / ARMOR_DURABILITY_DAMAGE_PER_POINT);
+        return new ArmorDamageResult(true, overflowLoss / ARMOR_DURABILITY_DAMAGE_PER_POINT, brokenPieces);
     }
 
     private int remainingArmorDurability(ItemStack stack) {
@@ -299,7 +307,7 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
 
     private boolean damageArmorStack(LivingEntity target, EquipmentSlot slot, ItemStack stack, int loss) {
         if (DfsEquipmentItem.profile(stack) != null) {
-            return DfsEquipmentItem.damageWithoutBreaking(stack, loss);
+            return DfsEquipmentItem.damageWithoutBreaking(stack, loss, target);
         }
         int beforeCount = stack.getCount();
         stack.hurtAndBreak(loss, target, broken -> broken.broadcastBreakEvent(slot));
@@ -333,10 +341,12 @@ public class LunaCompositeGrenadeEntity extends Projectile implements ItemSuppli
     private static final class ArmorDamageResult {
         private final boolean hadDamageableArmor;
         private final float overflowHealthDamage;
+        private final int brokenPieces;
 
-        private ArmorDamageResult(boolean hadDamageableArmor, float overflowHealthDamage) {
+        private ArmorDamageResult(boolean hadDamageableArmor, float overflowHealthDamage, int brokenPieces) {
             this.hadDamageableArmor = hadDamageableArmor;
             this.overflowHealthDamage = overflowHealthDamage;
+            this.brokenPieces = brokenPieces;
         }
     }
 }

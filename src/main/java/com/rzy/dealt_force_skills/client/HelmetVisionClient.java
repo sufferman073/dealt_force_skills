@@ -41,17 +41,35 @@ import org.slf4j.Logger;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HelmetVisionClient {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final double THERMAL_HIGHLIGHT_RANGE = DealtForceConfig.doubleValue("client.helmet_vision_client.thermal_highlight_range", 96.0D);
+    private static final RenderLevelStageEvent.Stage HELMET_VISION_RENDER_STAGE = RenderLevelStageEvent.Stage.AFTER_ENTITIES;
+    private static final double MAX_THERMAL_HIGHLIGHT_RANGE = 96.0D;
+    private static final int MAX_THERMAL_HIGHLIGHT_TARGETS = 128;
+    private static final double MAX_THERMAL_BOX_EDGE = 16.0D;
+    private static final double THERMAL_HIGHLIGHT_RANGE = Math.min(MAX_THERMAL_HIGHLIGHT_RANGE,
+            Math.max(0.0D, DealtForceConfig.doubleValue("client.helmet_vision_client.thermal_highlight_range", 96.0D)));
     private static final int HEARING_REVEAL_COLOR = 0xFF7EE8FF;
+    private static final double MAX_HEARING_REVEAL_RANGE = Math.max(0.0D,
+            DealtForceConfig.doubleValue("client.helmet_vision_client.hearing_reveal_max_range", 64.0D));
+    private static final int MAX_HEARING_REVEAL_TARGETS = Math.max(0,
+            DealtForceConfig.intValue("client.helmet_vision_client.hearing_reveal_max_targets", 64));
+    private static final int HEARING_REVEAL_TTL_TICKS = Math.max(1,
+            DealtForceConfig.intValue("client.helmet_vision_client.hearing_reveal_ttl_ticks", 20));
+    private static final double MAX_HEARING_BOX_EDGE = Math.max(0.0D,
+            DealtForceConfig.doubleValue("client.helmet_vision_client.hearing_reveal_max_box_edge", 16.0D));
+    private static final double HEARING_REVEAL_RANGE_PER_BOOST = Math.max(0.0D,
+            DealtForceConfig.doubleValue("client.helmet_vision_client.hearing_reveal_range_per_boost", 100.0D));
     private static final String THERMAL_TEAM_NAME = "dfs_thermal";
     private static final Map<Integer, ThermalHighlightState> THERMAL_RESTORE = new HashMap<>();
+    private static final Map<Integer, HearingRevealState> HEARING_REVEALS = new HashMap<>();
     private static ClientLevel thermalLevel;
+    private static ClientLevel hearingLevel;
 
     private HelmetVisionClient() {
     }
@@ -83,20 +101,29 @@ public final class HelmetVisionClient {
             clearThermalHighlightCache();
             thermalLevel = minecraft.level;
         }
+        if (hearingLevel != minecraft.level) {
+            clearHearingRevealCache();
+            hearingLevel = minecraft.level;
+        }
         tickThermalHighlights(minecraft);
+        tickHearingReveals(minecraft);
     }
 
     @SubscribeEvent
     public static void onClientLogout(ClientPlayerNetworkEvent.LoggingOut event) {
         clearThermalHighlightCache();
+        clearHearingRevealCache();
         thermalLevel = null;
+        hearingLevel = null;
     }
 
     @SubscribeEvent
     public static void onClientLevelUnload(LevelEvent.Unload event) {
         if (event.getLevel() instanceof ClientLevel) {
             clearThermalHighlightCache();
+            clearHearingRevealCache();
             thermalLevel = null;
+            hearingLevel = null;
         }
     }
 
@@ -129,7 +156,7 @@ public final class HelmetVisionClient {
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
+        if (event.getStage() != HELMET_VISION_RENDER_STAGE) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -142,7 +169,8 @@ public final class HelmetVisionClient {
         ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
         DfsEquipmentItem.Profile profile = DfsEquipmentItem.profile(head);
         double hearingRange = hearingRevealRange(head, profile);
-        if (!thermal && hearingRange <= 0.0D) {
+        boolean hearing = hearingRange > 0.0D && !HEARING_REVEALS.isEmpty();
+        if (!thermal && !hearing) {
             return;
         }
 
@@ -151,18 +179,24 @@ public final class HelmetVisionClient {
         Vec3 cameraPos = camera.getPosition();
         MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
         Font font = minecraft.font;
-
         RenderSystem.disableDepthTest();
-        var lineBuffer = buffers.getBuffer(RenderType.lines());
-        if (thermal) {
-            renderThermalEntityBoxes(minecraft, player, poseStack, lineBuffer, cameraPos);
+        try {
+            var lineBuffer = buffers.getBuffer(RenderType.lines());
+            if (thermal) {
+                renderThermalEntityBoxes(minecraft, player, poseStack, lineBuffer, cameraPos);
+            }
+            if (hearing) {
+                renderHearingRevealBoxes(minecraft, player, poseStack, lineBuffer, cameraPos);
+            }
+            buffers.endBatch(RenderType.lines());
+
+            if (hearing) {
+                renderHearingRevealLabels(minecraft, player, poseStack, buffers, font, camera, cameraPos);
+                buffers.endBatch();
+            }
+        } finally {
+            RenderSystem.enableDepthTest();
         }
-        if (hearingRange > 0.0D) {
-            renderHearingRevealMarkers(minecraft, player, profile, hearingRange, poseStack, buffers, font, camera, cameraPos, lineBuffer);
-        }
-        buffers.endBatch(RenderType.lines());
-        buffers.endBatch();
-        RenderSystem.enableDepthTest();
     }
 
     private static void renderScanLines(RenderGuiOverlayEvent.Post event, int tickCount, int width, int height, int color) {
@@ -174,57 +208,231 @@ public final class HelmetVisionClient {
 
     private static void renderThermalEntityBoxes(Minecraft minecraft, LocalPlayer player, PoseStack poseStack,
                                                  VertexConsumer lineBuffer, Vec3 cameraPos) {
+        if (!isFinite(cameraPos)) {
+            return;
+        }
         double rangeSqr = THERMAL_HIGHLIGHT_RANGE * THERMAL_HIGHLIGHT_RANGE;
         Vec3 viewer = player.getEyePosition();
+        if (!isFinite(viewer)) {
+            return;
+        }
+        int rendered = 0;
         for (Entity entity : minecraft.level.entitiesForRendering()) {
+            if (rendered >= MAX_THERMAL_HIGHLIGHT_TARGETS) {
+                break;
+            }
             if (entity == player || !entity.isAlive() || entity.isSpectator()
+                    || !hasFinitePosition(entity)
                     || entity.distanceToSqr(viewer) > rangeSqr
                     || isThermalHiddenTarget(entity)) {
                 continue;
             }
-            AABB box = entity.getBoundingBox().inflate(0.08D)
-                    .move(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-            LevelRenderer.renderLineBox(poseStack, lineBuffer, box, 1.0F, 1.0F, 1.0F, 0.98F);
-        }
-    }
-
-    private static void renderHearingRevealMarkers(Minecraft minecraft, LocalPlayer player,
-                                                   DfsEquipmentItem.Profile profile, double hearingRange,
-                                                   PoseStack poseStack, MultiBufferSource.BufferSource buffers,
-                                                   Font font, Camera camera, Vec3 cameraPos,
-                                                   VertexConsumer lineBuffer) {
-        boolean includePlayers = profile != null && profile.ability() == DfsEquipmentItem.SpecialAbility.HEARING_SHARE;
-        double rangeSqr = hearingRange * hearingRange;
-        for (LivingEntity entity : minecraft.level.getEntitiesOfClass(
-                LivingEntity.class,
-                player.getBoundingBox().inflate(hearingRange),
-                entity -> isHearingRevealTarget(player, entity, includePlayers))) {
-            if (entity.distanceToSqr(player) > rangeSqr) {
+            AABB box = safeThermalRenderBox(entity.getBoundingBox(), cameraPos, 0.08D);
+            if (box == null) {
                 continue;
             }
-            AABB box = entity.getBoundingBox().inflate(0.04D)
-                    .move(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-            LevelRenderer.renderLineBox(poseStack, lineBuffer, box, 0.49F, 0.91F, 1.0F, 0.82F);
-            Vec3 labelPos = entity.position().add(0.0D, entity.getBbHeight() + 0.35D, 0.0D);
-            double distance = labelPos.distanceTo(player.getEyePosition());
-            String text = Component.translatable("hud.dealt_force_skills.equipment.hearing_revealed").getString()
-                    + " " + Math.round(distance) + "m";
-            renderWorldLabel(poseStack, buffers, font, camera, cameraPos, labelPos, text, HEARING_REVEAL_COLOR);
+            LevelRenderer.renderLineBox(poseStack, lineBuffer, box, 1.0F, 1.0F, 1.0F, 0.98F);
+            rendered++;
         }
     }
 
-    private static boolean isHearingRevealTarget(LocalPlayer player, LivingEntity entity, boolean includePlayers) {
+    private static void renderHearingRevealBoxes(Minecraft minecraft, LocalPlayer player,
+                                                 PoseStack poseStack, VertexConsumer lineBuffer, Vec3 cameraPos) {
+        int rendered = 0;
+        for (Integer entityId : HEARING_REVEALS.keySet()) {
+            if (rendered >= MAX_HEARING_REVEAL_TARGETS) {
+                break;
+            }
+            LivingEntity entity = hearingRevealEntity(minecraft, player, entityId);
+            if (entity == null) {
+                continue;
+            }
+            AABB box = safeHearingRenderBox(entity.getBoundingBox(), cameraPos, 0.04D);
+            if (box == null) {
+                continue;
+            }
+            LevelRenderer.renderLineBox(poseStack, lineBuffer, box, 0.49F, 0.91F, 1.0F, 0.82F);
+            rendered++;
+        }
+    }
+
+    private static void renderHearingRevealLabels(Minecraft minecraft, LocalPlayer player,
+                                                  PoseStack poseStack, MultiBufferSource.BufferSource buffers,
+                                                  Font font, Camera camera, Vec3 cameraPos) {
+        String labelPrefix = Component.translatable("hud.dealt_force_skills.equipment.hearing_revealed").getString();
+        int rendered = 0;
+        for (Integer entityId : HEARING_REVEALS.keySet()) {
+            if (rendered >= MAX_HEARING_REVEAL_TARGETS) {
+                break;
+            }
+            LivingEntity entity = hearingRevealEntity(minecraft, player, entityId);
+            if (entity == null || !isFinite(entity.getBbHeight()) || entity.getBbHeight() > MAX_HEARING_BOX_EDGE) {
+                continue;
+            }
+            Vec3 labelPos = entity.position().add(0.0D, entity.getBbHeight() + 0.35D, 0.0D);
+            if (!isFinite(labelPos)) {
+                continue;
+            }
+            double distance = labelPos.distanceTo(player.getEyePosition());
+            if (!isFinite(distance) || distance > MAX_HEARING_REVEAL_RANGE + MAX_HEARING_BOX_EDGE) {
+                continue;
+            }
+            String text = labelPrefix + " " + Math.round(distance) + "m";
+            renderWorldLabel(poseStack, buffers, font, camera, cameraPos, labelPos, text, HEARING_REVEAL_COLOR);
+            rendered++;
+        }
+    }
+
+    private static boolean isHearingRevealTarget(LocalPlayer player, LivingEntity entity) {
         return entity.isAlive()
                 && entity != player
                 && !entity.isSpectator()
-                && (includePlayers || !(entity instanceof Player));
+                && !isSameTeamPlayer(player, entity)
+                && !(entity instanceof Player);
+    }
+
+    private static boolean isSameTeamPlayer(LocalPlayer player, LivingEntity entity) {
+        if (!(entity instanceof Player other) || player == null) {
+            return false;
+        }
+        if (other == player) {
+            return true;
+        }
+        return player.isAlliedTo(other) || other.isAlliedTo(player);
     }
 
     private static double hearingRevealRange(ItemStack head, DfsEquipmentItem.Profile profile) {
         if (profile == null || profile.hearingBoost() <= 0.0D) {
             return 0.0D;
         }
-        return Math.max(0.0D, profile.hearingBoost() * 100.0D);
+        return Math.min(MAX_HEARING_REVEAL_RANGE, Math.max(0.0D, profile.hearingBoost() * HEARING_REVEAL_RANGE_PER_BOOST));
+    }
+
+    private static void tickHearingReveals(Minecraft minecraft) {
+        LocalPlayer player = minecraft.player;
+        if (player == null || minecraft.level == null) {
+            clearHearingRevealCache();
+            return;
+        }
+        ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
+        DfsEquipmentItem.Profile profile = DfsEquipmentItem.profile(head);
+        double hearingRange = hearingRevealRange(head, profile);
+        if (hearingRange <= 0.0D) {
+            clearHearingRevealCache();
+            return;
+        }
+
+        int now = player.tickCount;
+        double rangeSqr = hearingRange * hearingRange;
+        pruneHearingReveals(minecraft, player, rangeSqr, now);
+
+        for (Entity rawEntity : minecraft.level.entitiesForRendering()) {
+            if (!(rawEntity instanceof LivingEntity entity)) {
+                continue;
+            }
+            if (!isHearingRevealCandidate(player, entity, rangeSqr)) {
+                continue;
+            }
+            HearingRevealState state = HEARING_REVEALS.get(entity.getId());
+            if (state == null) {
+                if (HEARING_REVEALS.size() >= MAX_HEARING_REVEAL_TARGETS) {
+                    continue;
+                }
+                state = new HearingRevealState(now);
+                HEARING_REVEALS.put(entity.getId(), state);
+            } else {
+                state.lastSeenTick = now;
+            }
+        }
+    }
+
+    private static void pruneHearingReveals(Minecraft minecraft, LocalPlayer player, double rangeSqr, int now) {
+        Iterator<Map.Entry<Integer, HearingRevealState>> iterator = HEARING_REVEALS.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, HearingRevealState> entry = iterator.next();
+            if (now - entry.getValue().lastSeenTick > HEARING_REVEAL_TTL_TICKS) {
+                iterator.remove();
+                continue;
+            }
+            Entity entity = minecraft.level.getEntity(entry.getKey());
+            if (!(entity instanceof LivingEntity living)
+                    || !isHearingRevealCandidate(player, living, rangeSqr)) {
+                iterator.remove();
+            }
+        }
+    }
+
+    private static LivingEntity hearingRevealEntity(Minecraft minecraft, LocalPlayer player, int entityId) {
+        if (minecraft.level == null) {
+            return null;
+        }
+        Entity entity = minecraft.level.getEntity(entityId);
+        if (!(entity instanceof LivingEntity living)) {
+            return null;
+        }
+        double rangeSqr = MAX_HEARING_REVEAL_RANGE * MAX_HEARING_REVEAL_RANGE;
+        return isHearingRevealCandidate(player, living, rangeSqr) ? living : null;
+    }
+
+    private static boolean isHearingRevealCandidate(LocalPlayer player, LivingEntity entity, double rangeSqr) {
+        return isHearingRevealTarget(player, entity)
+                && isWithinHearingRenderRange(player, entity, rangeSqr)
+                && isReasonableBox(entity.getBoundingBox(), MAX_HEARING_BOX_EDGE);
+    }
+
+    private static boolean isWithinHearingRenderRange(LocalPlayer player, Entity entity, double rangeSqr) {
+        if (!hasFinitePosition(player) || !hasFinitePosition(entity)) {
+            return false;
+        }
+        double distanceSqr = entity.distanceToSqr(player);
+        return isFinite(distanceSqr)
+                && distanceSqr <= rangeSqr
+                && distanceSqr <= MAX_HEARING_REVEAL_RANGE * MAX_HEARING_REVEAL_RANGE;
+    }
+
+    private static AABB safeHearingRenderBox(AABB box, Vec3 cameraPos, double inflate) {
+        return safeRenderBox(box, cameraPos, inflate, MAX_HEARING_BOX_EDGE);
+    }
+
+    private static AABB safeThermalRenderBox(AABB box, Vec3 cameraPos, double inflate) {
+        return safeRenderBox(box, cameraPos, inflate, MAX_THERMAL_BOX_EDGE);
+    }
+
+    private static AABB safeRenderBox(AABB box, Vec3 cameraPos, double inflate, double maxEdge) {
+        if (!isReasonableBox(box, maxEdge) || !isFinite(cameraPos)) {
+            return null;
+        }
+        AABB renderBox = box.inflate(inflate).move(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+        return isReasonableBox(renderBox, maxEdge + inflate * 2.0D) ? renderBox : null;
+    }
+
+    private static boolean isReasonableBox(AABB box, double maxEdge) {
+        if (box == null
+                || !isFinite(box.minX) || !isFinite(box.minY) || !isFinite(box.minZ)
+                || !isFinite(box.maxX) || !isFinite(box.maxY) || !isFinite(box.maxZ)) {
+            return false;
+        }
+        double xSize = box.maxX - box.minX;
+        double ySize = box.maxY - box.minY;
+        double zSize = box.maxZ - box.minZ;
+        return isFinite(xSize) && isFinite(ySize) && isFinite(zSize)
+                && xSize >= 0.0D && ySize >= 0.0D && zSize >= 0.0D
+                && xSize <= maxEdge && ySize <= maxEdge && zSize <= maxEdge;
+    }
+
+    private static boolean hasFinitePosition(Entity entity) {
+        return entity != null
+                && isFinite(entity.getX())
+                && isFinite(entity.getY())
+                && isFinite(entity.getZ());
+    }
+
+    private static boolean isFinite(Vec3 vec) {
+        return vec != null && isFinite(vec.x) && isFinite(vec.y) && isFinite(vec.z);
+    }
+
+    private static boolean isFinite(double value) {
+        return Double.isFinite(value);
     }
 
     private static void renderWorldLabel(PoseStack poseStack, MultiBufferSource.BufferSource buffers,
@@ -249,18 +457,31 @@ public final class HelmetVisionClient {
             restoreThermalHighlights();
             return;
         }
+        if (THERMAL_HIGHLIGHT_RANGE <= 0.0D) {
+            restoreThermalHighlights();
+            return;
+        }
 
         Set<Integer> current = new HashSet<>();
+        int highlighted = 0;
         for (LivingEntity entity : minecraft.level.getEntitiesOfClass(
                 LivingEntity.class,
                 minecraft.player.getBoundingBox().inflate(THERMAL_HIGHLIGHT_RANGE),
                 entity -> entity.isAlive()
                         && entity != minecraft.player
                         && !isThermalHiddenTarget(entity))) {
+            if (highlighted >= MAX_THERMAL_HIGHLIGHT_TARGETS) {
+                break;
+            }
+            if (!hasFinitePosition(entity)
+                    || !isReasonableBox(entity.getBoundingBox(), MAX_THERMAL_BOX_EDGE)) {
+                continue;
+            }
             current.add(entity.getId());
             THERMAL_RESTORE.putIfAbsent(entity.getId(), captureThermalState(entity));
             entity.setGlowingTag(true);
             applyThermalTeam(entity);
+            highlighted++;
         }
 
         THERMAL_RESTORE.entrySet().removeIf(entry -> {
@@ -354,6 +575,18 @@ public final class HelmetVisionClient {
         THERMAL_RESTORE.clear();
     }
 
+    private static void clearHearingRevealCache() {
+        HEARING_REVEALS.clear();
+    }
+
     private record ThermalHighlightState(boolean glowing, String scoreboardName, String teamName) {
+    }
+
+    private static final class HearingRevealState {
+        private int lastSeenTick;
+
+        private HearingRevealState(int lastSeenTick) {
+            this.lastSeenTick = lastSeenTick;
+        }
     }
 }

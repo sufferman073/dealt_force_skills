@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/root",
+  "display": {
+    "icon": {
+      "item": "minecraft:emerald"
+    },
+    "title": {
+      "text": "三角洲技艺：入门"
+    },
+    "description": {
+      "text": "较为简单的挑战"
+    },
+    "frame": "goal",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false
+  },
+  "criteria": {
+    "tick": {
+      "trigger": "minecraft:tick"
+    }
+  },
+  "requirements": [
+    [
+      "tick"
+    ]
+  ]
+}

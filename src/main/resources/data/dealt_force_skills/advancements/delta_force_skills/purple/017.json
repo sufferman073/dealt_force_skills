@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:golden_apple"
+    },
+    "title": {
+      "text": "起死回生"
+    },
+    "description": {
+      "text": "使用蜂医时，自己倒地后完成自救，并在10秒内救援另一名玩家"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

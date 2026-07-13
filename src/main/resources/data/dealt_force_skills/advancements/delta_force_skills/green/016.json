@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/green",
+  "display": {
+    "icon": {
+      "item": "minecraft:note_block"
+    },
+    "title": {
+      "text": "群羊皆惊"
+    },
+    "description": {
+      "text": "使用牧羊人时，震撼无人机一次震慑同时影响6个目标"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

@@ -93,6 +93,10 @@ public final class ClientHackclawHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.HACKCLAW_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.HACKCLAW_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != HackclawTool.NONE;
     }

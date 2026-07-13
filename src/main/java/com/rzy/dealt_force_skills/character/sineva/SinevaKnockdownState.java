@@ -14,8 +14,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public final class SinevaKnockdownState {
-    private static final double KNOCKBACK_HORIZONTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_knockdown_state.knockback_horizontal", 0.85D);
-    private static final double KNOCKBACK_VERTICAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_knockdown_state.knockback_vertical", 0.18D);
+    private static volatile double KNOCKBACK_HORIZONTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNOCKBACK_HORIZONTAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_knockdown_state.knockback_horizontal", 0.85));
+    private static volatile double KNOCKBACK_VERTICAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNOCKBACK_VERTICAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_knockdown_state.knockback_vertical", 0.18));
     private static final Map<UUID, KnockdownData> ACTIVE = new HashMap<>();
 
     private SinevaKnockdownState() {

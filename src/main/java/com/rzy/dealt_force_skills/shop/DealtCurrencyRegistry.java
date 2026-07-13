@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.ToLongFunction;
 import java.util.function.Predicate;
 
 public final class DealtCurrencyRegistry {
@@ -21,19 +22,25 @@ public final class DealtCurrencyRegistry {
                 "lex_ninjia_lotus_boxes",
                 "currency.dealt_force_skills.lotus_boxes",
                 LexNinjiaStateManager::isLexNinjia,
-                LexNinjiaCurrencyManager::grant
+                LexNinjiaCurrencyManager::get,
+                LexNinjiaCurrencyManager::grant,
+                LexNinjiaCurrencyManager::set
         ));
         registerBuiltin(new SimpleProvider(
                 "undead_souls",
                 "currency.dealt_force_skills.souls",
                 UndeadStateManager::isUndead,
-                UndeadSoulManager::grant
+                UndeadSoulManager::get,
+                UndeadSoulManager::grant,
+                UndeadSoulManager::set
         ));
         registerBuiltin(new SimpleProvider(
                 "saeed_tactical_points",
                 "currency.dealt_force_skills.tactical_points",
                 SaeedStateManager::isSaeed,
-                SaeedStateManager::grantTacticalPoints
+                SaeedStateManager::tacticalPoints,
+                SaeedStateManager::grantTacticalPoints,
+                SaeedStateManager::setTacticalPoints
         ));
         registerBuiltin(new SimpleProvider(
                 "haff_coins",
@@ -41,7 +48,9 @@ public final class DealtCurrencyRegistry {
                 player -> !LexNinjiaStateManager.isLexNinjia(player)
                         && !UndeadStateManager.isUndead(player)
                         && !SaeedStateManager.isSaeed(player),
-                HaffCoinManager::grant
+                HaffCoinManager::get,
+                HaffCoinManager::grant,
+                HaffCoinManager::set
         ));
     }
 
@@ -80,7 +89,9 @@ public final class DealtCurrencyRegistry {
             String id,
             String nameKey,
             Predicate<ServerPlayer> supports,
-            BiFunction<ServerPlayer, Long, Long> grant
+            ToLongFunction<ServerPlayer> balance,
+            BiFunction<ServerPlayer, Long, Long> grant,
+            BiFunction<ServerPlayer, Long, Long> set
     ) implements DealtCurrencyProvider {
         @Override
         public Component displayName() {
@@ -93,8 +104,18 @@ public final class DealtCurrencyRegistry {
         }
 
         @Override
+        public long balance(ServerPlayer player) {
+            return balance.applyAsLong(player);
+        }
+
+        @Override
         public long grant(ServerPlayer player, long amount) {
             return grant.apply(player, amount);
+        }
+
+        @Override
+        public long set(ServerPlayer player, long amount) {
+            return set.apply(player, amount);
         }
     }
 }

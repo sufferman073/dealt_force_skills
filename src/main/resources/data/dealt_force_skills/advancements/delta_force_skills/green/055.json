@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/green",
+  "display": {
+    "icon": {
+      "item": "minecraft:emerald"
+    },
+    "title": {
+      "text": "谁还有多余资金"
+    },
+    "description": {
+      "text": "使用尚博勒时，通过被动累计抽取队友25000的资金"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

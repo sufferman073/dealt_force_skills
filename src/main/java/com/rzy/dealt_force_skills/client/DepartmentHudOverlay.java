@@ -37,7 +37,7 @@ public final class DepartmentHudOverlay {
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        if (ClientDepartmentHudState.shouldRender()) {
+        if (ClientDepartmentHudState.shouldDisplay()) {
             renderSkillHud(graphics, font);
         }
         MobEffectInstance calibration = minecraft.player.getEffect(ModEffects.DEPARTMENT_CALIBRATION.get());
@@ -47,8 +47,8 @@ public final class DepartmentHudOverlay {
     }
 
     private static void renderSkillHud(GuiGraphics graphics, Font font) {
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
         int coreCooldown = Math.max(ClientDepartmentHudState.coreCooldownTicks(),
                 Math.max(ClientDepartmentHudState.coreCountdownTicks(), ClientDepartmentHudState.coreAscendTicks()));
         drawSlot(graphics, font, x, y, 0xFFFFE05A, KeybindRegister.CORE_SKILL,
@@ -96,7 +96,8 @@ public final class DepartmentHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101012);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101012);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -115,7 +116,8 @@ public final class DepartmentHudOverlay {
         }
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void renderCalibrationOverlay(GuiGraphics graphics, Font font, Minecraft minecraft, MobEffectInstance effect) {

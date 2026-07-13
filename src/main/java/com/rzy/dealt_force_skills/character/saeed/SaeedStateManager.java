@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.saeed;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
@@ -14,6 +15,7 @@ import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -83,21 +85,37 @@ public final class SaeedStateManager {
     private static final String LAST_INTERACT_Z = "LastInteractZ";
     private static final String LAST_INTERACT_UNTIL = "LastInteractUntil";
 
-    private static final int ROLL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.roll_cooldown_ticks", 12 * 20);
-    private static final int ROLL_BOOST_TICKS_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.roll_boost_ticks_total", 9);
-    private static final double ROLL_BOOST_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.roll_boost_speed_per_tick", 2.75D);
-    private static final int FIRE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.fire_recharge_ticks", 30 * 20);
-    private static final int FIRE_MAX_AMMO = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.fire_max_ammo", 2);
-    private static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.core_cooldown_ticks", 120 * 20);
-    private static final int CORE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.core_duration_ticks", 90 * 20);
-    private static final int COMMAND_VISUAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.command_visual_ticks", 18);
-    private static final double COMMAND_POINT_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.command_point_range", 75.0D);
-    private static final int FOLLOW_INTERACT_MEMORY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.follow_interact_memory_ticks", 4 * 20);
-    private static final int FOLLOW_BREAK_TASK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.follow_break_task_ticks", 7 * 20);
-    private static final int MAX_ACTIVE_GUARDS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.max_active_guards", 16);
-    private static final double GUARD_SUMMON_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.guard_summon_radius", 2.6D);
-    private static final double GUARD_MINING_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.guard_mining_range", 7.0D);
-    private static final int GUARD_MINING_SEARCH_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.guard_mining_search_radius", 3);
+    private static volatile int ROLL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.roll_cooldown_ticks", 240));
+    private static volatile int ROLL_BOOST_TICKS_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_BOOST_TICKS_TOTAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.roll_boost_ticks_total", 9));
+    private static volatile double ROLL_BOOST_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_BOOST_SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.roll_boost_speed_per_tick", 2.75));
+    private static volatile int FIRE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIRE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.fire_recharge_ticks", 600));
+    private static volatile int FIRE_MAX_AMMO = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIRE_MAX_AMMO", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.fire_max_ammo", 2));
+    private static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.core_cooldown_ticks", 2400));
+    private static volatile int CORE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.core_duration_ticks", 1800));
+    private static volatile int COMMAND_VISUAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMMAND_VISUAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.command_visual_ticks", 18));
+    private static volatile double COMMAND_POINT_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMMAND_POINT_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.command_point_range", 75.0));
+    private static volatile int FOLLOW_INTERACT_MEMORY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOLLOW_INTERACT_MEMORY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.follow_interact_memory_ticks", 80));
+    private static volatile int FOLLOW_BREAK_TASK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOLLOW_BREAK_TASK_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.follow_break_task_ticks", 140));
+    private static volatile int MAX_ACTIVE_GUARDS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_ACTIVE_GUARDS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.max_active_guards", 16));
+    private static volatile double GUARD_SUMMON_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUARD_SUMMON_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.guard_summon_radius", 2.6));
+    private static volatile double GUARD_MINING_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUARD_MINING_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.saeed.saeed_state_manager.guard_mining_range", 7.0));
+    private static volatile int GUARD_MINING_SEARCH_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUARD_MINING_SEARCH_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.guard_mining_search_radius", 3));
+    private static volatile int KILL_AWARD_PLAYER_KILL_POINTS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_PLAYER_KILL_POINTS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.saeed_state_manager.kill_award.player_kill_points", 5));
+    private static volatile int KILL_AWARD_MOB_KILL_POINTS_TIER1 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_MOB_KILL_POINTS_TIER1", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.saeed.saeed_state_manager.kill_award.mob_kill_points_tier1", 1
+   ));
+    private static volatile int KILL_AWARD_MOB_KILL_POINTS_TIER2 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_MOB_KILL_POINTS_TIER2", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.saeed.saeed_state_manager.kill_award.mob_kill_points_tier2", 10
+   ));
+    private static volatile int KILL_AWARD_MOB_KILL_POINTS_TIER3 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_MOB_KILL_POINTS_TIER3", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.saeed.saeed_state_manager.kill_award.mob_kill_points_tier3", 15
+   ));
+    private static volatile float KILL_AWARD_MOB_HEALTH_THRESHOLD_1 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_MOB_HEALTH_THRESHOLD_1", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.saeed.saeed_state_manager.kill_award.mob_health_threshold_1", 50.0F
+   ));
+    private static volatile float KILL_AWARD_MOB_HEALTH_THRESHOLD_2 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KILL_AWARD_MOB_HEALTH_THRESHOLD_2", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.saeed.saeed_state_manager.kill_award.mob_health_threshold_2", 300.0F
+   ));
     private static final int[] PRESTIGE_POPULATION = {0, 8, 16, 28, 40};
     private static final int[] PRESTIGE_COST = {
             com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.saeed.prestige.level_0_cost", 0),
@@ -162,7 +180,11 @@ public final class SaeedStateManager {
     }
 
     public static void clearRuntimeOnDeath(ServerPlayer player) {
-        withdrawAll(player, Refund.NORMAL);
+        clearRoundTransientState(player);
+    }
+
+    public static void clearRoundTransientState(ServerPlayer player) {
+        withdrawTemporaryGuards(player);
         CompoundTag tag = data(player);
         tag.putBoolean(CROSSBOW_EQUIPPED, false);
         tag.remove(CORE_ACTIVE_UNTIL);
@@ -172,12 +194,26 @@ public final class SaeedStateManager {
         syncToClient(player);
     }
 
+    /**
+     * Clears tactical-point currency and prestige purchase progress (prestige back to 1).
+     * Active guards are left alone; only the shop/recruit purchase state is reset.
+     */
+    public static void clearPurchaseProgress(ServerPlayer player) {
+        initializeIfNeeded(player);
+        CompoundTag tag = data(player);
+        tag.putInt(TACTICAL_POINTS, 0);
+        tag.putInt(PRESTIGE, 1);
+        if (isSaeed(player)) {
+            syncToClient(player);
+        }
+    }
+
     public static void tick(ServerPlayer player) {
         if (!isSaeed(player)) {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         rechargeFireAmmo(player, now);
         tickRollBoost(player);
         pruneGuardList(player);
@@ -191,17 +227,18 @@ public final class SaeedStateManager {
     public static boolean useRoll(ServerPlayer player) {
         initializeIfNeeded(player);
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(ROLL_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.saeed.roll_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.saeed.roll_cooldown"));
             return true;
         }
         tag.putLong(ROLL_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, ROLL_COOLDOWN_TICKS));
         startRollBoost(player);
         player.hurtMarked = true;
         player.fallDistance = 0.0F;
-        player.level().playSound(null, player.blockPosition(), ModSounds.SAEED_ROLL_START.get(),
-                SoundSource.PLAYERS, 0.85F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SAEED_ROLL_START.get(),
+                SoundSource.PLAYERS, 0.85F, 1.0F, 32.0D);
         return true;
     }
 
@@ -210,12 +247,12 @@ public final class SaeedStateManager {
             return;
         }
         CompoundTag tag = data(player);
-        if (tag.getLong(ROLL_COOLDOWN_UNTIL) <= player.level().getGameTime()) {
+        if (tag.getLong(ROLL_COOLDOWN_UNTIL) <= SkillCooldownHelper.now(player)) {
             return;
         }
         tag.putLong(ROLL_COOLDOWN_UNTIL, 0L);
-        player.level().playSound(null, player.blockPosition(), ModSounds.SAEED_ROLL_END.get(),
-                SoundSource.PLAYERS, 0.75F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SAEED_ROLL_END.get(),
+                SoundSource.PLAYERS, 0.75F, 1.0F, 32.0D);
         syncToClient(player);
     }
 
@@ -272,11 +309,11 @@ public final class SaeedStateManager {
 
         int ammo = tag.getInt(FIRE_AMMO);
         if (ammo <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.saeed.fire_arrow_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.saeed.fire_arrow_empty"));
             return true;
         }
         tag.putInt(FIRE_AMMO, ammo - 1);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (ammo == FIRE_MAX_AMMO) {
             tag.putLong(FIRE_NEXT_RECHARGE, now + FIRE_RECHARGE_TICKS);
         }
@@ -297,13 +334,14 @@ public final class SaeedStateManager {
     public static boolean useCore(ServerPlayer player) {
         initializeIfNeeded(player);
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long activeUntil = tag.getLong(CORE_ACTIVE_UNTIL);
         if (activeUntil > now) {
             return clearCommandPoint(player);
         }
         if (now < tag.getLong(CORE_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.saeed.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.saeed.core_cooldown"));
             return true;
         }
 
@@ -336,7 +374,7 @@ public final class SaeedStateManager {
         tag.putDouble(COMMAND_POINT_X, point.x);
         tag.putDouble(COMMAND_POINT_Y, point.y);
         tag.putDouble(COMMAND_POINT_Z, point.z);
-        tag.putLong(COMMAND_VISUAL_UNTIL, player.level().getGameTime() + COMMAND_VISUAL_TICKS);
+        tag.putLong(COMMAND_VISUAL_UNTIL, SkillCooldownHelper.now(player) + COMMAND_VISUAL_TICKS);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.saeed.command_point_set"), true);
         player.level().playSound(null, player.blockPosition(), ModSounds.SAEED_COMMAND_VOICE.get(),
                 SoundSource.PLAYERS, 0.85F, 1.0F);
@@ -375,21 +413,28 @@ public final class SaeedStateManager {
                 tag.getDouble(COMMAND_POINT_Z)));
     }
 
+    public static int activeGuardCountForAchievements(ServerPlayer player) {
+        if (!isSaeed(player)) {
+            return 0;
+        }
+        return activeGuards(player).size();
+    }
+
     public static void awardKill(ServerPlayer killer, LivingEntity victim) {
         if (!isSaeed(killer)) {
             return;
         }
         int points;
         if (victim instanceof Player) {
-            points = 5;
+            points = KILL_AWARD_PLAYER_KILL_POINTS;
         } else {
             float maxHealth = victim.getMaxHealth();
-            if (maxHealth < 50.0F) {
-                points = 1;
-            } else if (maxHealth < 300.0F) {
-                points = 10;
+            if (maxHealth < KILL_AWARD_MOB_HEALTH_THRESHOLD_1) {
+                points = KILL_AWARD_MOB_KILL_POINTS_TIER1;
+            } else if (maxHealth < KILL_AWARD_MOB_HEALTH_THRESHOLD_2) {
+                points = KILL_AWARD_MOB_KILL_POINTS_TIER2;
             } else {
-                points = 15;
+                points = KILL_AWARD_MOB_KILL_POINTS_TIER3;
             }
         }
         addTacticalPoints(killer, points);
@@ -491,12 +536,12 @@ public final class SaeedStateManager {
         tag.putInt(LAST_INTERACT_X, pos.getX());
         tag.putInt(LAST_INTERACT_Y, pos.getY());
         tag.putInt(LAST_INTERACT_Z, pos.getZ());
-        tag.putLong(LAST_INTERACT_UNTIL, player.level().getGameTime() + FOLLOW_INTERACT_MEMORY_TICKS);
+        tag.putLong(LAST_INTERACT_UNTIL, SkillCooldownHelper.now(player) + FOLLOW_INTERACT_MEMORY_TICKS);
     }
 
     public static Optional<BlockPos> activeInteractTarget(ServerPlayer player) {
         CompoundTag tag = data(player);
-        if (!allowInteract(player) || tag.getLong(LAST_INTERACT_UNTIL) <= player.level().getGameTime()) {
+        if (!allowInteract(player) || tag.getLong(LAST_INTERACT_UNTIL) <= SkillCooldownHelper.now(player)) {
             return Optional.empty();
         }
         return Optional.of(new BlockPos(tag.getInt(LAST_INTERACT_X), tag.getInt(LAST_INTERACT_Y), tag.getInt(LAST_INTERACT_Z)));
@@ -741,6 +786,7 @@ public final class SaeedStateManager {
             return;
         }
         data(player).putInt(PRESTIGE, next);
+        DfsAchievements.onSaeedPrestige(player, next);
         player.level().playSound(null, player.blockPosition(), ModSounds.SAEED_PRESTIGE_UP.get(),
                 SoundSource.PLAYERS, 0.85F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.saeed_recruit.prestige_up", next), true);
@@ -755,6 +801,17 @@ public final class SaeedStateManager {
             }
         }
         data(player).put(GUARDS, new ListTag());
+    }
+
+    private static void withdrawTemporaryGuards(ServerPlayer player) {
+        initializeIfNeeded(player);
+        for (UUID id : guardIds(player)) {
+            Entity entity = findEntity(player, id);
+            if (entity instanceof SaeedGuardEntity guard && guard.isTemporaryGuard()) {
+                guard.withdraw(Refund.NONE);
+            }
+        }
+        pruneGuardList(player);
     }
 
     public static void handleGuardRemoved(SaeedGuardEntity guard, Refund refund) {
@@ -787,7 +844,7 @@ public final class SaeedStateManager {
     }
 
     public static boolean isCoreBoostActive(ServerPlayer player) {
-        return data(player).getLong(CORE_ACTIVE_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(CORE_ACTIVE_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static double guardAttributeMultiplier(ServerPlayer owner) {
@@ -884,6 +941,14 @@ public final class SaeedStateManager {
                 syncToClient(player);
             }
         }
+        return tacticalPoints(player);
+    }
+
+    public static long setTacticalPoints(ServerPlayer player, long amount) {
+        initializeIfNeeded(player);
+        int value = amount >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.max(0L, amount);
+        data(player).putInt(TACTICAL_POINTS, value);
+        syncToClient(player);
         return tacticalPoints(player);
     }
 
@@ -1125,7 +1190,8 @@ public final class SaeedStateManager {
     }
 
     public static boolean canGuardBreak(ServerPlayer player, ServerLevel level, BlockPos pos, BlockState state, ItemStack tool) {
-        if (state.isAir()
+        if (!ModGameRules.areSkillBlockBreaksEnabled(level)
+                || state.isAir()
                 || state.getDestroySpeed(level, pos) < 0.0F
                 || level.getBlockEntity(pos) != null) {
             return false;
@@ -1171,8 +1237,7 @@ public final class SaeedStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

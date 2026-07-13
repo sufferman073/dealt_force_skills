@@ -27,6 +27,7 @@ public final class CharacterSkinTextures {
             Map.entry(ModCharacters.VLINDER_ID, skin("vlinder")),
             Map.entry(ModCharacters.MANBA_ID, skin("manba")),
             Map.entry(ModCharacters.NIKAIDOU_HIRO_ID, skin("nikaidou_hiro")),
+            Map.entry(ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID, skin("nikaidou_hiro")),
             Map.entry(ModCharacters.CATDAD_ID, skin("catdad")),
             Map.entry(ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID, skin("department_of_transportation")),
             Map.entry(ModCharacters.UNDEAD_ID, skin("undead")),
@@ -46,6 +47,6 @@ public final class CharacterSkinTextures {
     }
 
     private static ResourceLocation skin(String name) {
-        return new ResourceLocation(DealtForceSkillsMod.MODID, ROOT + name + ".png");
+        return ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, ROOT + name + ".png");
     }
 }

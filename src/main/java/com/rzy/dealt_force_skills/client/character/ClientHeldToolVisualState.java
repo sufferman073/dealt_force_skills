@@ -34,8 +34,17 @@ public final class ClientHeldToolVisualState {
                         || minecraft.level.getEntity(entry.getKey()) == null);
     }
 
+    public static void reset() {
+        STATES.clear();
+    }
+
     public static HeldToolVisual visual(Entity entity) {
         State state = entity == null ? null : STATES.get(entity.getId());
+        return state == null ? HeldToolVisual.NONE : state.visual();
+    }
+
+    public static HeldToolVisual visual(int entityId) {
+        State state = STATES.get(entityId);
         return state == null ? HeldToolVisual.NONE : state.visual();
     }
 

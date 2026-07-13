@@ -102,6 +102,10 @@ public final class ClientDepartmentHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != DepartmentTool.NONE;
     }

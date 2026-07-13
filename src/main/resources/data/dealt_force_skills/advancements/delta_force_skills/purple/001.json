@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:fire_charge"
+    },
+    "title": {
+      "text": "烈火灼心"
+    },
+    "description": {
+      "text": "使用红狼时，在一次外骨骼超载生效期间仅通过击杀敌人延长125秒持续时间"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

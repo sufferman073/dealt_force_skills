@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:lead"
+    },
+    "title": {
+      "text": "一线生机"
+    },
+    "description": {
+      "text": "使用疾风时，触发致命紧急拉回后，在1点生命状态下完成自救并存活30秒"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

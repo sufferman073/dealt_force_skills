@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.client.character;
 
+import com.rzy.dealt_force_skills.client.ClientTeamSpectatorState;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
@@ -31,11 +32,21 @@ public final class ClientSkillModelVisualState {
         STATES.replaceAll((id, state) -> state.tick());
         STATES.entrySet().removeIf(entry ->
                 entry.getValue().remainingTicks() <= 0
-                        || minecraft.level.getEntity(entry.getKey()) == null);
+                        || minecraft.level.getEntity(entry.getKey()) == null
+                        && !ClientTeamSpectatorState.isTargetEntity(entry.getKey()));
+    }
+
+    public static void reset() {
+        STATES.clear();
     }
 
     public static SkillModelVisual visual(Entity entity) {
         State state = entity == null ? null : STATES.get(entity.getId());
+        return state == null ? null : state.visual();
+    }
+
+    public static SkillModelVisual visual(int entityId) {
+        State state = STATES.get(entityId);
         return state == null ? null : state.visual();
     }
 
@@ -44,13 +55,28 @@ public final class ClientSkillModelVisualState {
         return state == null ? 0.0F : (state.ageTicks() + partialTick) / 20.0F * CAST_PLAYBACK_SPEED;
     }
 
+    public static float animationSeconds(int entityId, float partialTick) {
+        State state = STATES.get(entityId);
+        return state == null ? 0.0F : (state.ageTicks() + partialTick) / 20.0F * CAST_PLAYBACK_SPEED;
+    }
+
     public static float ageSeconds(Entity entity, float partialTick) {
         State state = entity == null ? null : STATES.get(entity.getId());
         return state == null ? 0.0F : (state.ageTicks() + partialTick) / 20.0F;
     }
 
+    public static float ageSeconds(int entityId, float partialTick) {
+        State state = STATES.get(entityId);
+        return state == null ? 0.0F : (state.ageTicks() + partialTick) / 20.0F;
+    }
+
     public static int remainingTicks(Entity entity) {
         State state = entity == null ? null : STATES.get(entity.getId());
+        return state == null ? 0 : state.remainingTicks();
+    }
+
+    public static int remainingTicks(int entityId) {
+        State state = STATES.get(entityId);
         return state == null ? 0 : state.remainingTicks();
     }
 

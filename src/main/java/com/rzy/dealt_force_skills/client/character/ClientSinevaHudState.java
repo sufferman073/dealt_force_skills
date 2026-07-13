@@ -19,6 +19,8 @@ public final class ClientSinevaHudState {
     private static boolean shieldDeployed;
     private static int viewportHealth;
     private static int viewportMaxHealth;
+    private static int shieldDurability;
+    private static int shieldMaxDurability;
 
     private ClientSinevaHudState() {
     }
@@ -37,6 +39,8 @@ public final class ClientSinevaHudState {
         shieldDeployed = false;
         viewportHealth = 0;
         viewportMaxHealth = 0;
+        shieldDurability = 0;
+        shieldMaxDurability = 0;
     }
 
     public static void sync(
@@ -51,7 +55,9 @@ public final class ClientSinevaHudState {
             boolean bombSuitActive,
             boolean shieldDeployed,
             int viewportHealth,
-            int viewportMaxHealth
+            int viewportMaxHealth,
+            int shieldDurability,
+            int shieldMaxDurability
     ) {
         synced = true;
         ClientSinevaHudState.bladeWireCharges = bladeWireCharges;
@@ -66,10 +72,16 @@ public final class ClientSinevaHudState {
         ClientSinevaHudState.shieldDeployed = shieldDeployed;
         ClientSinevaHudState.viewportHealth = viewportHealth;
         ClientSinevaHudState.viewportMaxHealth = viewportMaxHealth;
+        ClientSinevaHudState.shieldDurability = shieldDurability;
+        ClientSinevaHudState.shieldMaxDurability = shieldMaxDurability;
     }
 
     public static boolean shouldRender() {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.SINEVA_ID);
+    }
+
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.SINEVA_ID);
     }
 
     public static void tick() {
@@ -135,6 +147,14 @@ public final class ClientSinevaHudState {
 
     public static int viewportMaxHealth() {
         return viewportMaxHealth;
+    }
+
+    public static int shieldDurability() {
+        return shieldDurability;
+    }
+
+    public static int shieldMaxDurability() {
+        return shieldMaxDurability;
     }
 
     public static void consumeShieldBlockStamina(int percent, int floorPercent) {

@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.item;
 
 import com.rzy.dealt_force_skills.effect.ModItemEffectHelper;
+import com.rzy.dealt_force_skills.effect.InjuryManager;
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -25,6 +26,7 @@ public class HarmfulCleanerItem extends DfsUseItem {
     private final int maxAmplifierInclusive;
     private final boolean strongest;
     private final boolean selectable;
+    private final boolean woundsOnly;
 
     public HarmfulCleanerItem(Properties properties,
                               DfsItemQuality quality,
@@ -37,7 +39,7 @@ public class HarmfulCleanerItem extends DfsUseItem {
                               String startMessageKey,
                               String finishMessageKey) {
         this(properties, quality, tooltipKey, useTicks, maxAmplifierInclusive, strongest,
-                startSound, finishSound, startMessageKey, finishMessageKey, false);
+                startSound, finishSound, startMessageKey, finishMessageKey, false, false);
     }
 
     public HarmfulCleanerItem(Properties properties,
@@ -51,11 +53,28 @@ public class HarmfulCleanerItem extends DfsUseItem {
                               String startMessageKey,
                               String finishMessageKey,
                               boolean selectable) {
+        this(properties, quality, tooltipKey, useTicks, maxAmplifierInclusive, strongest,
+                startSound, finishSound, startMessageKey, finishMessageKey, selectable, false);
+    }
+
+    public HarmfulCleanerItem(Properties properties,
+                              DfsItemQuality quality,
+                              String tooltipKey,
+                              int useTicks,
+                              int maxAmplifierInclusive,
+                              boolean strongest,
+                              Supplier<SoundEvent> startSound,
+                              Supplier<SoundEvent> finishSound,
+                              String startMessageKey,
+                              String finishMessageKey,
+                              boolean selectable,
+                              boolean woundsOnly) {
         super(properties, quality, tooltipKey, useTicks, startSound, finishSound, startMessageKey, finishMessageKey);
         this.maxAmplifierInclusive = DealtForceConfig.intValue(
                 configKey() + ".max_removed_effect_amplifier", maxAmplifierInclusive);
         this.strongest = DealtForceConfig.booleanValue(configKey() + ".remove_strongest_first", strongest);
         this.selectable = DealtForceConfig.booleanValue(configKey() + ".selectable_effect", selectable);
+        this.woundsOnly = woundsOnly;
     }
 
     @Override
@@ -75,20 +94,25 @@ public class HarmfulCleanerItem extends DfsUseItem {
         if (!selectable || level.isClientSide) {
             return true;
         }
-        return ensureSelectedEffect(player, stack);
+        return canUseSelectedOrDefault(player, stack);
     }
 
     @Override
     protected boolean applyUseEffect(ItemStack stack, Level level, ServerPlayer player) {
+        if (woundsOnly) {
+            return InjuryManager.removeRandomWound(player);
+        }
         if (selectable) {
             MobEffect selected = selectedEffect(stack);
-            boolean removed = ModItemEffectHelper.removeHarmfulEffect(player, selected, maxAmplifierInclusive);
-            if (removed) {
-                clearSelectedEffect(stack);
+            if (selected != null) {
+                boolean removed = ModItemEffectHelper.removeHarmfulEffect(player, selected, maxAmplifierInclusive);
+                if (removed) {
+                    clearSelectedEffect(stack);
+                }
+                return removed;
             }
-            return removed;
         }
-        return ModItemEffectHelper.removeHarmfulEffect(player, maxAmplifierInclusive, strongest);
+        return ModItemEffectHelper.removeHarmfulEffectPreferNonWound(player, maxAmplifierInclusive, strongest);
     }
 
     @Override
@@ -106,7 +130,7 @@ public class HarmfulCleanerItem extends DfsUseItem {
         }
     }
 
-    private boolean ensureSelectedEffect(Player player, ItemStack stack) {
+    private boolean canUseSelectedOrDefault(Player player, ItemStack stack) {
         List<ModItemEffectHelper.HarmfulEffectChoice> choices =
                 ModItemEffectHelper.harmfulEffectChoices(player, maxAmplifierInclusive);
         if (choices.isEmpty()) {
@@ -120,8 +144,7 @@ public class HarmfulCleanerItem extends DfsUseItem {
                 return true;
             }
         }
-        setSelectedEffect(stack, choices.get(0).effect());
-        displaySelected(player, choices.get(0), 1, choices.size());
+        clearSelectedEffect(stack);
         return true;
     }
 

@@ -32,24 +32,24 @@ public final class GenericSkillHudOverlay {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientCharacterSelectionState.hasSelectedCharacter()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientCharacterSelectionState.hasDisplayedCharacter()) {
             return;
         }
 
-        String selectedId = ClientCharacterSelectionState.selectedCharacterId();
+        String selectedId = ClientCharacterSelectionState.displayedCharacterId();
         if (hasDedicatedHud(selectedId)) {
             return;
         }
 
-        CharacterDefinition character = ModCharacters.get(selectedId).orElse(null);
+        CharacterDefinition character = ClientCharacterSelectionState.catalogCharacter(selectedId).orElse(null);
         if (character == null) {
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawSlotIfPresent(graphics, font, character, SkillSlot.CORE, x, y,
                 0xFF67D6FF, KeybindRegister.CORE_SKILL);
@@ -75,7 +75,7 @@ public final class GenericSkillHudOverlay {
         }
 
         drawSlot(graphics, font, x, y, accentColor, key,
-                Component.translatable(skill.translationKey()),
+                skill.displayName(),
                 Component.translatable(skill.implemented()
                         ? "hud.dealt_force_skills.generic.ready"
                         : "hud.dealt_force_skills.generic.placeholder").getString());
@@ -91,7 +91,8 @@ public final class GenericSkillHudOverlay {
             Component icon,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101216);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101216);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -101,7 +102,8 @@ public final class GenericSkillHudOverlay {
         drawCenteredClipped(graphics, font, detail, x + SLOT / 2, y + 22, 34, 0xFFE0E4EA);
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static boolean hasDedicatedHud(String selectedId) {
@@ -109,7 +111,9 @@ public final class GenericSkillHudOverlay {
                 || ModCharacters.ULURU_ID.equals(selectedId)
                 || ModCharacters.D_WOLF_ID.equals(selectedId)
                 || ModCharacters.GIZMO_ID.equals(selectedId)
+                || ModCharacters.CHAMBER_ID.equals(selectedId)
                 || ModCharacters.SHEPHERD_ID.equals(selectedId)
+                || ModCharacters.N_TWO_ID.equals(selectedId)
                 || ModCharacters.LUNA_ID.equals(selectedId)
                 || ModCharacters.HACKCLAW_ID.equals(selectedId)
                 || ModCharacters.VYRON_ID.equals(selectedId)
@@ -117,10 +121,13 @@ public final class GenericSkillHudOverlay {
                 || ModCharacters.STINGER_ID.equals(selectedId)
                 || ModCharacters.MANBA_ID.equals(selectedId)
                 || ModCharacters.NIKAIDOU_HIRO_ID.equals(selectedId)
+                || ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID.equals(selectedId)
                 || ModCharacters.CATDAD_ID.equals(selectedId)
+                || ModCharacters.CORPS_ID.equals(selectedId)
                 || ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID.equals(selectedId)
                 || ModCharacters.UNDEAD_ID.equals(selectedId)
                 || ModCharacters.MORSE_ID.equals(selectedId)
+                || ModCharacters.GAMBLER_ID.equals(selectedId)
                 || ModCharacters.TOXIK_ID.equals(selectedId)
                 || ModCharacters.RAPTOR_ID.equals(selectedId)
                 || ModCharacters.VLINDER_ID.equals(selectedId)

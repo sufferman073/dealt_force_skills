@@ -11,6 +11,7 @@ import com.rzy.dealt_force_skills.network.S2C_SyncLunaState;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.ReconRevealThrottle;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -26,17 +27,18 @@ import java.util.List;
 import java.util.Optional;
 
 public final class LunaStateManager {
-    public static final int SHOCK_ARROW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_max_charges", 2);
-    public static final int SHOCK_ARROW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_recharge_ticks", 30 * 20);
-    public static final int COMPOSITE_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_max_charges", 2);
-    public static final int COMPOSITE_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_recharge_ticks", 30 * 20);
-    public static final int COMPOSITE_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_fuse_ticks", 5 * 20);
-    public static final int RECON_ARROW_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_arrow_cooldown_ticks", 45 * 20);
-    public static final int MAX_BOW_CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.max_bow_charge_ticks", 14);
-    public static final int SKILL_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.skill_reveal_ticks", 30);
-    public static final int PASSIVE_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.passive_reveal_ticks", 20);
-    public static final int RECON_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_reveal_ticks", 40);
-
+    public static volatile int SHOCK_ARROW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHOCK_ARROW_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_max_charges", 2));
+    public static volatile int SHOCK_ARROW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHOCK_ARROW_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.shock_arrow_recharge_ticks", 600));
+    public static volatile int COMPOSITE_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMPOSITE_GRENADE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_max_charges", 2));
+    public static volatile int COMPOSITE_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMPOSITE_GRENADE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.luna.luna_state_manager.composite_grenade_recharge_ticks", 600
+   ));
+    public static volatile int COMPOSITE_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMPOSITE_GRENADE_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.composite_grenade_fuse_ticks", 100));
+    public static volatile int RECON_ARROW_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECON_ARROW_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_arrow_cooldown_ticks", 900));
+    public static volatile int MAX_BOW_CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_BOW_CHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.max_bow_charge_ticks", 14));
+    public static volatile int SKILL_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SKILL_REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.skill_reveal_ticks", 30));
+    public static volatile int PASSIVE_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PASSIVE_REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.passive_reveal_ticks", 20));
+    public static volatile int RECON_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECON_REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_state_manager.recon_reveal_ticks", 40));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".luna";
     private static final String INITIALIZED = "Initialized";
     private static final String SHOCK_CHARGES = "ShockCharges";
@@ -94,7 +96,7 @@ public final class LunaStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, SHOCK_CHARGES, SHOCK_ARROW_MAX_CHARGES, SHOCK_NEXT_RECHARGE, SHOCK_ARROW_RECHARGE_TICKS);
         recharge(player, now, GRENADE_CHARGES, COMPOSITE_GRENADE_MAX_CHARGES, GRENADE_NEXT_RECHARGE, COMPOSITE_GRENADE_RECHARGE_TICKS);
     }
@@ -154,7 +156,7 @@ public final class LunaStateManager {
     public static void startGrenadeCook(Player player) {
         CompoundTag tag = data(player);
         if (tag.getLong(GRENADE_COOK_START) <= 0L) {
-            tag.putLong(GRENADE_COOK_START, player.level().getGameTime());
+            tag.putLong(GRENADE_COOK_START, SkillCooldownHelper.now(player));
         }
     }
 
@@ -167,12 +169,12 @@ public final class LunaStateManager {
         if (start <= 0L || equippedTool(player) != LunaTool.COMPOSITE_GRENADE) {
             return 0;
         }
-        long cooked = player.level().getGameTime() - start;
+        long cooked = SkillCooldownHelper.now(player) - start;
         return cooked > 0L ? (int) Math.min(Integer.MAX_VALUE, cooked) : 0;
     }
 
     public static boolean isCoreReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(CORE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(CORE_COOLDOWN_UNTIL);
     }
 
     public static int coreCooldownRemainingTicks(Player player) {
@@ -181,7 +183,7 @@ public final class LunaStateManager {
 
     public static void setCoreCooldown(ServerPlayer player) {
         data(player).putLong(CORE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), RECON_ARROW_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), RECON_ARROW_COOLDOWN_TICKS));
     }
 
     public static void handleDamageReveal(LivingHurtEvent event) {
@@ -202,17 +204,23 @@ public final class LunaStateManager {
         if (!isLuna(owner) || target == owner || ticks <= 0) {
             return;
         }
+        // Recon must not expose teammates (and never self).
+        if (!com.rzy.dealt_force_skills.util.PositionRevealHelper.isValidReconTarget(owner, target)) {
+            return;
+        }
         if (!ReconRevealThrottle.tryStart(target, ticks)) {
             return;
         }
 
-        NetworkHandler.sendToPlayer(new S2C_LunaRevealEntities(List.of(target.getId()), ticks), owner);
+        // Share position exposure with the caster's teammates.
+        com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(
+                owner, new S2C_LunaRevealEntities(List.of(target.getId()), ticks));
         if (target instanceof ServerPlayer) {
             target.level().playSound(null, target.blockPosition(), ModSounds.LUNA_POSITION_REVEAL.get(),
                     SoundSource.PLAYERS, 0.85f, 1.0f);
             if (voiceIfPlayer) {
-                owner.level().playSound(null, owner.blockPosition(), ModSounds.LUNA_REVEAL_VOICE.get(),
-                        SoundSource.PLAYERS, 0.8f, 1.0f);
+                RangedSoundHelper.playFollowingPlayer(owner, ModSounds.LUNA_REVEAL_VOICE.get(),
+                        SoundSource.PLAYERS, 0.8f, 1.0f, 32.0D);
             }
         }
     }
@@ -253,7 +261,7 @@ public final class LunaStateManager {
 
         tag.putInt(chargesKey, charges - 1);
         if (charges == maxCharges) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -281,8 +289,7 @@ public final class LunaStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

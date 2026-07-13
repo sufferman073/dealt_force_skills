@@ -39,6 +39,7 @@ public final class ModItemEffectHelper {
             Map.entry("BlockCharges", 3),
             Map.entry("BombCharges", 2),
             Map.entry("CoverCharges", 2),
+            Map.entry("DewarCharges", 2),
             Map.entry("ElbowCharges", 6),
             Map.entry("FlashCharges", 2),
             Map.entry("FlashDroneCharges", 2),
@@ -71,7 +72,7 @@ public final class ModItemEffectHelper {
 
     public static boolean shouldSuppressHarmfulImpact(LivingEntity entity, MobEffect effect) {
         return entity instanceof Player player
-                && player.hasEffect(ModEffects.PAIN_RELIEF.get())
+                && (player.hasEffect(ModEffects.PAIN_RELIEF.get()) || player.hasEffect(ModEffects.SEDATION.get()))
                 && effect != null
                 && effect.getCategory() == MobEffectCategory.HARMFUL;
     }
@@ -84,7 +85,7 @@ public final class ModItemEffectHelper {
 
     public static void tickPainRelief(ServerPlayer player) {
         restoreSuppressedEffects(player);
-        if (player.hasEffect(ModEffects.PAIN_RELIEF.get())) {
+        if (player.hasEffect(ModEffects.PAIN_RELIEF.get()) || player.hasEffect(ModEffects.SEDATION.get())) {
             suppressActiveHarmfulAttributes(player);
         } else {
             restoreSuppressedHarmfulAttributes(player);
@@ -94,7 +95,7 @@ public final class ModItemEffectHelper {
     public static void tickItemEffects(ServerPlayer player) {
         tickPainRelief(player);
         if (player.hasEffect(ModEffects.SEDATION.get())) {
-            removeActiveHarmfulEffects(player);
+            removeActiveNonInjuryHarmfulEffects(player);
         }
     }
 
@@ -127,25 +128,61 @@ public final class ModItemEffectHelper {
                     "message.dealt_force_skills.item.no_harmful_effect"), true);
             return false;
         }
-        HarmfulRef selected;
+        HarmfulRef selected = selectHarmfulRef(player, candidates, strongest);
+        removeHarmfulRef(player, selected);
+        return true;
+    }
+
+    public static boolean removeHarmfulEffectPreferNonWound(Player player, int maxAmplifierInclusive, boolean strongest) {
+        List<HarmfulRef> candidates = harmfulRefs(player, maxAmplifierInclusive);
+        if (candidates.isEmpty()) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.dealt_force_skills.item.no_harmful_effect"), true);
+            return false;
+        }
+        List<HarmfulRef> preferred = new ArrayList<>();
+        for (HarmfulRef candidate : candidates) {
+            if (!InjuryManager.isWound(candidate.effect())) {
+                preferred.add(candidate);
+            }
+        }
+        HarmfulRef selected = selectHarmfulRef(player, preferred.isEmpty() ? candidates : preferred, strongest);
+        removeHarmfulRef(player, selected);
+        return true;
+    }
+
+    private static HarmfulRef selectHarmfulRef(Player player, List<HarmfulRef> candidates, boolean strongest) {
         if (strongest) {
-            selected = candidates.stream()
+            return candidates.stream()
                     .max(Comparator.comparingInt(HarmfulRef::amplifier).thenComparingInt(HarmfulRef::duration))
                     .orElse(candidates.get(0));
-        } else {
-            selected = candidates.get(player.getRandom().nextInt(candidates.size()));
         }
+        return candidates.get(player.getRandom().nextInt(candidates.size()));
+    }
+
+    private static void removeHarmfulRef(Player player, HarmfulRef selected) {
         player.removeEffect(selected.effect());
         removeSuppressed(player, selected.effect());
         player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
                 "message.dealt_force_skills.item.cleaned_effect",
                 selected.effect().getDisplayName()), true);
-        return true;
     }
 
     public static void removeActiveHarmfulEffects(LivingEntity entity) {
         for (MobEffectInstance active : new ArrayList<>(entity.getActiveEffects())) {
             if (active.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
+                entity.removeEffect(active.getEffect());
+                if (entity instanceof Player player) {
+                    removeSuppressed(player, active.getEffect());
+                }
+            }
+        }
+    }
+
+    public static void removeActiveNonInjuryHarmfulEffects(LivingEntity entity) {
+        for (MobEffectInstance active : new ArrayList<>(entity.getActiveEffects())) {
+            if (active.getEffect().getCategory() == MobEffectCategory.HARMFUL
+                    && !InjuryManager.isInjury(active.getEffect())) {
                 entity.removeEffect(active.getEffect());
                 if (entity instanceof Player player) {
                     removeSuppressed(player, active.getEffect());
@@ -201,6 +238,7 @@ public final class ModItemEffectHelper {
 
     public static double medicineUseSpeedMultiplier(LivingEntity entity) {
         double multiplier = 1.0D;
+        multiplier *= InjuryManager.armActionMultiplier(entity);
         multiplier *= effectMultiplier(entity, ModEffects.LAUGHING_MANIA_I.get(), 0.25D);
         multiplier *= effectMultiplier(entity, ModEffects.STAMINA_BOOST.get(), 0.30D);
         multiplier *= effectMultiplier(entity, ModEffects.CARRY_BOOST.get(), 0.25D);
@@ -214,6 +252,7 @@ public final class ModItemEffectHelper {
 
     public static double medicineBreakSpeedMultiplier(LivingEntity entity) {
         double multiplier = 1.0D;
+        multiplier *= InjuryManager.armActionMultiplier(entity);
         multiplier *= effectMultiplier(entity, ModEffects.LAUGHING_MANIA_I.get(), 0.25D);
         multiplier *= effectMultiplier(entity, ModEffects.STAMINA_BOOST.get(), 0.30D);
         multiplier *= effectMultiplier(entity, ModEffects.CARRY_BOOST.get(), 0.10D);
@@ -246,6 +285,7 @@ public final class ModItemEffectHelper {
 
     public static double medicineTaczAimSpeedMultiplier(LivingEntity entity) {
         double multiplier = 1.0D;
+        multiplier *= InjuryManager.armActionMultiplier(entity);
         multiplier *= effectMultiplier(entity, ModEffects.LAUGHING_MANIA_I.get(), 0.25D);
         multiplier *= effectMultiplier(entity, ModEffects.SMALL_AIM_SPEED.get(), 0.50D);
         multiplier *= effectMultiplier(entity, ModEffects.LARGE_AIM_SPEED.get(), 19.00D);
@@ -311,11 +351,13 @@ public final class ModItemEffectHelper {
             return true;
         }
         int charges = Math.min(maxCharges, Math.max(0, tag.getInt(chargeKey)));
+        boolean restored = false;
         if (charges < maxCharges) {
             charges++;
+            restored = true;
             tag.putInt(chargeKey, charges);
         }
-        if (charges >= maxCharges) {
+        if (restored || charges >= maxCharges) {
             tag.putLong(rechargeKey, 0L);
         }
         return true;

@@ -26,9 +26,9 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class DWolfPlaceholderVisuals {
     public static final ResourceLocation HAND_CANNON_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "d_wolf_hand_cannon");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "d_wolf_hand_cannon");
     public static final ResourceLocation SMOKE_GRENADE_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "d_wolf_smoke_grenade");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "d_wolf_smoke_grenade");
     private static final String HAND_CANNON_KEY = "d_wolf_hand_cannon";
     private static final String SMOKE_GRENADE_KEY = "d_wolf_smoke_grenade";
     private static boolean savedThirdPersonArm;

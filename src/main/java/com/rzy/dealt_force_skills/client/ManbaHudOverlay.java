@@ -40,15 +40,15 @@ public final class ManbaHudOverlay {
 
         drawDuelTargetVision(event.getGuiGraphics());
 
-        if (!ClientManbaHudState.shouldRender()) {
+        if (!ClientManbaHudState.shouldDisplay()) {
             drawExternalDuelStatus(event.getGuiGraphics(), minecraft.font);
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawStatus(graphics, font);
         drawTalents(graphics, font);
@@ -184,7 +184,8 @@ public final class ManbaHudOverlay {
 
     private static void drawSlot(GuiGraphics graphics, Font font, int x, int y, int accentColor, KeyMapping key,
                                  Component icon, int cooldownTicks, String detail) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101216);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101216);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -200,7 +201,8 @@ public final class ManbaHudOverlay {
         }
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

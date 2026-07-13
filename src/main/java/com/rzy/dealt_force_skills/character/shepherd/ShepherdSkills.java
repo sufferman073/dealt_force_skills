@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.shepherd;
 
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.entity.ShepherdDroneEntity;
 import com.rzy.dealt_force_skills.entity.ShepherdFragGrenadeEntity;
@@ -25,6 +27,16 @@ public final class ShepherdSkills {
     private static final Map<UUID, ToolActionStamp> LAST_TOOL_ACTIONS = new HashMap<>();
 
     private ShepherdSkills() {
+    }
+
+    public static void clearForPlayer(ServerPlayer player) {
+        if (player != null) {
+            LAST_TOOL_ACTIONS.remove(player.getUUID());
+        }
+    }
+
+    public static void clearRuntimeCaches() {
+        LAST_TOOL_ACTIONS.clear();
     }
 
     public static boolean useSkill(ServerPlayer player, SkillSlot slot, boolean alternate) {
@@ -66,7 +78,7 @@ public final class ShepherdSkills {
             return true;
         }
         if (ShepherdStateManager.sonicTrapCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.trap_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.shepherd.trap_empty"));
             return true;
         }
         if (ShepherdStateManager.countSonicTraps(player) >= ShepherdStateManager.SONIC_TRAP_ACTIVE_LIMIT) {
@@ -87,7 +99,7 @@ public final class ShepherdSkills {
             return true;
         }
         if (ShepherdStateManager.fragGrenadeCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.frag_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.shepherd.frag_empty"));
             return true;
         }
 
@@ -108,7 +120,7 @@ public final class ShepherdSkills {
             return true;
         }
         if (!ShepherdStateManager.consumeSonicTrapCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.trap_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.shepherd.trap_empty"));
             return true;
         }
 
@@ -143,7 +155,7 @@ public final class ShepherdSkills {
             return false;
         }
         if (!ShepherdStateManager.consumeFragGrenadeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.frag_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.shepherd.frag_empty"));
             ShepherdStateManager.setEquippedTool(player, ShepherdTool.NONE);
             return true;
         }
@@ -168,7 +180,8 @@ public final class ShepherdSkills {
 
     private static boolean launchDrone(ServerPlayer player, boolean patrolMode) {
         if (!ShepherdStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.drone_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.shepherd.drone_cooldown"));
             return true;
         }
 
@@ -237,7 +250,7 @@ public final class ShepherdSkills {
         return main.isEmpty() && off.isEmpty();
     }
     private static boolean isDuplicateToolAction(ServerPlayer player, ShepherdToolAction action, int targetEntityId) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         ToolActionStamp previous = LAST_TOOL_ACTIONS.get(player.getUUID());
         if (previous != null
                 && previous.action == action

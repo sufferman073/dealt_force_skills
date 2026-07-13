@@ -14,6 +14,7 @@ import java.util.Set;
 
 public final class CharacterBanManager {
     private static final String PLAYER_BANS_TAG = DealtForceSkillsMod.MODID + ".banned_characters";
+    private static final String PLAYER_ALLOWS_TAG = DealtForceSkillsMod.MODID + ".allowed_characters";
     private static final String DATA_NAME = DealtForceSkillsMod.MODID + "_character_bans";
     private static final String SERVER_BANS_TAG = "ServerBans";
 
@@ -25,8 +26,9 @@ public final class CharacterBanManager {
         ListTag bans = data.contains(PLAYER_BANS_TAG, Tag.TAG_LIST)
                 ? data.getList(PLAYER_BANS_TAG, Tag.TAG_STRING)
                 : new ListTag();
+        boolean allowRemoved = removeFromList(data, PLAYER_ALLOWS_TAG, characterId);
         if (contains(bans, characterId)) {
-            return false;
+            return allowRemoved;
         }
         bans.add(StringTag.valueOf(characterId));
         data.put(PLAYER_BANS_TAG, bans);
@@ -35,29 +37,24 @@ public final class CharacterBanManager {
 
     public static boolean unbanPlayer(ServerPlayer player, String characterId) {
         CompoundTag data = player.getPersistentData();
-        if (!data.contains(PLAYER_BANS_TAG, Tag.TAG_LIST)) {
-            return false;
+        boolean banRemoved = removeFromList(data, PLAYER_BANS_TAG, characterId);
+        ListTag allows = data.contains(PLAYER_ALLOWS_TAG, Tag.TAG_LIST)
+                ? data.getList(PLAYER_ALLOWS_TAG, Tag.TAG_STRING)
+                : new ListTag();
+        if (contains(allows, characterId)) {
+            return banRemoved;
         }
-        ListTag bans = data.getList(PLAYER_BANS_TAG, Tag.TAG_STRING);
-        ListTag kept = new ListTag();
-        boolean changed = false;
-        for (int i = 0; i < bans.size(); i++) {
-            String value = bans.getString(i);
-            if (characterId.equals(value)) {
-                changed = true;
-            } else {
-                kept.add(StringTag.valueOf(value));
-            }
-        }
-        if (!changed) {
-            return false;
-        }
-        if (kept.isEmpty()) {
-            data.remove(PLAYER_BANS_TAG);
-        } else {
-            data.put(PLAYER_BANS_TAG, kept);
-        }
+        allows.add(StringTag.valueOf(characterId));
+        data.put(PLAYER_ALLOWS_TAG, allows);
         return true;
+    }
+
+    public static boolean isPlayerAllowed(ServerPlayer player, String characterId) {
+        CompoundTag data = player.getPersistentData();
+        if (!data.contains(PLAYER_ALLOWS_TAG, Tag.TAG_LIST)) {
+            return false;
+        }
+        return contains(data.getList(PLAYER_ALLOWS_TAG, Tag.TAG_STRING), characterId);
     }
 
     public static boolean isPlayerBanned(ServerPlayer player, String characterId) {
@@ -97,6 +94,32 @@ public final class CharacterBanManager {
             }
         }
         return false;
+    }
+
+    private static boolean removeFromList(CompoundTag data, String tagName, String characterId) {
+        if (!data.contains(tagName, Tag.TAG_LIST)) {
+            return false;
+        }
+        ListTag values = data.getList(tagName, Tag.TAG_STRING);
+        ListTag kept = new ListTag();
+        boolean changed = false;
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.getString(i);
+            if (characterId.equals(value)) {
+                changed = true;
+            } else {
+                kept.add(StringTag.valueOf(value));
+            }
+        }
+        if (!changed) {
+            return false;
+        }
+        if (kept.isEmpty()) {
+            data.remove(tagName);
+        } else {
+            data.put(tagName, kept);
+        }
+        return true;
     }
 
     private static ServerBanData serverData(MinecraftServer server) {

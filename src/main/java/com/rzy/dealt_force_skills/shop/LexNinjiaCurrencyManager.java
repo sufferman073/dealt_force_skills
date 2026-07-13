@@ -12,11 +12,11 @@ import net.minecraft.world.entity.player.Player;
 public final class LexNinjiaCurrencyManager {
     private static final String LOTUS_BOXES = DealtForceSkillsMod.MODID + ".lex_ninjia_lotus_boxes";
     private static final String LAST_SURVIVAL_AWARD_TICK = DealtForceSkillsMod.MODID + ".lex_ninjia_last_survival_award_tick";
-    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award_interval_ticks", 60L * 20L);
-    private static final long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award", 500L);
-    private static final long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_kill_award", 4500L);
-    private static final long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_death_award", 6000L);
-
+    private static volatile long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award_interval_ticks", 1200L));
+    private static volatile long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.survival_award", 500L));
+    private static volatile long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_KILL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_kill_award", 4500L));
+    private static volatile long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_DEATH_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiacurrencymanager.player_death_award", 6000L));
+    private static volatile double MOB_KILL_HEALTH_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MOB_KILL_HEALTH_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("shop.lexninjiacurrencymanager.mob_kill_health_multiplier", 10.0));
     private LexNinjiaCurrencyManager() {
     }
 
@@ -73,7 +73,7 @@ public final class LexNinjiaCurrencyManager {
             add(killer, PLAYER_KILL_AWARD);
             return;
         }
-        add(killer, Math.max(1L, Math.round(victim.getMaxHealth() * 10.0D)));
+        add(killer, Math.max(1L, Math.round(victim.getMaxHealth() * MOB_KILL_HEALTH_MULTIPLIER)));
     }
 
     public static void awardDeath(ServerPlayer player) {
@@ -104,9 +104,10 @@ public final class LexNinjiaCurrencyManager {
         NetworkHandler.sendToPlayer(new S2C_SyncLexNinjiaCurrency(get(player)), player);
     }
 
-    private static void set(ServerPlayer player, long amount) {
+    public static long set(ServerPlayer player, long amount) {
         player.getPersistentData().putLong(LOTUS_BOXES, Math.max(0L, amount));
         sync(player);
+        return get(player);
     }
 
     private static long safeAdd(long left, long right) {

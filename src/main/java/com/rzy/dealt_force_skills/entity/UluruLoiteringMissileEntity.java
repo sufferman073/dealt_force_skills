@@ -1,12 +1,15 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_UluruMissileCamera;
 import com.rzy.dealt_force_skills.network.S2C_UluruGhostEntities;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -57,42 +60,57 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 public class UluruLoiteringMissileEntity extends Projectile implements ItemSupplier {
-    private static final double DIRECT_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.direct_max_speed", 45.0 / 20.0);
-    private static final double DIRECT_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_acceleration", 30.0 / 400.0);
-    private static final double DIRECT_GRAVITY = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_gravity", 0.018);
-    private static final double DIRECT_TERMINAL_DROP = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_terminal_drop", -0.8);
-    private static final double GUIDED_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_max_speed", 24.0 / 20.0);
-    private static final double GUIDED_BOOST_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_boost_max_speed", 48.0 / 20.0);
-    private static final double GUIDED_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.guided_acceleration", 24.0 / 400.0);
-    private static final double GUIDED_BOOST_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_boost_acceleration", 48.0 / 400.0);
-    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.explosion_radius", 4.8);
-    private static final float EXPLOSION_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.uluruloiteringmissileentity.explosion_damage", 140.0f);
-    private static final float PLAYER_EXPLOSION_DAMAGE_CAP = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.uluruloiteringmissileentity.player_explosion_damage_cap", 16.0f);
-    private static final int DIRECT_MAX_TICKS_X2 = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.direct_max_ticks_x2", 20 * 20 * 2);
-    private static final int GUIDED_MAX_TICKS_X2 = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guided_max_ticks_x2", 30 * 20 * 2);
+    private static volatile double DIRECT_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DIRECT_MAX_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.direct_max_speed", 2.25));
+    private static volatile double DIRECT_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DIRECT_ACCELERATION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_acceleration", 0.075));
+    private static volatile double DIRECT_GRAVITY = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DIRECT_GRAVITY", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_gravity", 0.018));
+    private static volatile double DIRECT_TERMINAL_DROP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DIRECT_TERMINAL_DROP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.direct_terminal_drop", -0.8));
+    private static volatile double GUIDED_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDED_MAX_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_max_speed", 1.2));
+    private static volatile double GUIDED_BOOST_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDED_BOOST_MAX_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_boost_max_speed", 2.4));
+    private static volatile double GUIDED_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDED_ACCELERATION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluru_loitering_missile_entity.guided_acceleration", 0.06));
+    private static volatile double GUIDED_BOOST_ACCELERATION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDED_BOOST_ACCELERATION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guided_boost_acceleration", 0.12));
+    private static volatile double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.explosion_radius", 4.8));
+    private static volatile float EXPLOSION_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.uluruloiteringmissileentity.explosion_damage", 140.0F));
+    private static volatile float PLAYER_EXPLOSION_DAMAGE_CAP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_EXPLOSION_DAMAGE_CAP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "summons.uluruloiteringmissileentity.player_explosion_damage_cap", 16.0F
+   ));
+    private static volatile int DIRECT_MAX_TICKS_X2 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DIRECT_MAX_TICKS_X2", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.direct_max_ticks_x2", 800));
+    private static volatile int GUIDED_MAX_TICKS_X2 = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDED_MAX_TICKS_X2", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guided_max_ticks_x2", 1200));
     private static final int FLIGHT_SOUND_INTERVAL_TICKS = 12;
-    private static final int WARNING_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.warning_interval_ticks", 10);
-    private static final double WARNING_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.warning_radius", 256.0D);
-    private static final int FORCED_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.forced_chunk_radius", 5);
-    private static final int CRITICAL_TERRAIN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.critical_terrain_radius", 2);
-    private static final int MAX_TERRAIN_CHUNKS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.max_terrain_chunks_per_tick", 24);
-    private static final double ENTITY_STREAM_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.entity_stream_radius", 192.0D);
-    private static final int ENTITY_STREAM_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.entity_stream_interval_ticks", 2);
-    private static final int ENTITY_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.entity_respawn_interval_ticks", 20);
-    private static final int MAX_GHOST_VISUAL_ENTITIES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluru_loitering_missile_entity.max_ghost_visual_entities", 96);
-    private static final int PRELOAD_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.preload_chunk_radius", 4);
-    private static final int CHUNK_LOOKAHEAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.chunk_lookahead_ticks", 14);
-    private static final int FAR_CHUNK_LOOKAHEAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.far_chunk_lookahead_ticks", 32);
+    private static final double FLIGHT_SOUND_RANGE = 64.0D;
+    private static volatile int WARNING_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARNING_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.warning_interval_ticks", 10));
+    private static volatile double WARNING_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARNING_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.warning_radius", 256.0));
+    private static volatile int FORCED_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FORCED_CHUNK_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.forced_chunk_radius", 5));
+    private static volatile int CRITICAL_TERRAIN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CRITICAL_TERRAIN_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.critical_terrain_radius", 2));
+    private static volatile int MAX_TERRAIN_CHUNKS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_TERRAIN_CHUNKS_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.max_terrain_chunks_per_tick", 24));
+    private static volatile double ENTITY_STREAM_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENTITY_STREAM_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.entity_stream_radius", 192.0));
+    private static volatile int ENTITY_STREAM_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENTITY_STREAM_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.entity_stream_interval_ticks", 2));
+    private static volatile int ENTITY_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENTITY_RESPAWN_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.entity_respawn_interval_ticks", 20));
+    private static volatile int MAX_GHOST_VISUAL_ENTITIES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_GHOST_VISUAL_ENTITIES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluru_loitering_missile_entity.max_ghost_visual_entities", 96));
+    private static volatile int PRELOAD_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PRELOAD_CHUNK_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.preload_chunk_radius", 4));
+    private static volatile int CHUNK_LOOKAHEAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHUNK_LOOKAHEAD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.chunk_lookahead_ticks", 14));
+    private static volatile int FAR_CHUNK_LOOKAHEAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FAR_CHUNK_LOOKAHEAD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.far_chunk_lookahead_ticks", 32));
     private static final int GUIDED_CHUNK_CACHE_RADIUS = 10;
-    private static final int SERVER_CAMERA_REFRESH_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.server_camera_refresh_interval_ticks", 20);
-    private static final int OWNER_MISSILE_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.owner_missile_respawn_interval_ticks", 20);
-    private static final int RESTORE_TERRAIN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.restore_terrain_ticks", 120);
-    private static final int RESTORE_TERRAIN_CENTER_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.restore_terrain_center_interval_ticks", 1);
-    private static final int RESTORE_TERRAIN_CHUNKS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.restore_terrain_chunks_per_tick", 16);
-    private static final int GUIDANCE_STALE_DAMPING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guidance_stale_damping_ticks", 4);
-    private static final int GUIDANCE_STALE_COAST_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guidance_stale_coast_ticks", 8);
-    private static final double GUIDANCE_DAMPED_SPEED_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guidance_damped_speed_factor", 0.55D);
-    private static final double GUIDANCE_COAST_SPEED_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruloiteringmissileentity.guidance_coast_speed_factor", 0.25D);
+    private static volatile int SERVER_CAMERA_REFRESH_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SERVER_CAMERA_REFRESH_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.uluruloiteringmissileentity.server_camera_refresh_interval_ticks", 20
+   ));
+    private static volatile int OWNER_MISSILE_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OWNER_MISSILE_RESPAWN_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.uluruloiteringmissileentity.owner_missile_respawn_interval_ticks", 20
+   ));
+    private static volatile int RESTORE_TERRAIN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RESTORE_TERRAIN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.restore_terrain_ticks", 120));
+    private static volatile int RESTORE_TERRAIN_CENTER_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RESTORE_TERRAIN_CENTER_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.uluruloiteringmissileentity.restore_terrain_center_interval_ticks", 1
+   ));
+    private static volatile int RESTORE_TERRAIN_CHUNKS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RESTORE_TERRAIN_CHUNKS_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.uluruloiteringmissileentity.restore_terrain_chunks_per_tick", 16
+   ));
+    private static volatile int GUIDANCE_STALE_DAMPING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDANCE_STALE_DAMPING_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guidance_stale_damping_ticks", 4));
+    private static volatile int GUIDANCE_STALE_COAST_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDANCE_STALE_COAST_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.uluruloiteringmissileentity.guidance_stale_coast_ticks", 8));
+    private static volatile double GUIDANCE_DAMPED_SPEED_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDANCE_DAMPED_SPEED_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "summons.uluruloiteringmissileentity.guidance_damped_speed_factor", 0.55
+   ));
+    private static volatile double GUIDANCE_COAST_SPEED_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDANCE_COAST_SPEED_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "summons.uluruloiteringmissileentity.guidance_coast_speed_factor", 0.25
+   ));
     private static final Map<UUID, Integer> ACTIVE_GUIDED_MISSILES = new HashMap<>();
     private static final Map<UUID, ControlAnchor> ACTIVE_GUIDED_ANCHORS = new HashMap<>();
     private static final Map<UUID, RestoreTerrainSession> RESTORING_TERRAIN = new HashMap<>();
@@ -238,6 +256,16 @@ public class UluruLoiteringMissileEntity extends Projectile implements ItemSuppl
         }
     }
 
+    public static void clearPlayerControlState(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        ACTIVE_GUIDED_MISSILES.remove(playerId);
+        ACTIVE_GUIDED_ANCHORS.remove(playerId);
+        RESTORING_TERRAIN.remove(playerId);
+    }
+
     public static void lockControllingPlayer(ServerPlayer player) {
         if (!ACTIVE_GUIDED_MISSILES.containsKey(player.getUUID())) {
             return;
@@ -375,6 +403,8 @@ public class UluruLoiteringMissileEntity extends Projectile implements ItemSuppl
                     80, EXPLOSION_RADIUS * 0.5, 0.5, EXPLOSION_RADIUS * 0.5, 0.05);
 
             LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+            ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
+            boolean damagedTarget = false;
             AABB box = new AABB(center, center).inflate(EXPLOSION_RADIUS);
             for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
                 double distance = target.position().add(0, target.getBbHeight() * 0.5, 0).distanceTo(center);
@@ -387,9 +417,17 @@ public class UluruLoiteringMissileEntity extends Projectile implements ItemSuppl
                 }
                 if (amount <= 0) continue;
                 target.invulnerableTime = 0;
-                SkillDamageHelper.hurt(target, SkillDamageHelper.uluruMissile(serverLevel, this, owner), owner, amount);
+                if (SkillDamageHelper.hurt(target, SkillDamageHelper.uluruMissile(serverLevel, this, owner), owner, amount)) {
+                    damagedTarget = true;
+                }
                 target.hurtMarked = true;
             }
+            if (ownerPlayer != null && damagedTarget) {
+                DfsAchievements.recordUluruMissileCombo(ownerPlayer, true, false);
+            }
+            SuperbWarfareCompat.damageVehicles(serverLevel, center, EXPLOSION_RADIUS,
+                    SkillDamageHelper.uluruMissile(serverLevel, this, owner), this,
+                    EXPLOSION_DAMAGE / 100.0F, true);
 
             spawnBomblets(serverLevel, center, owner);
             UluruExplosionHelper.destroyQuickCovers(serverLevel, center, EXPLOSION_RADIUS);
@@ -527,8 +565,9 @@ public class UluruLoiteringMissileEntity extends Projectile implements ItemSuppl
 
     private void playFlightSound(ServerLevel level) {
         if (tickCount % FLIGHT_SOUND_INTERVAL_TICKS == 0) {
-            level.playSound(null, blockPosition(), ModSounds.MISSILE_FLY.get(),
-                    SoundSource.PLAYERS, 0.6f, 1.0f);
+            // Flight-loop volume reduced by 50% from previous 0.6 baseline.
+            RangedSoundHelper.play(level, position(), ModSounds.MISSILE_FLY.get(),
+                    SoundSource.PLAYERS, 0.3F, 1.0F, FLIGHT_SOUND_RANGE);
         }
     }
 

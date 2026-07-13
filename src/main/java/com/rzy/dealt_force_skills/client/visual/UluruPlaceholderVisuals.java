@@ -24,11 +24,11 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class UluruPlaceholderVisuals {
     private static final ResourceLocation INCENDIARY_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_incendiary_grenade");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "uluru_incendiary_grenade");
     private static final ResourceLocation COVER_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_quick_cover_package");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "uluru_quick_cover_package");
     private static final ResourceLocation MISSILE_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "uluru_missile_launcher");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "uluru_missile_launcher");
     private static UluruTool lastAnimatedTool = UluruTool.NONE;
 
     private UluruPlaceholderVisuals() {

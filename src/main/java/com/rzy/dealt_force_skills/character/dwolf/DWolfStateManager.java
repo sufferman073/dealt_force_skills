@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.character.dwolf;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -8,6 +9,7 @@ import com.rzy.dealt_force_skills.network.S2C_DWolfStaminaRestore;
 import com.rzy.dealt_force_skills.network.S2C_SyncDWolfState;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -25,18 +27,23 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class DWolfStateManager {
-    public static final int HAND_CANNON_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_max_charges", 2);
-    public static final int HAND_CANNON_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_recharge_ticks", 25 * 20);
-    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_max_charges", 2);
-    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_recharge_ticks", 25 * 20);
-    public static final int OVERLOAD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_cooldown_ticks", 75 * 20);
-    public static final int OVERLOAD_STARTUP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_startup_ticks", 10);
-    public static final int OVERLOAD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_duration_ticks", 25 * 20);
-    public static final int OVERLOAD_EXTENSION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_extension_ticks", 5 * 20);
-    public static final int OVERLOAD_REGEN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_regen_ticks", 3 * 20);
-    public static final int SLIDE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_ticks", 12);
-    public static final int SLIDE_STAMINA_PERCENT_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_stamina_percent_cost", 15);
-    public static final int SLIDE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_cooldown_ticks", 8);
+    public static volatile int HAND_CANNON_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HAND_CANNON_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_max_charges", 2));
+    public static volatile int HAND_CANNON_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HAND_CANNON_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.hand_cannon_recharge_ticks", 500));
+    public static volatile int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_max_charges", 2));
+    public static volatile int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.smoke_recharge_ticks", 500));
+    public static volatile int OVERLOAD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_cooldown_ticks", 1500));
+    public static volatile int OVERLOAD_STARTUP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_STARTUP_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_startup_ticks", 10));
+    public static volatile int OVERLOAD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_duration_ticks", 500));
+    public static volatile int OVERLOAD_EXTENSION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_EXTENSION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_extension_ticks", 100));
+    public static volatile int OVERLOAD_REGEN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_REGEN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.overload_regen_ticks", 40));
+    public static volatile float OVERLOAD_KILL_HEAL_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OVERLOAD_KILL_HEAL_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.dwolf.d_wolf_state_manager.overload_kill_heal_fraction", 0.5F
+   ));
+    public static volatile int SLIDE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLIDE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_ticks", 12));
+    public static volatile int SLIDE_STAMINA_PERCENT_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLIDE_STAMINA_PERCENT_COST", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_stamina_percent_cost", 15));
+    public static volatile int SLIDE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLIDE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.slide_cooldown_ticks", 8));
+    private static final int OVERLOAD_STEP_INTERVAL_TICKS = 4;
+    private static volatile double SLIDE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLIDE_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.dwolf.d_wolf_state_manager.slide_speed", 0.9));
     public static final UUID OVERLOAD_SPEED_UUID = UUID.fromString("02c58f66-7af1-4a6a-9df8-2b6c5b5224b1");
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".d_wolf";
@@ -56,6 +63,11 @@ public final class DWolfStateManager {
     private static final String SLIDE_DIR_X = "SlideDirX";
     private static final String SLIDE_DIR_Z = "SlideDirZ";
     private static final String OVERLOAD_SELF_REWARD_LAST_TICK = "OverloadSelfRewardLastTick";
+    private static final String OVERLOAD_KILL_HEAL_REMAINING = "OverloadKillHealRemaining";
+    private static final String OVERLOAD_KILL_HEAL_TICKS = "OverloadKillHealTicks";
+    private static final String OVERLOAD_STEP_LAST_TICK = "OverloadStepLastTick";
+    private static final String OVERLOAD_STEP_LAST_X = "OverloadStepLastX";
+    private static final String OVERLOAD_STEP_LAST_Z = "OverloadStepLastZ";
 
     private DWolfStateManager() {
     }
@@ -91,6 +103,9 @@ public final class DWolfStateManager {
         tag.putDouble(SLIDE_DIR_X, 0.0D);
         tag.putDouble(SLIDE_DIR_Z, 0.0D);
         tag.putLong(OVERLOAD_SELF_REWARD_LAST_TICK, Long.MIN_VALUE / 4);
+        tag.putFloat(OVERLOAD_KILL_HEAL_REMAINING, 0.0F);
+        tag.putInt(OVERLOAD_KILL_HEAL_TICKS, 0);
+        tag.putLong(OVERLOAD_STEP_LAST_TICK, Long.MIN_VALUE / 4);
     }
 
     public static void copyState(Player original, Player target) {
@@ -101,6 +116,9 @@ public final class DWolfStateManager {
     }
 
     public static void clearState(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            RangedSoundHelper.stop(serverPlayer.serverLevel(), ModSounds.D_WOLF_OVERLOAD_ACTIVE.get(), SoundSource.PLAYERS);
+        }
         player.getPersistentData().remove(ROOT_TAG);
     }
 
@@ -118,12 +136,13 @@ public final class DWolfStateManager {
         }
         initializeIfNeeded(player);
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, HAND_CANNON_CHARGES, HAND_CANNON_MAX_CHARGES, HAND_CANNON_NEXT_RECHARGE, HAND_CANNON_RECHARGE_TICKS);
         recharge(player, now, SMOKE_CHARGES, SMOKE_MAX_CHARGES, SMOKE_NEXT_RECHARGE, SMOKE_RECHARGE_TICKS);
         tickCannonBurst(player, now);
         finishOverloadStartup(player, now);
         tickOverload(player, now);
+        tickOverloadKillHeal(player);
         tickSlide(player);
     }
 
@@ -181,14 +200,14 @@ public final class DWolfStateManager {
             return false;
         }
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         tag.putInt(CANNON_BURST_SHOTS, 3);
         tag.putLong(CANNON_BURST_NEXT_SHOT, now);
         return true;
     }
 
     public static boolean isOverloadReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(OVERLOAD_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(OVERLOAD_COOLDOWN_UNTIL);
     }
 
     public static int overloadCooldownRemainingTicks(Player player) {
@@ -212,7 +231,7 @@ public final class DWolfStateManager {
     }
 
     public static void startOverloadStartup(ServerPlayer player) {
-        data(player).putLong(OVERLOAD_STARTUP_UNTIL, player.level().getGameTime() + OVERLOAD_STARTUP_TICKS);
+        data(player).putLong(OVERLOAD_STARTUP_UNTIL, SkillCooldownHelper.now(player) + OVERLOAD_STARTUP_TICKS);
     }
 
     public static void extendOverload(ServerPlayer player) {
@@ -222,7 +241,11 @@ public final class DWolfStateManager {
 
         CompoundTag tag = data(player);
         tag.putLong(OVERLOAD_ACTIVE_UNTIL, tag.getLong(OVERLOAD_ACTIVE_UNTIL) + OVERLOAD_EXTENSION_TICKS);
-        player.addEffect(new MobEffectInstance(MobEffects.REGENERATION, OVERLOAD_REGEN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.effect.regeneration.0.amplifier", 3), false, true, true));
+        DfsAchievements.recordDWolfOverloadExtension(player, OVERLOAD_EXTENSION_TICKS);
+        // Overload kill reward: restore 50% max health over 2 seconds (not vanilla REGEN amp).
+        float healTotal = player.getMaxHealth() * Math.max(0.0F, OVERLOAD_KILL_HEAL_FRACTION);
+        tag.putFloat(OVERLOAD_KILL_HEAL_REMAINING, healTotal);
+        tag.putInt(OVERLOAD_KILL_HEAL_TICKS, Math.max(1, OVERLOAD_REGEN_TICKS));
         player.addEffect(new MobEffectInstance(MobEffects.SATURATION, OVERLOAD_REGEN_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.dwolf.d_wolf_state_manager.effect.saturation.1.amplifier", 1), false, true, true));
         NetworkHandler.sendToPlayer(new S2C_DWolfStaminaRestore(50), player);
         player.level().playSound(null, player.blockPosition(), ModSounds.D_WOLF_OVERLOAD_KILL_EXTENSION.get(),
@@ -234,13 +257,30 @@ public final class DWolfStateManager {
         if (!isOverloadActive(player)) {
             return false;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long previous = data(player).getLong(OVERLOAD_SELF_REWARD_LAST_TICK);
         return now - previous >= 20L;
     }
 
     public static void markSelfReward(ServerPlayer player) {
-        data(player).putLong(OVERLOAD_SELF_REWARD_LAST_TICK, player.level().getGameTime());
+        data(player).putLong(OVERLOAD_SELF_REWARD_LAST_TICK, SkillCooldownHelper.now(player));
+    }
+
+    private static void tickOverloadKillHeal(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        int remainingTicks = tag.getInt(OVERLOAD_KILL_HEAL_TICKS);
+        float remainingHeal = tag.getFloat(OVERLOAD_KILL_HEAL_REMAINING);
+        if (remainingTicks <= 0 || remainingHeal <= 0.0F) {
+            if (remainingTicks != 0 || remainingHeal != 0.0F) {
+                tag.putInt(OVERLOAD_KILL_HEAL_TICKS, 0);
+                tag.putFloat(OVERLOAD_KILL_HEAL_REMAINING, 0.0F);
+            }
+            return;
+        }
+        float portion = remainingHeal / remainingTicks;
+        player.heal(portion);
+        tag.putFloat(OVERLOAD_KILL_HEAL_REMAINING, Math.max(0.0F, remainingHeal - portion));
+        tag.putInt(OVERLOAD_KILL_HEAL_TICKS, remainingTicks - 1);
     }
 
     public static boolean startSlide(ServerPlayer player) {
@@ -249,7 +289,7 @@ public final class DWolfStateManager {
         }
 
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (tag.getInt(SLIDE_TICKS_REMAINING) > 0 || now < tag.getLong(SLIDE_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -319,13 +359,18 @@ public final class DWolfStateManager {
 
         tag.putLong(OVERLOAD_STARTUP_UNTIL, 0L);
         tag.putLong(OVERLOAD_ACTIVE_UNTIL, now + OVERLOAD_DURATION_TICKS);
+        tag.putDouble(OVERLOAD_STEP_LAST_X, player.getX());
+        tag.putDouble(OVERLOAD_STEP_LAST_Z, player.getZ());
         NetworkHandler.sendToPlayer(new S2C_DWolfStaminaRestore(50), player);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.D_WOLF_OVERLOAD_ACTIVE.get(),
+                SoundSource.PLAYERS, 1.0f, 1.0f, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.d_wolf.overload_active"), true);
         syncToClient(player);
     }
 
     private static void tickOverload(ServerPlayer player, long now) {
-        boolean active = data(player).getLong(OVERLOAD_ACTIVE_UNTIL) > now;
+        CompoundTag tag = data(player);
+        boolean active = tag.getLong(OVERLOAD_ACTIVE_UNTIL) > now;
         var attr = player.getAttribute(Attributes.MOVEMENT_SPEED);
         if (attr != null) {
             AttributeModifier existing = attr.getModifier(OVERLOAD_SPEED_UUID);
@@ -338,16 +383,36 @@ public final class DWolfStateManager {
                 attr.removeModifier(OVERLOAD_SPEED_UUID);
             }
         }
+        if (active) {
+            maybePlayOverloadStep(player, tag, now);
+        }
 
-        CompoundTag tag = data(player);
         long activeUntil = tag.getLong(OVERLOAD_ACTIVE_UNTIL);
         if (activeUntil > 0L && now >= activeUntil) {
             tag.putLong(OVERLOAD_ACTIVE_UNTIL, 0L);
             tag.putLong(OVERLOAD_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, OVERLOAD_COOLDOWN_TICKS));
+            RangedSoundHelper.stop(player.serverLevel(), ModSounds.D_WOLF_OVERLOAD_ACTIVE.get(), SoundSource.PLAYERS);
             player.level().playSound(null, player.blockPosition(), ModSounds.D_WOLF_OVERLOAD_END.get(),
                     SoundSource.PLAYERS, 1.0f, 1.0f);
             syncToClient(player);
         }
+    }
+
+    private static void maybePlayOverloadStep(ServerPlayer player, CompoundTag tag, long now) {
+        if (!player.onGround() || now - tag.getLong(OVERLOAD_STEP_LAST_TICK) < OVERLOAD_STEP_INTERVAL_TICKS) {
+            return;
+        }
+        double dx = player.getX() - tag.getDouble(OVERLOAD_STEP_LAST_X);
+        double dz = player.getZ() - tag.getDouble(OVERLOAD_STEP_LAST_Z);
+        if (dx * dx + dz * dz < 0.04D) {
+            return;
+        }
+        tag.putLong(OVERLOAD_STEP_LAST_TICK, now);
+        tag.putDouble(OVERLOAD_STEP_LAST_X, player.getX());
+        tag.putDouble(OVERLOAD_STEP_LAST_Z, player.getZ());
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+                ModSounds.D_WOLF_OVERLOAD_STEP.get(), SoundSource.PLAYERS,
+                0.75f, 0.95f + player.getRandom().nextFloat() * 0.1f);
     }
 
     private static void tickSlide(ServerPlayer player) {
@@ -363,7 +428,7 @@ public final class DWolfStateManager {
             return;
         }
 
-        Vec3 motion = direction.normalize().scale(0.9D);
+        Vec3 motion = direction.normalize().scale(SLIDE_SPEED);
         player.setPose(Pose.SWIMMING);
         player.refreshDimensions();
         player.setDeltaMovement(motion.x, player.getDeltaMovement().y, motion.z);
@@ -380,7 +445,7 @@ public final class DWolfStateManager {
 
         tag.putInt(chargesKey, charges - 1);
         if (charges == maxCharges) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -399,8 +464,7 @@ public final class DWolfStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

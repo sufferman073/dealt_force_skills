@@ -19,10 +19,24 @@ public class S2C_SyncNikaidouHiroState {
     private final int coreActiveTicks;
     private final int doomedTicks;
     private final int attackCooldownTicks;
+    private final boolean anchorMarkerActive;
+    private final String anchorMarkerDimension;
+    private final double anchorMarkerX;
+    private final double anchorMarkerY;
+    private final double anchorMarkerZ;
 
     public S2C_SyncNikaidouHiroState(int riftStacks, int riftTicks, int active1CooldownTicks, int active1Ticks,
                                      int equippedToolOrdinal, int coreCooldownTicks, boolean coreActive,
                                      int coreActiveTicks, int doomedTicks, int attackCooldownTicks) {
+        this(riftStacks, riftTicks, active1CooldownTicks, active1Ticks, equippedToolOrdinal, coreCooldownTicks,
+                coreActive, coreActiveTicks, doomedTicks, attackCooldownTicks, false, "", 0.0D, 0.0D, 0.0D);
+    }
+
+    public S2C_SyncNikaidouHiroState(int riftStacks, int riftTicks, int active1CooldownTicks, int active1Ticks,
+                                     int equippedToolOrdinal, int coreCooldownTicks, boolean coreActive,
+                                     int coreActiveTicks, int doomedTicks, int attackCooldownTicks,
+                                     boolean anchorMarkerActive, String anchorMarkerDimension,
+                                     double anchorMarkerX, double anchorMarkerY, double anchorMarkerZ) {
         this.riftStacks = riftStacks;
         this.riftTicks = riftTicks;
         this.active1CooldownTicks = active1CooldownTicks;
@@ -33,6 +47,11 @@ public class S2C_SyncNikaidouHiroState {
         this.coreActiveTicks = coreActiveTicks;
         this.doomedTicks = doomedTicks;
         this.attackCooldownTicks = attackCooldownTicks;
+        this.anchorMarkerActive = anchorMarkerActive;
+        this.anchorMarkerDimension = anchorMarkerDimension == null ? "" : anchorMarkerDimension;
+        this.anchorMarkerX = anchorMarkerX;
+        this.anchorMarkerY = anchorMarkerY;
+        this.anchorMarkerZ = anchorMarkerZ;
     }
 
     public static void encode(S2C_SyncNikaidouHiroState msg, FriendlyByteBuf buf) {
@@ -46,6 +65,11 @@ public class S2C_SyncNikaidouHiroState {
         buf.writeVarInt(msg.coreActiveTicks);
         buf.writeVarInt(msg.doomedTicks);
         buf.writeVarInt(msg.attackCooldownTicks);
+        buf.writeBoolean(msg.anchorMarkerActive);
+        buf.writeUtf(msg.anchorMarkerDimension);
+        buf.writeDouble(msg.anchorMarkerX);
+        buf.writeDouble(msg.anchorMarkerY);
+        buf.writeDouble(msg.anchorMarkerZ);
     }
 
     public static S2C_SyncNikaidouHiroState decode(FriendlyByteBuf buf) {
@@ -59,7 +83,12 @@ public class S2C_SyncNikaidouHiroState {
                 buf.readBoolean(),
                 buf.readVarInt(),
                 buf.readVarInt(),
-                buf.readVarInt()
+                buf.readVarInt(),
+                buf.readBoolean(),
+                buf.readUtf(32767),
+                buf.readDouble(),
+                buf.readDouble(),
+                buf.readDouble()
         );
     }
 
@@ -76,7 +105,12 @@ public class S2C_SyncNikaidouHiroState {
                         msg.coreActive,
                         msg.coreActiveTicks,
                         msg.doomedTicks,
-                        msg.attackCooldownTicks
+                        msg.attackCooldownTicks,
+                        msg.anchorMarkerActive,
+                        msg.anchorMarkerDimension,
+                        msg.anchorMarkerX,
+                        msg.anchorMarkerY,
+                        msg.anchorMarkerZ
                 )
         ));
         ctx.get().setPacketHandled(true);

@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawTerminalVisuals {
     private static final ResourceLocation TERMINAL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "hackclaw_hacking_terminal");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "hackclaw_hacking_terminal");
 
     private HackclawTerminalVisuals() {
     }

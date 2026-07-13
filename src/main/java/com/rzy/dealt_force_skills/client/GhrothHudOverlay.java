@@ -30,14 +30,14 @@ public final class GhrothHudOverlay {
         }
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.options.hideGui
-                || !ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.selectedCharacterId())) {
+                || !ModCharacters.GHROTH_ID.equals(ClientCharacterSelectionState.displayedCharacterId())) {
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawSlot(graphics, font, x, y, 0xFFD9A441, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.ghroth.skill.noon"),
@@ -71,7 +71,8 @@ public final class GhrothHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA12141A);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA12141A);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -85,7 +86,8 @@ public final class GhrothHudOverlay {
             HudTextHelper.drawCenteredFitted(graphics, font, detail, x + SLOT / 2, y + 22, 38, 0xFFE0E4EA);
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        HudTextHelper.drawCenteredFitted(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            HudTextHelper.drawCenteredFitted(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static String cooldownText(int ticks) {

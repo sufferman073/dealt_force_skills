@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.sineva.SinevaKnockdownState;
 import com.rzy.dealt_force_skills.character.sineva.SinevaStateManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
@@ -33,13 +34,20 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
-    private static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.fuse_ticks", 5 * 20);
-    private static final int KNOCKDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.knockdown_ticks", 5 * 20);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vyrontigercannonentity.radius", 4.0D);
-    private static final int MAX_FLOOR_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyron_tiger_cannon_entity.max_floor_bounces", 2);
+    private static volatile int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.fuse_ticks", 60));
+    private static volatile int KNOCKDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNOCKDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyrontigercannonentity.knockdown_ticks", 100));
+    private static volatile int MAX_FLOOR_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLOOR_BOUNCES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vyron_tiger_cannon_entity.max_floor_bounces", 2));
+    private static final int READY_SOUND_ELAPSED_TICKS = Math.max(1, (int) Math.ceil(FUSE_TICKS * 0.4D));
+
+    /** Live config read so /reload hot-applies blast radius (default 5.5 blocks). */
+    private static double radius() {
+        return com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+                "summons.vyrontigercannonentity.radius", 5.5D);
+    }
 
     private int fuseRemaining = FUSE_TICKS;
     private int floorBounces;
+    private boolean readySoundStarted;
 
     public VyronTigerCannonEntity(EntityType<? extends VyronTigerCannonEntity> type, Level level) {
         super(type, level);
@@ -65,6 +73,7 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
 
         if (!level().isClientSide) {
             warnPlayers();
+            playReadySoundIfDue();
             if (--fuseRemaining <= 0) {
                 explode();
                 return;
@@ -97,12 +106,14 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
             fuseRemaining = FUSE_TICKS;
         }
         floorBounces = tag.getInt("FloorBounces");
+        readySoundStarted = tag.getBoolean("ReadySoundStarted");
     }
 
     @Override
     protected void addAdditionalSaveData(CompoundTag tag) {
         tag.putInt("FuseRemaining", fuseRemaining);
         tag.putInt("FloorBounces", floorBounces);
+        tag.putBoolean("ReadySoundStarted", readySoundStarted);
     }
 
     @Override
@@ -134,11 +145,8 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * 0.72D, motion.y * 0.85D, motion.z * 0.72D);
-            case Y -> new Vec3(motion.x * 0.72D, -motion.y * 0.46D, motion.z * 0.72D);
-            case Z -> new Vec3(motion.x * 0.72D, motion.y * 0.85D, -motion.z * 0.72D);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, 0.72D, 0.46D, 0.85D);
     }
 
     private void warnPlayers() {
@@ -146,11 +154,25 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
             return;
         }
         Vec3 center = position();
-        AABB box = new AABB(center, center).inflate(RADIUS);
+        double r = radius();
+        AABB box = new AABB(center, center).inflate(r);
         for (ServerPlayer player : serverLevel.getEntitiesOfClass(ServerPlayer.class, box,
-                target -> TargetingUtil.isTargetablePlayer(target) && target.distanceToSqr(center) <= RADIUS * RADIUS)) {
+                target -> TargetingUtil.isTargetablePlayer(target) && target.distanceToSqr(center) <= r * r)) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.tiger_warning"), true);
         }
+    }
+
+    private void playReadySoundIfDue() {
+        if (readySoundStarted || !(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        int elapsed = FUSE_TICKS - fuseRemaining;
+        if (elapsed < READY_SOUND_ELAPSED_TICKS) {
+            return;
+        }
+        readySoundStarted = true;
+        RangedSoundHelper.playFollowingEntity(serverLevel, this, ModSounds.VYRON_TIGER_CANNON_READY.get(),
+                SoundSource.PLAYERS, 0.82f, 1.0f, 18.0D);
     }
 
     private void explode() {
@@ -167,9 +189,12 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
                 8, 0.45D, 0.25D, 0.45D, 0.02D);
 
         boolean hitAny = false;
-        AABB box = new AABB(center, center).inflate(RADIUS);
+        int knockedDownTargets = 0;
+        double r = radius();
+        AABB box = new AABB(center, center).inflate(r);
+        // Self-harm skill: can knock down the firer; teammates stay protected.
         for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
-                entity -> TargetingUtil.isTargetableLiving(entity) && entity.distanceToSqr(center) <= RADIUS * RADIUS)) {
+                entity -> TargetingUtil.isSelfOrHostileLivingFor(owner, entity) && entity.distanceToSqr(center) <= r * r)) {
             Vec3 targetCenter = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
             if (!hasLineOfSight(center, targetCenter) || isBlockedBySinevaShield(target, center)) {
                 continue;
@@ -179,8 +204,10 @@ public class VyronTigerCannonEntity extends Projectile implements ItemSupplier {
                 SinevaKnockdownState.apply(attacker, target, KNOCKDOWN_TICKS);
             }
             hitAny = true;
+            knockedDownTargets++;
         }
         if (hitAny && owner instanceof ServerPlayer attacker) {
+            DfsAchievements.recordVyronTigerCannonExplosion(attacker, floorBounces, knockedDownTargets);
             RangedSoundHelper.playThrottled(serverLevel, attacker.position(), ModSounds.VYRON_TIGER_CANNON_HIT_FEEDBACK.get(),
                     SoundSource.PLAYERS, 0.85f, 1.0f, 8.0D, 4, 2.0D);
         }

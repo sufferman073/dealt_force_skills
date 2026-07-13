@@ -24,7 +24,7 @@ public final class HelmetVisionInputHandler {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.screen != null || minecraft.player == null) {
+        if (minecraft.screen != null || minecraft.player == null || minecraft.player.isSpectator()) {
             return;
         }
 

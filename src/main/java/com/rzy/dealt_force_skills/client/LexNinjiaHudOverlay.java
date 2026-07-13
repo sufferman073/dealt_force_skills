@@ -24,7 +24,7 @@ public final class LexNinjiaHudOverlay {
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Post event) {
         if (!VanillaGuiOverlay.HOTBAR.id().equals(event.getOverlay().id())
-                || !ClientLexNinjiaHudState.shouldRender()) {
+                || !ClientLexNinjiaHudState.shouldDisplay()) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -36,9 +36,9 @@ public final class LexNinjiaHudOverlay {
 
     private static void render(GuiGraphics graphics, Font font) {
         int barWidth = 172;
-        int x = 8;
+        int x = ClientHudLayout.x(8);
         int skillY = Math.max(8, graphics.guiHeight() - SKILL_HUD_BOTTOM_OFFSET);
-        int y = Math.max(8, skillY - LEX_HUD_HEIGHT - LEX_HUD_GAP);
+        int y = ClientHudLayout.y(Math.max(8, skillY - LEX_HUD_HEIGHT - LEX_HUD_GAP));
         float ratio = Math.min(1.0F, ClientLexNinjiaHudState.leicra() / ClientLexNinjiaHudState.maxLeicra());
         graphics.fill(x, y, x + barWidth, y + 10, 0xBB10131A);
         graphics.fill(x + 1, y + 1, x + 1 + Math.round((barWidth - 2) * ratio), y + 9, 0xFF66D5FF);

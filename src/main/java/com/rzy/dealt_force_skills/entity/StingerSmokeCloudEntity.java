@@ -3,8 +3,7 @@ package com.rzy.dealt_force_skills.entity;
 import com.rzy.dealt_force_skills.util.ClientVisionHooks;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.registry.ModParticles;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -26,17 +25,16 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
-import org.joml.Vector3f;
 
 import java.util.UUID;
 
 public class StingerSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int GRENADE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.grenade_life_ticks", 15 * 20);
-    public static final int DRONE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.drone_life_ticks", 25 * 20);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.radius", 7.0D);
-    public static final double ENHANCED_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.enhanced_radius", 9.0D);
+    public static volatile int GRENADE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GRENADE_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.grenade_life_ticks", 300));
+    public static volatile int DRONE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DRONE_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokecloudentity.drone_life_ticks", 500));
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.radius", 5.5));
+    public static volatile double ENHANCED_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokecloudentity.enhanced_radius", 7.0));
+    private static final int PARTICLE_REFRESH_TICKS = 15;
     private static final EntityDataAccessor<Boolean> DATA_ENHANCED = SynchedEntityData.defineId(StingerSmokeCloudEntity.class, EntityDataSerializers.BOOLEAN);
-    private static final DustParticleOptions GREEN_SMOKE = new DustParticleOptions(new Vector3f(0.35f, 1.0f, 0.46f), 1.7f);
 
     private UUID ownerId;
     private int lifeTicks = GRENADE_LIFE_TICKS;
@@ -123,9 +121,12 @@ public class StingerSmokeCloudEntity extends Entity implements ItemSupplier {
     private void applySmokeRegen(ServerLevel level) {
         double radius = smokeRadius();
         AABB box = new AABB(position(), position()).inflate(radius);
+        ServerPlayer owner = ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box,
-                player -> player.isAlive() && player.position().add(0.0D, player.getBbHeight() * 0.5D, 0.0D).distanceTo(position()) <= radius)) {
-            StingerStateManager.applySmokeRegen(player);
+                player -> player.isAlive()
+                        && (owner == null || DealtTeamManager.isSelfOrTeammate(owner, player))
+                        && player.position().add(0.0D, player.getBbHeight() * 0.5D, 0.0D).distanceTo(position()) <= radius)) {
+            StingerStateManager.applySmokeRegen(owner, player);
         }
     }
 
@@ -178,37 +179,12 @@ public class StingerSmokeCloudEntity extends Entity implements ItemSupplier {
         if (ClientVisionHooks.isThermalVisionActive()) {
             return;
         }
+        if (tickCount > 1 && tickCount % PARTICLE_REFRESH_TICKS != 0) {
+            return;
+        }
         boolean enhanced = isEnhanced();
-        double radius = smokeRadius();
-        int largeCount = enhanced ? 6 : 4;
-        for (int i = 0; i < largeCount; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = Math.sqrt(random.nextDouble()) * radius * (enhanced ? 0.9D : 0.76D);
-            double x = getX() + Math.cos(angle) * dist;
-            double z = getZ() + Math.sin(angle) * dist;
-            double y = getY() + 0.25D + random.nextDouble() * (enhanced ? 4.8D : 4.2D);
-            if (enhanced) {
-                level().addParticle(GREEN_SMOKE, x, y, z, 0.0D, 0.01D, 0.0D);
-                if (tickCount % 3 == 0) {
-                    level().addParticle(ParticleTypes.HAPPY_VILLAGER, x, y, z, 0.0D, 0.02D, 0.0D);
-                }
-            } else {
-                level().addParticle(ModParticles.D_WOLF_LARGE_SMOKE.get(), x, y, z, 0.0D, 0.008D, 0.0D);
-            }
-        }
-        int outerCount = enhanced ? 6 : 4;
-        for (int i = 0; i < outerCount; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = radius * (enhanced ? 0.62D : 0.56D) + random.nextDouble() * radius * 0.36D;
-            double x = getX() + Math.cos(angle) * dist;
-            double y = getY() + random.nextDouble() * (enhanced ? 4.6D : 3.8D);
-            double z = getZ() + Math.sin(angle) * dist;
-            if (enhanced) {
-                level().addParticle(GREEN_SMOKE, x, y, z, 0.0D, 0.01D, 0.0D);
-            } else {
-                level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y, z, 0.0D, 0.01D, 0.0D);
-            }
-        }
+        var particle = enhanced ? ModParticles.STINGER_HEALING_SMOKE.get() : ModParticles.STINGER_LARGE_SMOKE.get();
+        level().addParticle(particle, getX(), getY() + 1.5D, getZ(), 0.0D, 0.0D, 0.0D);
     }
 
     private boolean isEnhanced() {

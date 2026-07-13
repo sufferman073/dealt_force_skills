@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/green",
+  "display": {
+    "icon": {
+      "item": "minecraft:lead"
+    },
+    "title": {
+      "text": "我即风暴"
+    },
+    "description": {
+      "text": "使用不死人的猎人职业时，散射姿态开启期间，连续命中25次范围伤害且不因能量耗尽眩晕"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

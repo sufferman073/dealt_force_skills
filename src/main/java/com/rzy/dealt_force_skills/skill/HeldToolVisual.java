@@ -32,7 +32,11 @@ public enum HeldToolVisual {
     VLINDER_MEDICAL_DRONE,
     VYRON_MAGNETIC_BOMB,
     VYRON_TIGER_CANNON,
-    DEPARTMENT_EXPLOSIVE_TRAP;
+    DEPARTMENT_EXPLOSIVE_TRAP,
+    CHAMBER_TELEPORT_CARD,
+    CHAMBER_TRAP_CARD,
+    N_TWO_DEWAR_CANISTER,
+    N_TWO_CONDENSER_LAUNCHER;
 
     public static HeldToolVisual byId(int id) {
         HeldToolVisual[] values = values();

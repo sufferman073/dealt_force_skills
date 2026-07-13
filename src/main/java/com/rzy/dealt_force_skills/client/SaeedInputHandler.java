@@ -22,7 +22,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SaeedInputHandler {
-    private static final int MONITOR_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.saeed_input_handler.monitor_long_hold_ticks", 10);
+    private static volatile int MONITOR_LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MONITOR_LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.saeed_input_handler.monitor_long_hold_ticks", 10));
     private static boolean selectionWasDown;
     private static boolean selectionLongTriggered;
     private static int selectionHeldTicks;

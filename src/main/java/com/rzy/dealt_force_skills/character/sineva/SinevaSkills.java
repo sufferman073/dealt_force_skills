@@ -1,7 +1,9 @@
 package com.rzy.dealt_force_skills.character.sineva;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.compat.ParcoolStaminaBridge;
+import com.rzy.dealt_force_skills.effect.InjuryManager;
 import com.rzy.dealt_force_skills.entity.BladeWireProjectileEntity;
 import com.rzy.dealt_force_skills.entity.GrappleHookEntity;
 import com.rzy.dealt_force_skills.registry.ModBlocks;
@@ -9,10 +11,12 @@ import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -32,15 +36,20 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class SinevaSkills {
-    private static final double FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.front_dot", Math.cos(Math.toRadians(60.0)));
-    private static final int BASH_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_cooldown_ticks", 10);
-    private static final int CHARGE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.charge_cooldown_ticks", 20);
-    private static final int BASH_ACTIVE_STAMINA_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_active_stamina_ticks", 20);
-    private static final int SILENCE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.silence_ticks", 60);
-    private static final double PROJECTILE_REFLECT_MIN_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_min_speed", 1.4D);
-    private static final double PROJECTILE_REFLECT_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_max_speed", 3.8D);
-    private static final double PROJECTILE_CHARGE_SPEED_BONUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_charge_speed_bonus", 0.45D);
+    private static volatile double FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FRONT_DOT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.front_dot", Math.cos(Math.toRadians(60.0))));
+    private static volatile int BASH_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASH_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_cooldown_ticks", 10));
+    private static volatile int CHARGE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHARGE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.charge_cooldown_ticks", 20));
+    private static volatile int BASH_ACTIVE_STAMINA_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASH_ACTIVE_STAMINA_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.bash_active_stamina_ticks", 20));
+    private static volatile int SILENCE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SILENCE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_skills.silence_ticks", 60));
+    private static volatile double PROJECTILE_REFLECT_MIN_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PROJECTILE_REFLECT_MIN_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_min_speed", 1.4));
+    private static volatile double PROJECTILE_REFLECT_MAX_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PROJECTILE_REFLECT_MAX_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_skills.projectile_reflect_max_speed", 3.8));
+    private static volatile double PROJECTILE_CHARGE_SPEED_BONUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PROJECTILE_CHARGE_SPEED_BONUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_skills.projectile_charge_speed_bonus", 0.45
+   ));
+    private static final int GRAPPLE_CHARGE_SOUND_READY_TICKS = 25;
+    private static final int GRAPPLE_CHARGE_SOUND_STALE_TICKS = 80;
     private static final ConcurrentHashMap<UUID, ChargeData> CHARGING_PLAYERS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<UUID, GrappleChargeSoundData> GRAPPLE_CHARGE_SOUNDS = new ConcurrentHashMap<>();
 
     private SinevaSkills() {
     }
@@ -49,7 +58,7 @@ public final class SinevaSkills {
         SinevaStateManager.initializeIfNeeded(player);
         return switch (slot) {
             case ACTIVE_1 -> useBladeWire(player, alternate);
-            case ACTIVE_2 -> useGrapple(player);
+            case ACTIVE_2 -> useGrapple(player, alternate);
             case CORE -> useBombSuit(player, alternate);
             case PASSIVE -> false;
         };
@@ -89,7 +98,7 @@ public final class SinevaSkills {
             core.setLinkedWireCount(placedWires);
         }
 
-        level.playSound(null, corePos, ModSounds.WIRE_PLACE.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
+        level.playSound(null, corePos, ModSounds.SINEVA_BARBED_WIRE_LAND.get(), SoundSource.BLOCKS, 1.0f, 1.0f);
         damageBladeWireBurst(level, corePos, owner);
     }
 
@@ -100,29 +109,32 @@ public final class SinevaSkills {
 
         SinevaStateManager.setBashCooldown(player, BASH_COOLDOWN_TICKS);
         ParcoolStaminaBridge.markActiveStaminaUse(player, BASH_ACTIVE_STAMINA_TICKS);
-        player.level().playSound(null, player.blockPosition(), ModSounds.SHIELD_BASH.get(),
-                SoundSource.PLAYERS, 1.0f, 1.0f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_SHIELD_BASH.get(),
+                SoundSource.PLAYERS, 1.0f, 1.0f, 32.0D);
 
         Vec3 forward = player.getLookAngle().normalize();
         AABB box = player.getBoundingBox().inflate(2.0, 1.0, 2.0);
         reflectProjectiles(player, box, forward, FRONT_DOT, null, 0.0D);
         boolean controlVoicePlayed = false;
+        int controlledTargets = 0;
         for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
-                entity -> entity != player && entity.isAlive())) {
+                entity -> entity != player && entity.isAlive() && !DealtTeamManager.areTeammates(player, entity))) {
             Vec3 toTarget = target.position().add(0, target.getBbHeight() * 0.5, 0)
                     .subtract(player.getEyePosition()).normalize();
             if (forward.dot(toTarget) < FRONT_DOT) continue;
 
             float damage = target instanceof Player ? 5.0f : 50.0f;
-            if (SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaShieldBash(player.serverLevel(), null, player), player, damage)) {
-                player.level().playSound(null, target.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
-                        SoundSource.PLAYERS, 1.0f, 1.0f);
-            }
+            SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaShieldBash(player.serverLevel(), null, player), player, damage);
+            playShieldBashHit(player, target);
             if (applyShieldBashControl(player, target) && !controlVoicePlayed) {
+                controlledTargets++;
                 playShieldBashControlVoice(player);
                 controlVoicePlayed = true;
+            } else if (target.hasEffect(ModEffects.STUN.get())) {
+                controlledTargets++;
             }
         }
+        DfsAchievements.recordSinevaShieldBashTargets(player, controlledTargets, true);
         return true;
     }
 
@@ -142,8 +154,8 @@ public final class SinevaSkills {
 
         SinevaStateManager.setChargeCooldown(player, CHARGE_COOLDOWN_TICKS);
         CHARGING_PLAYERS.put(player.getUUID(), new ChargeData(horizontal.normalize(), 14));
-        player.level().playSound(null, player.blockPosition(), ModSounds.SHIELD_BASH.get(),
-                SoundSource.PLAYERS, 1.0f, 0.8f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_SHIELD_BASH_CHARGE.get(),
+                SoundSource.PLAYERS, 1.0f, 0.8f, 32.0D);
         return true;
     }
 
@@ -172,20 +184,20 @@ public final class SinevaSkills {
             AABB box = player.getBoundingBox().inflate(2.0, 1.0, 2.0);
             reflectProjectiles(player, box, data.direction, 0.0D, data.reflectedProjectiles, PROJECTILE_CHARGE_SPEED_BONUS);
             for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
-                    entity -> entity != player && entity.isAlive() && !data.hitEntities.contains(entity))) {
+                    entity -> entity != player && entity.isAlive() && !data.hitEntities.contains(entity)
+                            && !DealtTeamManager.areTeammates(player, entity))) {
                 Vec3 toTarget = target.position().subtract(player.position()).normalize();
                 if (data.direction.dot(new Vec3(toTarget.x, 0.0, toTarget.z).normalize()) < 0.0) continue;
 
                 float damage = target instanceof Player ? 5.0f : 50.0f;
-                if (SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaShieldBash(player.serverLevel(), null, player), player, damage)) {
-                    player.level().playSound(null, target.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
-                            SoundSource.PLAYERS, 1.0f, 1.0f);
-                }
+                SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaShieldBash(player.serverLevel(), null, player), player, damage);
+                playShieldBashHit(player, target);
                 if (applyShieldBashControl(player, target) && !data.controlVoicePlayed) {
                     playShieldBashControlVoice(player);
                     data.controlVoicePlayed = true;
                 }
                 data.hitEntities.add(target);
+                DfsAchievements.recordSinevaShieldBashTargets(player, data.hitEntities.size(), false);
             }
         }
     }
@@ -200,8 +212,13 @@ public final class SinevaSkills {
     }
 
     private static void playShieldBashControlVoice(ServerPlayer player) {
-        player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_SHIELD_BASH_CONTROL.get(),
-                SoundSource.PLAYERS, 1.0f, 1.0f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_SHIELD_BASH_CONTROL_VOICE.get(),
+                SoundSource.PLAYERS, 1.0f, 1.0f, 32.0D);
+    }
+
+    private static void playShieldBashHit(ServerPlayer player, LivingEntity target) {
+        player.level().playSound(null, target.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
+                SoundSource.PLAYERS, 1.0F, 1.0F);
     }
 
     private static void reflectProjectiles(ServerPlayer player, AABB box, Vec3 facing, double minDot,
@@ -270,11 +287,54 @@ public final class SinevaSkills {
 
     public static void clearForPlayer(ServerPlayer player) {
         CHARGING_PLAYERS.remove(player.getUUID());
+        GRAPPLE_CHARGE_SOUNDS.remove(player.getUUID());
+    }
+
+    public static void clearRuntimeCaches() {
+        CHARGING_PLAYERS.clear();
+        GRAPPLE_CHARGE_SOUNDS.clear();
+    }
+
+    public static void beginGrappleChargeSound(ServerPlayer player) {
+        if (!SinevaStateManager.isSineva(player) || !SinevaStateManager.isGrappleReady(player)) {
+            return;
+        }
+        long now = SkillCooldownHelper.now(player);
+        GrappleChargeSoundData current = GRAPPLE_CHARGE_SOUNDS.get(player.getUUID());
+        if (current != null && now - current.startedAt <= GRAPPLE_CHARGE_SOUND_STALE_TICKS) {
+            return;
+        }
+        GRAPPLE_CHARGE_SOUNDS.put(player.getUUID(), new GrappleChargeSoundData(now));
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_GRAPPLE_CHARGE.get(),
+                SoundSource.PLAYERS, 0.85F, 1.0F, 32.0D);
+    }
+
+    public static void markGrappleChargeSoundReady(ServerPlayer player) {
+        GrappleChargeSoundData data = GRAPPLE_CHARGE_SOUNDS.get(player.getUUID());
+        long now = SkillCooldownHelper.now(player);
+        if (data == null || data.readyPlayed || now - data.startedAt < GRAPPLE_CHARGE_SOUND_READY_TICKS) {
+            return;
+        }
+        data.readyPlayed = true;
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_GRAPPLE_CHARGE_READY.get(),
+                SoundSource.PLAYERS, 0.9F, 1.0F, 32.0D);
+    }
+
+    public static void cancelGrappleChargeSound(ServerPlayer player) {
+        if (GRAPPLE_CHARGE_SOUNDS.remove(player.getUUID()) == null) {
+            return;
+        }
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_GRAPPLE_RETRACT.get(),
+                SoundSource.PLAYERS, 0.8F, 1.0F, 32.0D);
+    }
+
+    public static void finishGrappleChargeSound(ServerPlayer player) {
+        GRAPPLE_CHARGE_SOUNDS.remove(player.getUUID());
     }
 
     private static boolean useBladeWire(ServerPlayer player, boolean heldThrow) {
         if (!SinevaStateManager.consumeBladeWireCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.blade_wire_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.sineva.blade_wire_empty"));
             return true;
         }
 
@@ -287,27 +347,47 @@ public final class SinevaSkills {
         projectile.setYRot(player.getYRot());
         projectile.setXRot(player.getXRot());
         level.addFreshEntity(projectile);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_BARBED_WIRE_THROW.get(),
+                SoundSource.PLAYERS, 0.9F, 1.0F, 32.0D);
         return true;
     }
 
-    private static boolean useGrapple(ServerPlayer player) {
+    private static boolean useGrapple(ServerPlayer player, boolean lockTarget) {
+        finishGrappleChargeSound(player);
         if (!SinevaStateManager.isGrappleReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.grapple_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.sineva.grapple_cooldown"));
             return true;
         }
 
         ServerLevel level = player.serverLevel();
         GrappleHookEntity hook = new GrappleHookEntity(ModEntities.GRAPPLE_HOOK.get(), level, player);
-        Vec3 look = player.getLookAngle().normalize();
         Vec3 start = GrappleHookEntity.ropeOrigin(player, 1.0F);
+        LivingEntity target = lockTarget ? SinevaGrappleTargeting.findTarget(level, player) : null;
+        Vec3 look = target == null
+                ? player.getLookAngle().normalize()
+                : target.getBoundingBox().getCenter().subtract(start).normalize();
         hook.setPos(start.x, start.y, start.z);
         hook.setDeltaMovement(look.scale(2.2));
-        hook.setYRot(player.getYRot());
-        hook.setXRot(player.getXRot());
+        alignGrappleRotation(hook, look, player);
         level.addFreshEntity(hook);
-        level.playSound(null, player.blockPosition(), ModSounds.GRAPPLE_FIRE.get(), SoundSource.PLAYERS, 1.0f, 1.0f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_GRAPPLE_FIRE.get(),
+                SoundSource.PLAYERS, 1.0f, 1.0f, 32.0D);
         SinevaStateManager.setGrappleCooldown(player);
         return true;
+    }
+
+    private static void alignGrappleRotation(GrappleHookEntity hook, Vec3 direction, ServerPlayer player) {
+        if (direction.lengthSqr() < 1.0E-6D) {
+            hook.setYRot(player.getYRot());
+            hook.setXRot(player.getXRot());
+            return;
+        }
+        double horizontal = direction.horizontalDistance();
+        hook.setYRot((float) (Math.atan2(direction.x, direction.z) * (180.0D / Math.PI)));
+        hook.setXRot((float) (Math.atan2(direction.y, horizontal) * -(180.0D / Math.PI)));
+        hook.yRotO = hook.getYRot();
+        hook.xRotO = hook.getXRot();
     }
 
     private static boolean useBombSuit(ServerPlayer player, boolean alternate) {
@@ -316,10 +396,16 @@ public final class SinevaSkills {
                 SinevaStateManager.deactivateBombSuit(player);
                 player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.bomb_suit_deactivated"), true);
             } else {
+                if (SinevaStateManager.isShieldBroken(player)) {
+                    player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.shield_broken"), true);
+                    SinevaStateManager.syncToClient(player);
+                    SinevaStateManager.syncRenderStateToClients(player);
+                    return true;
+                }
                 boolean deployed = !SinevaStateManager.isShieldDeployed(player);
                 SinevaStateManager.setShieldDeployed(player, deployed);
-                player.level().playSound(null, player.blockPosition(), SoundEvents.ARMOR_EQUIP_NETHERITE,
-                        SoundSource.PLAYERS, 0.85f, deployed ? 1.08f : 0.82f);
+                RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_SHIELD_TOGGLE.get(),
+                        SoundSource.PLAYERS, 0.85f, deployed ? 1.08f : 0.82f, 32.0D);
                 player.displayClientMessage(Component.translatable(deployed
                         ? "message.dealt_force_skills.sineva.shield_deployed"
                         : "message.dealt_force_skills.sineva.shield_stowed"), true);
@@ -332,13 +418,16 @@ public final class SinevaSkills {
         }
 
         if (!SinevaStateManager.isBombSuitCooldownReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.bomb_suit_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.sineva.bomb_suit_cooldown"));
             return true;
         }
 
         SinevaStateManager.startBombSuitEquip(player);
-        player.level().playSound(null, player.blockPosition(), ModSounds.BOMB_SUIT_EQUIP.get(),
-                SoundSource.PLAYERS, 0.9f, 0.95f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_RIOT_SUIT_PREPARE.get(),
+                SoundSource.PLAYERS, 0.9f, 0.95f, 32.0D);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_RIOT_SUIT_VOICE.get(),
+                SoundSource.VOICE, 1.0f, 1.0f, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.bomb_suit_equipping"), true);
         return true;
     }
@@ -349,6 +438,9 @@ public final class SinevaSkills {
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box,
                 entity -> entity != owner && entity.isAlive() && entity.distanceToSqr(center) <= 16.0)) {
             SkillDamageHelper.hurt(target, SkillDamageHelper.sinevaBladeWire(level, null, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.sineva.sineva_skills.skill_hurt.2.damage", 12.0f));
+            if (target instanceof ServerPlayer player) {
+                InjuryManager.applyBladeWireBurst(player);
+            }
         }
         // Blade wire explosion should destroy Uluru quick covers in range
         com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper.destroyQuickCovers(level, center, 5.0);
@@ -380,6 +472,15 @@ public final class SinevaSkills {
         private ChargeData(Vec3 direction, int ticksRemaining) {
             this.direction = direction;
             this.ticksRemaining = ticksRemaining;
+        }
+    }
+
+    private static final class GrappleChargeSoundData {
+        private final long startedAt;
+        private boolean readyPlayed;
+
+        private GrappleChargeSoundData(long startedAt) {
+            this.startedAt = startedAt;
         }
     }
 }

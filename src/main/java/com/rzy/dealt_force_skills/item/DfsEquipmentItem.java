@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.item;
 
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.ItemStack;
@@ -33,6 +35,7 @@ import java.util.function.Consumer;
 
 public class DfsEquipmentItem extends ArmorItem {
     public static final String TAG_VISION_MODE = "DfsVisionMode";
+    public static final String TAG_INSTANCE_ID = "DfsEquipmentInstanceId";
     public static final int VISION_OFF = 0;
     public static final int VISION_NIGHT = 1;
     public static final int VISION_THERMAL = 2;
@@ -92,7 +95,17 @@ public class DfsEquipmentItem extends ArmorItem {
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        if (!level.isClientSide) {
+            ensureInstanceId(player.getItemInHand(hand));
+        }
         return this.swapWithEquipmentSlot(this, level, player, hand);
+    }
+
+    @Override
+    public void onArmorTick(ItemStack stack, Level level, Player player) {
+        if (!level.isClientSide) {
+            ensureInstanceId(stack);
+        }
     }
 
     @Override
@@ -109,7 +122,7 @@ public class DfsEquipmentItem extends ArmorItem {
             return 0;
         }
         int cost = adjustedVanillaDamageCost(stack, amount);
-        damageWithoutBreaking(stack, cost);
+        damageWithoutBreaking(stack, cost, entity);
         return 0;
     }
 
@@ -229,6 +242,40 @@ public class DfsEquipmentItem extends ArmorItem {
         return null;
     }
 
+    public static UUID ensureInstanceId(ItemStack stack) {
+        if (profile(stack) == null) {
+            return null;
+        }
+        CompoundTag tag = stack.getOrCreateTag();
+        if (!tag.hasUUID(TAG_INSTANCE_ID)) {
+            tag.putUUID(TAG_INSTANCE_ID, UUID.randomUUID());
+        }
+        return tag.getUUID(TAG_INSTANCE_ID);
+    }
+
+    public static void removeDuplicatedEquippedHelmet(ServerPlayer player) {
+        ItemStack equipped = player.getItemBySlot(EquipmentSlot.HEAD);
+        UUID instanceId = ensureInstanceId(equipped);
+        if (instanceId == null) {
+            return;
+        }
+        for (ItemStack candidate : player.getInventory().items) {
+            removeMatchingCopy(equipped, instanceId, candidate);
+        }
+        for (ItemStack candidate : player.getInventory().offhand) {
+            removeMatchingCopy(equipped, instanceId, candidate);
+        }
+    }
+
+    private static void removeMatchingCopy(ItemStack equipped, UUID instanceId, ItemStack candidate) {
+        if (candidate.isEmpty() || candidate == equipped || candidate.getItem() != equipped.getItem()
+                || !candidate.hasTag() || !candidate.getTag().hasUUID(TAG_INSTANCE_ID)
+                || !instanceId.equals(candidate.getTag().getUUID(TAG_INSTANCE_ID))) {
+            return;
+        }
+        candidate.shrink(1);
+    }
+
     public static boolean hasAbility(ItemStack stack, SpecialAbility ability) {
         Profile profile = profile(stack);
         return profile != null && profile.ability() == ability;
@@ -249,10 +296,13 @@ public class DfsEquipmentItem extends ArmorItem {
         return Math.max(0, breakDamageLimit(stack) - stack.getDamageValue());
     }
 
-    public static boolean damageWithoutBreaking(ItemStack stack, int amount) {
+    public static boolean damageWithoutBreaking(ItemStack stack, int amount, LivingEntity wearer) {
         Profile profile = profile(stack);
+        boolean noDurabilityLossEnabled = profile != null
+                && profile.ability() == SpecialAbility.NO_DURABILITY_LOSS
+                && (!(wearer instanceof Player player) || ModGameRules.areArmorSpecialsEnabled(player));
         if (profile == null || amount <= 0 || stack.isEmpty() || !stack.isDamageableItem()
-                || profile.ability() == SpecialAbility.NO_DURABILITY_LOSS) {
+                || noDurabilityLossEnabled) {
             return false;
         }
         int breakLimit = breakDamageLimit(stack);

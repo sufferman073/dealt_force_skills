@@ -42,6 +42,11 @@ public final class RaptorFalconController {
     }
 
     public static void start(int entityId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.player.isSpectator()) {
+            clearControlState();
+            return;
+        }
         controlledEntityId = entityId;
         missingEntityTicks = 0;
         restoreFreezeTicks = 0;
@@ -53,26 +58,25 @@ public final class RaptorFalconController {
     }
 
     public static void stop(boolean notifyServer) {
+        int entityId = controlledEntityId;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null) {
-            beginRestoreFreeze(minecraft);
-            minecraft.setCameraEntity(minecraft.player);
-            terrainRecenterTicks = TERRAIN_RECENTER_TICKS;
-            recenterTerrainOnPlayer(minecraft, true);
+        if (minecraft.player != null && minecraft.player.isSpectator()) {
+            restoreFreezeTicks = 0;
+            terrainRecenterTicks = 0;
         }
-        if (notifyServer && controlledEntityId >= 0) {
+        if (entityId >= 0 && minecraft.player != null) {
+            restoreCameraAfterControl(minecraft, entityId);
+        }
+        if (notifyServer && entityId >= 0) {
             NetworkHandler.sendToServer(new C2S_RaptorFalconControl(
-                    controlledEntityId,
+                    entityId,
                     0.0f,
                     0.0f,
                     false,
                     RaptorFalconControlAction.EXIT
             ));
         }
-        controlledEntityId = -1;
-        missingEntityTicks = 0;
-        localFlightSoundTicks = 0;
-        queuedAction = RaptorFalconControlAction.NONE;
+        clearControlState();
     }
 
     public static void tick(Minecraft minecraft) {
@@ -88,6 +92,10 @@ public final class RaptorFalconController {
             return;
         }
         if (minecraft.level == null || minecraft.player == null) {
+            stop(true);
+            return;
+        }
+        if (minecraft.player.isSpectator()) {
             stop(true);
             return;
         }
@@ -111,7 +119,7 @@ public final class RaptorFalconController {
             NetworkHandler.sendToServer(new C2S_RaptorFalconControl(controlledEntityId, yaw, pitch, boosting,
                     forwardInput, strafeInput, verticalInput, action));
             if (missingEntityTicks >= MISSING_ENTITY_TIMEOUT_TICKS) {
-                stop(false);
+                stop(true);
             }
             return;
         }
@@ -132,7 +140,7 @@ public final class RaptorFalconController {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMouseButtonPre(InputEvent.MouseButton.Pre event) {
-        if (!isControlling()) {
+        if (!isControlling() || !localPlayerAlive()) {
             return;
         }
         event.setCanceled(true);
@@ -169,9 +177,17 @@ public final class RaptorFalconController {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (isControlling() && event.getNewScreen() != null) {
+        if (isControlling() && localPlayerAlive() && event.getNewScreen() != null
+                && !(event.getNewScreen() instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             event.setCanceled(true);
         }
+    }
+
+    private static boolean localPlayerAlive() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null
+                && minecraft.player.isAlive()
+                && !com.rzy.dealt_force_skills.compat.PlayerReviveCompat.isBleeding(minecraft.player);
     }
 
     @SubscribeEvent
@@ -280,13 +296,37 @@ public final class RaptorFalconController {
 
     private static void setCameraToControlledEntity() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
+        if (minecraft.level == null || minecraft.player == null || minecraft.player.isSpectator()) {
             return;
         }
         Entity falcon = minecraft.level.getEntity(controlledEntityId);
         if (falcon != null) {
             minecraft.setCameraEntity(falcon);
         }
+    }
+
+    private static void restoreCameraAfterControl(Minecraft minecraft, int entityId) {
+        if (minecraft.player == null) {
+            return;
+        }
+        if (!minecraft.player.isSpectator()) {
+            beginRestoreFreeze(minecraft);
+        }
+        Entity camera = minecraft.getCameraEntity();
+        if (camera != null && camera.getId() == entityId) {
+            minecraft.setCameraEntity(minecraft.player);
+        }
+        if (!minecraft.player.isSpectator()) {
+            terrainRecenterTicks = TERRAIN_RECENTER_TICKS;
+            recenterTerrainOnPlayer(minecraft, true);
+        }
+    }
+
+    private static void clearControlState() {
+        controlledEntityId = -1;
+        missingEntityTicks = 0;
+        localFlightSoundTicks = 0;
+        queuedAction = RaptorFalconControlAction.NONE;
     }
 
     private static void syncLocalFalconRotation(Entity falcon, float yaw, float pitch) {

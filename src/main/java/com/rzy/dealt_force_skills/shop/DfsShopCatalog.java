@@ -1,20 +1,21 @@
 package com.rzy.dealt_force_skills.shop;
 
-import com.rzy.dealt_force_skills.config.DealtForceConfig;
+import com.rzy.dealt_force_skills.character.ghroth.GhrothTaczEnhancement;
+import com.rzy.dealt_force_skills.config.DealtShopSetConfig;
+import com.rzy.dealt_force_skills.config.DealtForceShopConfig;
 import com.rzy.dealt_force_skills.item.DfsItemQuality;
 import com.rzy.dealt_force_skills.registry.ModItems;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.RegistryObject;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class DfsShopCatalog {
-    private static final List<Entry> ENTRIES = List.of(
+    private static final List<Spec> BASE_ENTRIES = List.of(
             entry("boonie_hat", ModItems.BOONIE_HAT, Category.HELMET, DfsItemQuality.WHITE, 700),
             entry("outdoor_baseball_cap", ModItems.OUTDOOR_BASEBALL_CAP, Category.HELMET, DfsItemQuality.WHITE, 900),
             entry("h01_tactical_helmet", ModItems.H01_TACTICAL_HELMET, Category.HELMET, DfsItemQuality.GREEN, 1300),
@@ -113,30 +114,115 @@ public final class DfsShopCatalog {
             entry("asara_style", ModItems.ASARA_STYLE, Category.SPECIAL, DfsItemQuality.RED, 3500),
             entry("reis_dance", ModItems.REIS_DANCE, Category.SPECIAL, DfsItemQuality.RED, 3500)
     );
-    private static final Map<String, Entry> BY_ID = ENTRIES.stream()
-            .collect(Collectors.toUnmodifiableMap(Entry::id, Function.identity()));
-
     private DfsShopCatalog() {
     }
 
     public static List<Entry> entries() {
-        return ENTRIES;
+        List<Entry> entries = new ArrayList<>(baseEntries(true));
+        addTaczEntries(entries);
+        addLoadoutEntries(entries);
+        return sorted(entries);
+    }
+
+    static List<Entry> baseEntriesForArmory() {
+        return sorted(baseEntries(false));
+    }
+
+    private static List<Entry> baseEntries(boolean honorEnabled) {
+        List<Entry> entries = new ArrayList<>();
+        for (Spec spec : BASE_ENTRIES) {
+            spec.toEntry(honorEnabled).ifPresent(entries::add);
+        }
+        return entries;
+    }
+
+    private static List<Entry> sorted(List<Entry> entries) {
+        return entries.stream()
+                .sorted(Comparator.comparing(Entry::category)
+                        .thenComparing(Entry::quality)
+                        .thenComparingInt(Entry::price)
+                        .thenComparing(Entry::id))
+                .toList();
     }
 
     public static List<Entry> entries(Category category) {
-        return ENTRIES.stream()
+        return entries().stream()
                 .filter(entry -> entry.category() == category)
                 .sorted(Comparator.comparing(Entry::quality).thenComparingInt(Entry::price).thenComparing(Entry::id))
                 .toList();
     }
 
     public static Optional<Entry> find(String id) {
-        return Optional.ofNullable(BY_ID.get(id));
+        return entries().stream()
+                .filter(entry -> entry.id().equals(id))
+                .findFirst();
     }
 
-    private static Entry entry(String id, RegistryObject<Item> item, Category category, DfsItemQuality quality, int price) {
-        return new Entry(id, item, category, quality,
-                DealtForceConfig.intValue("shop.items." + id + ".price", price));
+    public static ItemStack buildPurchasedStack(String entryId) {
+        Optional<Entry> found = find(entryId);
+        return found.map(entry -> entry.preview().copy()).orElse(ItemStack.EMPTY);
+    }
+
+    private static Spec entry(String id, RegistryObject<Item> item, Category category, DfsItemQuality quality, int price) {
+        return new Spec(id, item, category, quality, price);
+    }
+
+    private static void addTaczEntries(List<Entry> entries) {
+        for (TaczShopCatalog.Entry tacz : TaczShopCatalog.entries()) {
+            Category category = switch (tacz.type()) {
+                case GUN -> Category.TACZ_GUNS;
+                case ATTACHMENT -> Category.TACZ_ATTACHMENTS;
+                case AMMO -> Category.TACZ_AMMO;
+            };
+            DfsItemQuality quality = switch (tacz.type()) {
+                case GUN -> DfsItemQuality.BLUE;
+                case ATTACHMENT -> DfsItemQuality.GREEN;
+                case AMMO -> DfsItemQuality.WHITE;
+            };
+            int price = taczPrice(tacz);
+            if (!taczEnabled(tacz)) {
+                continue;
+            }
+            entries.add(new Entry(
+                    tacz.entryId(),
+                    category,
+                    quality,
+                    price,
+                    tacz.preview().copy()
+            ));
+        }
+    }
+
+    private static void addLoadoutEntries(List<Entry> entries) {
+        for (DealtShopSetConfig.LoadoutSet set : DealtShopSetConfig.enabledSets()) {
+            entries.add(new Entry(
+                    set.entryId(),
+                    Category.LOADOUT,
+                    DfsItemQuality.GOLD,
+                    set.price(),
+                    DealtShopSetConfig.preview(set)
+            ));
+        }
+    }
+
+    private static int taczPrice(TaczShopCatalog.Entry entry) {
+        int calculated;
+        boolean addon = !"tacz".equals(entry.id().getNamespace());
+        if (entry.type() == TaczShopCatalog.Type.GUN) {
+            int base = GhrothTaczEnhancement.isLikelySniper(entry.id()) ? 22_000 : 12_000;
+            calculated = Math.min(90_000, base + (addon ? 3_000 : 0) + entry.sort() * 2);
+        } else if (entry.type() == TaczShopCatalog.Type.ATTACHMENT) {
+            calculated = Math.min(30_000, 4_500 + (addon ? 1_500 : 0) + entry.sort());
+        } else {
+            calculated = Math.min(8_000, 900 + (addon ? 200 : 0) + Math.max(0, entry.sort() / 10));
+        }
+        return DealtForceShopConfig.intValue("haff_shop.tacz." + entry.type().configSection()
+                + "." + TaczShopCatalog.configKey(entry.id()) + ".price", calculated);
+    }
+
+    private static boolean taczEnabled(TaczShopCatalog.Entry entry) {
+        return DealtForceShopConfig.booleanValue("haff_shop.tacz." + entry.type().configSection()
+                + "." + TaczShopCatalog.configKey(entry.id()) + ".enabled", true);
     }
 
     public enum Category {
@@ -144,7 +230,11 @@ public final class DfsShopCatalog {
         ARMOR("armor"),
         MEDICINE("medicine"),
         INJECTION_REPAIR("injection_repair"),
-        SPECIAL("special");
+        SPECIAL("special"),
+        TACZ_GUNS("tacz_guns"),
+        TACZ_ATTACHMENTS("tacz_attachments"),
+        TACZ_AMMO("tacz_ammo"),
+        LOADOUT("loadout");
 
         private final String key;
 
@@ -155,8 +245,28 @@ public final class DfsShopCatalog {
         public String key() {
             return key;
         }
+
+        public static Category byKey(String key) {
+            for (Category category : values()) {
+                if (category.key.equals(key)) {
+                    return category;
+                }
+            }
+            return HELMET;
+        }
     }
 
-    public record Entry(String id, RegistryObject<Item> item, Category category, DfsItemQuality quality, int price) {
+    private record Spec(String id, RegistryObject<Item> item, Category category, DfsItemQuality quality, int price) {
+        Optional<Entry> toEntry(boolean honorEnabled) {
+            int configuredPrice = DealtForceShopConfig.intValue("haff_shop.items." + id + ".price", price);
+            boolean enabled = DealtForceShopConfig.booleanValue("haff_shop.items." + id + ".enabled", true);
+            if (honorEnabled && !enabled) {
+                return Optional.empty();
+            }
+            return Optional.of(new Entry(id, category, quality, configuredPrice, new ItemStack(item.get())));
+        }
+    }
+
+    public record Entry(String id, Category category, DfsItemQuality quality, int price, ItemStack preview) {
     }
 }

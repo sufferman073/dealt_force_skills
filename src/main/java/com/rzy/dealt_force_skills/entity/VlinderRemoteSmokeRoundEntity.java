@@ -2,8 +2,6 @@ package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -24,16 +22,13 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
-import org.joml.Vector3f;
 
 import java.util.UUID;
 
 public class VlinderRemoteSmokeRoundEntity extends Entity implements ItemSupplier {
-    public static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.speed", 0.30D);
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderremotesmokeroundentity.life_ticks", 9 * 20);
-    private static final double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.guide_distance", 42.0D);
-    private static final DustParticleOptions TRAIL_DUST = new DustParticleOptions(new Vector3f(0.55f, 0.95f, 1.0f), 0.9f);
-
+    public static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.speed", 0.3));
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderremotesmokeroundentity.life_ticks", 180));
+    private static volatile double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDE_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderremotesmokeroundentity.guide_distance", 42.0));
     private UUID ownerId;
     private double directionX;
     private double directionY;
@@ -171,14 +166,9 @@ public class VlinderRemoteSmokeRoundEntity extends Entity implements ItemSupplie
         level.addFreshEntity(cloud);
         level.playSound(null, blockPosition(), ModSounds.VLINDER_REMOTE_SMOKE_BURST.get(),
                 SoundSource.PLAYERS, 0.85F, 1.0F);
-        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(),
-                80, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.55D, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.02D);
         discard();
     }
 
     private void spawnClientTrail() {
-        if (tickCount % 2 == 0) {
-            level().addParticle(TRAIL_DUST, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
-        }
     }
 }

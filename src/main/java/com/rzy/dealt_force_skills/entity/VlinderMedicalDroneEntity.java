@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.entity;
 import com.rzy.dealt_force_skills.character.vlinder.VlinderDroneMode;
 import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -27,10 +28,10 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class VlinderMedicalDroneEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlindermedicaldroneentity.life_ticks", 10 * 20);
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.speed", 0.40D);
-    private static final double HIT_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.hit_distance", 1.5D);
-    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.max_owner_distance", 128.0D);
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlindermedicaldroneentity.life_ticks", 200));
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.speed", 0.4));
+    private static volatile double HIT_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HIT_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.hit_distance", 1.5));
+    private static volatile double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_OWNER_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlindermedicaldroneentity.max_owner_distance", 128.0));
     private static final DustParticleOptions HEAL_DUST = new DustParticleOptions(new Vector3f(0.45f, 1.0f, 0.68f), 1.0f);
     private static final DustParticleOptions WASTE_DUST = new DustParticleOptions(new Vector3f(0.55f, 0.35f, 1.0f), 1.0f);
 
@@ -81,6 +82,14 @@ public class VlinderMedicalDroneEntity extends Entity implements ItemSupplier {
         ServerPlayer target = target(level);
         if (owner == null || target == null || tickCount > LIFE_TICKS
                 || owner.distanceToSqr(this) > MAX_OWNER_DISTANCE * MAX_OWNER_DISTANCE) {
+            discard();
+            return;
+        }
+        if (mode == VlinderDroneMode.HEAL && !DealtTeamManager.areTeammates(owner, target)) {
+            discard();
+            return;
+        }
+        if (mode != VlinderDroneMode.HEAL && DealtTeamManager.areTeammates(owner, target)) {
             discard();
             return;
         }

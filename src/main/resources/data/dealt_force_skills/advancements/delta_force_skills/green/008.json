@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/green",
+  "display": {
+    "icon": {
+      "item": "minecraft:lead"
+    },
+    "title": {
+      "text": "来去无踪"
+    },
+    "description": {
+      "text": "使用疾风时，绳索路径超过250米后成功拉回至原点"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

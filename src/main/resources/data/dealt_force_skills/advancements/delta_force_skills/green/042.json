@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/green",
+  "display": {
+    "icon": {
+      "item": "minecraft:clock"
+    },
+    "title": {
+      "text": "疏而不漏"
+    },
+    "description": {
+      "text": "使用典狱长时，通过被动效果向自己暴露隐身效果下的目标并将其击杀"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

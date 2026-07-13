@@ -21,14 +21,15 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ShepherdStateManager {
-    public static final int SONIC_TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_max_charges", 2);
-    public static final int SONIC_TRAP_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_recharge_ticks", 45 * 20);
-    public static final int SONIC_TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_active_limit", 2);
-    public static final int FRAG_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_max_charges", 2);
-    public static final int FRAG_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_recharge_ticks", 45 * 20);
-    public static final int FRAG_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_fuse_ticks", 70);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.core_cooldown_ticks", 90 * 20);
-
+    public static volatile int SONIC_TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SONIC_TRAP_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_max_charges", 2));
+    public static volatile int SONIC_TRAP_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SONIC_TRAP_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_recharge_ticks", 900));
+    public static volatile int SONIC_TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SONIC_TRAP_ACTIVE_LIMIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.sonic_trap_active_limit", 2));
+    public static volatile int FRAG_GRENADE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FRAG_GRENADE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_max_charges", 2));
+    public static volatile int FRAG_GRENADE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FRAG_GRENADE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.shepherd.shepherd_state_manager.frag_grenade_recharge_ticks", 900
+   ));
+    public static volatile int FRAG_GRENADE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FRAG_GRENADE_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.frag_grenade_fuse_ticks", 70));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.shepherd.shepherd_state_manager.core_cooldown_ticks", 1800));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".shepherd";
     private static final String INITIALIZED = "Initialized";
     private static final String TRAP_CHARGES = "TrapCharges";
@@ -84,7 +85,7 @@ public final class ShepherdStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, TRAP_CHARGES, SONIC_TRAP_MAX_CHARGES, countSonicTraps(player),
                 TRAP_NEXT_RECHARGE, SONIC_TRAP_RECHARGE_TICKS);
         recharge(player, now, FRAG_CHARGES, FRAG_GRENADE_MAX_CHARGES, 0,
@@ -160,7 +161,7 @@ public final class ShepherdStateManager {
     public static void startGrenadeCook(Player player) {
         CompoundTag tag = data(player);
         if (tag.getLong(GRENADE_COOK_START) <= 0L) {
-            tag.putLong(GRENADE_COOK_START, player.level().getGameTime());
+            tag.putLong(GRENADE_COOK_START, SkillCooldownHelper.now(player));
         }
     }
 
@@ -173,12 +174,12 @@ public final class ShepherdStateManager {
         if (start <= 0L || equippedTool(player) != ShepherdTool.FRAG_GRENADE) {
             return 0;
         }
-        long cooked = player.level().getGameTime() - start;
+        long cooked = SkillCooldownHelper.now(player) - start;
         return cooked > 0L ? (int) Math.min(Integer.MAX_VALUE, cooked) : 0;
     }
 
     public static boolean isCoreReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(CORE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(CORE_COOLDOWN_UNTIL);
     }
 
     public static int coreCooldownRemainingTicks(Player player) {
@@ -187,7 +188,7 @@ public final class ShepherdStateManager {
 
     public static void setCoreCooldown(ServerPlayer player) {
         data(player).putLong(CORE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), CORE_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), CORE_COOLDOWN_TICKS));
     }
 
     public static int countSonicTraps(Player player) {
@@ -247,7 +248,7 @@ public final class ShepherdStateManager {
 
         tag.putInt(chargesKey, charges - 1);
         if (charges == allowed) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -302,7 +303,7 @@ public final class ShepherdStateManager {
             return;
         }
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long nextRecharge = tag.getLong(TRAP_NEXT_RECHARGE);
         if (nextRecharge <= 0L) {
             tag.putLong(TRAP_NEXT_RECHARGE,
@@ -330,7 +331,7 @@ public final class ShepherdStateManager {
             return;
         }
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long currentRemaining = Math.max(1L, tag.getLong(rechargeKey) - now);
         if (tag.getLong(rechargeKey) <= now) {
             currentRemaining = SkillCooldownHelper.ticks(player, rechargeTicks);
@@ -342,8 +343,7 @@ public final class ShepherdStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static AABB trapSearchBox(ServerPlayer player) {

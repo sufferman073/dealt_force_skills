@@ -10,18 +10,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(targets = "com.tacz.guns.api.item.gun.AbstractGunItem", remap = false)
 public abstract class AbstractGunItemMixin {
-    @Inject(method = "allowAttachment", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "allowAttachment", at = @At("RETURN"), cancellable = true, remap = false)
     private void dfs$allowGhrothEnhancedAttachment(ItemStack gun, ItemStack attachmentItem,
                                                   CallbackInfoReturnable<Boolean> cir) {
-        if (GhrothTaczEnhancement.shouldForceAllowAttachment(gun, attachmentItem)) {
+        if (Boolean.FALSE.equals(cir.getReturnValue())
+                && GhrothTaczEnhancement.shouldForceAllowAttachment(gun, attachmentItem)) {
             cir.setReturnValue(true);
         }
     }
 
-    @Inject(method = "allowAttachmentType", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "allowAttachmentType", at = @At("RETURN"), cancellable = true, remap = false)
     private void dfs$allowGhrothEnhancedAttachmentType(ItemStack gun, AttachmentType type,
                                                       CallbackInfoReturnable<Boolean> cir) {
-        if (GhrothTaczEnhancement.shouldForceAllowAttachmentType(gun, type)) {
+        if (Boolean.FALSE.equals(cir.getReturnValue())
+                && GhrothTaczEnhancement.shouldForceAllowAttachmentType(gun, type)) {
             cir.setReturnValue(true);
         }
     }

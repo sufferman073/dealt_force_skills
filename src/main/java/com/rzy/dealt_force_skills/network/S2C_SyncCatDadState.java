@@ -20,12 +20,16 @@ public class S2C_SyncCatDadState {
     private final int downedTicks;
     private final int selfRescueTicks;
     private final int selfRescueRequiredTicks;
+    private final int fatalDownedRemainingUses;
+    private final int fatalDownedMaxUses;
     private final boolean truckBreakBlocks;
 
     public S2C_SyncCatDadState(int hissStage, int hissTimerTicks, int hissCooldownTicks,
                                int blockCharges, int blockMaxCharges, int blockRechargeTicks,
                                int blockWindowTicks, int coreCooldownTicks, int downedTicks,
-                               int selfRescueTicks, int selfRescueRequiredTicks, boolean truckBreakBlocks) {
+                               int selfRescueTicks, int selfRescueRequiredTicks,
+                               int fatalDownedRemainingUses, int fatalDownedMaxUses,
+                               boolean truckBreakBlocks) {
         this.hissStage = hissStage;
         this.hissTimerTicks = hissTimerTicks;
         this.hissCooldownTicks = hissCooldownTicks;
@@ -37,6 +41,8 @@ public class S2C_SyncCatDadState {
         this.downedTicks = downedTicks;
         this.selfRescueTicks = selfRescueTicks;
         this.selfRescueRequiredTicks = selfRescueRequiredTicks;
+        this.fatalDownedRemainingUses = fatalDownedRemainingUses;
+        this.fatalDownedMaxUses = fatalDownedMaxUses;
         this.truckBreakBlocks = truckBreakBlocks;
     }
 
@@ -52,11 +58,15 @@ public class S2C_SyncCatDadState {
         buf.writeVarInt(msg.downedTicks);
         buf.writeVarInt(msg.selfRescueTicks);
         buf.writeVarInt(msg.selfRescueRequiredTicks);
+        buf.writeVarInt(msg.fatalDownedRemainingUses);
+        buf.writeVarInt(msg.fatalDownedMaxUses);
         buf.writeBoolean(msg.truckBreakBlocks);
     }
 
     public static S2C_SyncCatDadState decode(FriendlyByteBuf buf) {
         return new S2C_SyncCatDadState(
+                buf.readVarInt(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt(),
@@ -87,6 +97,8 @@ public class S2C_SyncCatDadState {
                         msg.downedTicks,
                         msg.selfRescueTicks,
                         msg.selfRescueRequiredTicks,
+                        msg.fatalDownedRemainingUses,
+                        msg.fatalDownedMaxUses,
                         msg.truckBreakBlocks
                 )
         ));

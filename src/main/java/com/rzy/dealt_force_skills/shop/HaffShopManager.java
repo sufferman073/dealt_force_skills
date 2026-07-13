@@ -1,8 +1,12 @@
 package com.rzy.dealt_force_skills.shop;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
+import com.rzy.dealt_force_skills.character.chamber.ChamberStateManager;
+import com.rzy.dealt_force_skills.character.corps.CorpsStateManager;
 import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
+import com.rzy.dealt_force_skills.config.DealtShopSetConfig;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_OpenHaffShop;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
@@ -10,27 +14,39 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class HaffShopManager {
     private HaffShopManager() {
     }
 
     public static boolean shouldOpenShop(ServerPlayer player) {
-        return player.serverLevel().getGameRules().getBoolean(ModGameRules.DEALT_FORCE_SHOP)
+        return shouldOpenShop(player, false);
+    }
+
+    public static boolean shouldOpenShop(ServerPlayer player, boolean allowSaeed) {
+        return (player.serverLevel().getGameRules().getBoolean(ModGameRules.DEALT_FORCE_SHOP)
+                || ChamberStateManager.hasHaffPassive(player))
                 && !LexNinjiaStateManager.isLexNinjia(player)
                 && !GhrothStateManager.isGhroth(player)
-                && !SaeedStateManager.isSaeed(player)
+                && (allowSaeed || !SaeedStateManager.isSaeed(player))
                 && HaffCoinManager.canUseShop(player);
     }
 
     public static void openShop(ServerPlayer player) {
-        if (!shouldOpenShop(player)) {
+        openShop(player, false);
+    }
+
+    public static void openShop(ServerPlayer player, boolean allowSaeed) {
+        if (!shouldOpenShop(player, allowSaeed)) {
             return;
         }
-        NetworkHandler.sendToPlayer(new S2C_OpenHaffShop(HaffCoinManager.get(player)), player);
+        NetworkHandler.sendToPlayer(new S2C_OpenHaffShop(HaffCoinManager.get(player), DfsShopCatalog.entries()), player);
     }
 
     public static void buy(ServerPlayer player, String entryId) {
-        if (!shouldOpenShop(player)) {
+        if (!shouldOpenShop(player, SaeedStateManager.isSaeed(player))) {
             HaffCoinManager.sync(player);
             return;
         }
@@ -44,14 +60,50 @@ public final class HaffShopManager {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.not_enough_coins"), true);
             return;
         }
+        if (entry.category() == DfsShopCatalog.Category.LOADOUT) {
+            buyLoadout(player, entry);
+            return;
+        }
 
-        ItemStack purchased = new ItemStack(entry.item().get());
+        ItemStack purchased = DfsShopCatalog.buildPurchasedStack(entry.id());
+        if (purchased.isEmpty()) {
+            HaffCoinManager.grant(player, entry.price());
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.invalid_item"), true);
+            return;
+        }
+        ItemStack purchasedForMessage = purchased.copy();
         boolean inserted = player.getInventory().add(purchased);
         if (!inserted && !purchased.isEmpty()) {
             player.drop(purchased, false);
         }
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.purchased",
-                entry.item().get().getDescription(), entry.price()), true);
+                purchasedForMessage.getHoverName(), entry.price()), true);
+        DfsAchievements.onShopPurchase(player, "haff", entry.id());
+        CorpsStateManager.shareShopPurchase(player, List.of(purchasedForMessage));
+        HaffCoinManager.sync(player);
+    }
+
+    private static void buyLoadout(ServerPlayer player, DfsShopCatalog.Entry entry) {
+        DealtShopSetConfig.LoadoutSet loadout = DealtShopSetConfig.findByEntryId(entry.id()).orElse(null);
+        if (loadout == null || loadout.items().isEmpty()) {
+            HaffCoinManager.grant(player, entry.price());
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.invalid_item"), true);
+            HaffCoinManager.sync(player);
+            return;
+        }
+        List<ItemStack> purchasedStacks = new ArrayList<>();
+        for (ItemStack configured : loadout.items()) {
+            ItemStack stack = configured.copy();
+            purchasedStacks.add(stack.copy());
+            boolean inserted = player.getInventory().add(stack);
+            if (!inserted && !stack.isEmpty()) {
+                player.drop(stack, false);
+            }
+        }
+        player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.loadout_purchased",
+                Component.literal(loadout.name()), entry.price()), true);
+        DfsAchievements.onShopPurchase(player, "haff", entry.id());
+        CorpsStateManager.shareShopPurchase(player, purchasedStacks);
         HaffCoinManager.sync(player);
     }
 }

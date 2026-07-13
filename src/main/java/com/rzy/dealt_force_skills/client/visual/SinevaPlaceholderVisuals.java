@@ -39,6 +39,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.ModList;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Locale;
@@ -49,11 +50,11 @@ import org.joml.Matrix4f;
 public final class SinevaPlaceholderVisuals {
     private static final ItemStack BLADE_WIRE_PLACEHOLDER = new ItemStack(Items.COBWEB);
     private static final ResourceLocation BLADE_WIRE_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_blade_wire_core");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "sineva_blade_wire_core");
     private static final ResourceLocation GRAPPLE_GUN_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_grapple_gun");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "sineva_grapple_gun");
     private static final ResourceLocation RIOT_SHIELD_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "sineva_riot_shield");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "sineva_riot_shield");
     private static final String GRAPPLE_GUN_KEY = "sineva_grapple_gun";
     private static final int OUTER_R = 10;
     private static final int OUTER_G = 12;
@@ -74,8 +75,17 @@ public final class SinevaPlaceholderVisuals {
     private static final float THIRD_PERSON_MODEL_VIEWPORT_Y = -0.16f;
     private static final Map<UUID, ItemStack> SAVED_MAIN_HAND = new HashMap<>();
     private static final Map<UUID, YsmSavedMainHand> YSM_WORLD_SAVED_MAIN_HAND = new HashMap<>();
+    private static final Set<UUID> VANILLA_RENDERED_THIS_FRAME = new HashSet<>();
+    private static final Set<UUID> VANILLA_RENDERED_LAST_FRAME = new HashSet<>();
 
     private SinevaPlaceholderVisuals() {
+    }
+
+    public static void resetTransientState() {
+        SAVED_MAIN_HAND.clear();
+        YSM_WORLD_SAVED_MAIN_HAND.clear();
+        VANILLA_RENDERED_THIS_FRAME.clear();
+        VANILLA_RENDERED_LAST_FRAME.clear();
     }
 
     private static boolean isYesSteveModelLoaded() {
@@ -95,6 +105,7 @@ public final class SinevaPlaceholderVisuals {
         boolean shieldMode = shouldHideHeldHands(minecraft.player);
         boolean bladeWireMode = SinevaInputHandler.isBladeWireHeld();
         boolean grappleMode = ClientToolModelAnimationState.isActive(GRAPPLE_GUN_KEY)
+                || SinevaInputHandler.isGrappleCharging()
                 || hasActiveLocalGrapple(minecraft);
 
         if (!shieldMode && !bladeWireMode && !grappleMode) {
@@ -213,6 +224,9 @@ public final class SinevaPlaceholderVisuals {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
         Player player = event.getEntity();
+        if (isYesSteveModelLoaded()) {
+            VANILLA_RENDERED_THIS_FRAME.add(player.getUUID());
+        }
         ItemStack saved = SAVED_MAIN_HAND.remove(player.getUUID());
         if (saved != null) {
             player.getInventory().items.set(player.getInventory().selected, saved);
@@ -247,6 +261,7 @@ public final class SinevaPlaceholderVisuals {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null) {
             restoreYsmWorldMainHands(minecraft);
+            clearVanillaRenderFrameMarkers();
             return;
         }
 
@@ -264,6 +279,9 @@ public final class SinevaPlaceholderVisuals {
 
         MultiBufferSource.BufferSource buffer = minecraft.renderBuffers().bufferSource();
         for (Player player : minecraft.level.players()) {
+            if (vanillaPlayerRendererActive(player)) {
+                continue;
+            }
             boolean renderShield = shouldRenderFor(player);
             boolean renderGrapple = hasActiveGrapple(minecraft, player);
             if (!renderShield && !renderGrapple) {
@@ -281,6 +299,7 @@ public final class SinevaPlaceholderVisuals {
         }
         buffer.endBatch(DfsRenderTypes.untexturedQuads());
         restoreYsmWorldMainHands(minecraft);
+        finishVanillaRenderFrame();
     }
 
     private static void hideYsmWorldMainHands(Minecraft minecraft) {
@@ -289,7 +308,8 @@ public final class SinevaPlaceholderVisuals {
         }
 
         for (Player player : minecraft.level.players()) {
-            if (!shouldHideHeldHands(player) || YSM_WORLD_SAVED_MAIN_HAND.containsKey(player.getUUID())) {
+            if (!shouldHideHeldHands(player) || vanillaPlayerRendererActive(player)
+                    || YSM_WORLD_SAVED_MAIN_HAND.containsKey(player.getUUID())) {
                 continue;
             }
 
@@ -329,6 +349,25 @@ public final class SinevaPlaceholderVisuals {
         }
     }
 
+    private static boolean vanillaPlayerRendererActive(Player player) {
+        if (player == null) {
+            return false;
+        }
+        UUID id = player.getUUID();
+        return VANILLA_RENDERED_THIS_FRAME.contains(id) || VANILLA_RENDERED_LAST_FRAME.contains(id);
+    }
+
+    private static void finishVanillaRenderFrame() {
+        VANILLA_RENDERED_LAST_FRAME.clear();
+        VANILLA_RENDERED_LAST_FRAME.addAll(VANILLA_RENDERED_THIS_FRAME);
+        VANILLA_RENDERED_THIS_FRAME.clear();
+    }
+
+    private static void clearVanillaRenderFrameMarkers() {
+        VANILLA_RENDERED_THIS_FRAME.clear();
+        VANILLA_RENDERED_LAST_FRAME.clear();
+    }
+
     private static void renderYsmWorldFallbackShield(RenderLevelStageEvent event, Player player, MultiBufferSource buffer) {
         float partialTick = event.getPartialTick();
         double x = Mth.lerp(partialTick, player.xOld, player.getX()) - event.getCamera().getPosition().x;
@@ -347,7 +386,7 @@ public final class SinevaPlaceholderVisuals {
         if (frontShield) {
             poseStack.translate(0.0d, 0.38d, -0.58d - thrust * 0.45f);
         } else {
-            poseStack.translate(0.0d, 1.35d, 0.40d);
+            poseStack.translate(0.0d, 0.6625d, 0.40d);
             poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
             poseStack.mulPose(Axis.XP.rotationDegrees(10.0f));
         }
@@ -441,7 +480,7 @@ public final class SinevaPlaceholderVisuals {
                 poseStack.translate(0.0d, 0.94d, -0.54d - thrust * 0.45f);
             } else {
                 getParentModel().body.translateAndRotate(poseStack);
-                poseStack.translate(0.0d, 0.30d, 0.32d);
+                poseStack.translate(0.0d, 0.9875d, 0.32d);
                 poseStack.mulPose(Axis.YP.rotationDegrees(180.0f));
                 poseStack.mulPose(Axis.XP.rotationDegrees(10.0f));
             }

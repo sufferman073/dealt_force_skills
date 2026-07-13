@@ -30,14 +30,13 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxInputHandler {
-    private static final int FLASH_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.nox_input_handler.flash_equip_hold_ticks", 8);
-    private static final int FLASH_RELEASE_TICKS = DealtForceConfig.intValue("client.nox_input_handler.flash_release_ticks", 3);
-    private static final int ROTOR_LOCK_TICKS = DealtForceConfig.intValue("client.nox_input_handler.rotor_lock_ticks", 10);
-    private static final double ROTOR_LOCK_RANGE = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_range", 48.0D);
-    private static final double ROTOR_LOCK_MIN_ALIGNMENT = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_min_alignment", 0.78D);
-    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_direct_alignment", 0.975D);
-    private static final double ROTOR_LOCK_MAX_OFF_AXIS = DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_max_off_axis", 2.0D);
-
+    private static volatile int FLASH_EQUIP_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_EQUIP_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.nox_input_handler.flash_equip_hold_ticks", 8));
+    private static volatile int FLASH_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.nox_input_handler.flash_release_ticks", 3));
+    private static volatile int ROTOR_LOCK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.nox_input_handler.rotor_lock_ticks", 10));
+    private static volatile double ROTOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_range", 48.0));
+    private static volatile double ROTOR_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_MIN_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_min_alignment", 0.78));
+    private static volatile double ROTOR_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_DIRECT_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_direct_alignment", 0.975));
+    private static volatile double ROTOR_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_MAX_OFF_AXIS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.nox_input_handler.rotor_lock_max_off_axis", 2.0));
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean sentFlashEquip;

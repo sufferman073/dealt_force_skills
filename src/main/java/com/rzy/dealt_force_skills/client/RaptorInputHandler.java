@@ -22,10 +22,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class RaptorInputHandler {
-    private static final int ACTIVE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.active_long_hold_ticks", 15);
-    private static final int PULSE_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.pulse_equip_hold_ticks", 8);
-    private static final int PULSE_RELEASE_TICKS = DealtForceConfig.intValue("client.raptor_input_handler.pulse_release_ticks", 3);
-
+    private static volatile int ACTIVE_LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ACTIVE_LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.raptor_input_handler.active_long_hold_ticks", 15));
+    private static volatile int PULSE_EQUIP_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_EQUIP_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.raptor_input_handler.pulse_equip_hold_ticks", 8));
+    private static volatile int PULSE_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.raptor_input_handler.pulse_release_ticks", 3));
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean active2WasDown;

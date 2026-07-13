@@ -28,14 +28,14 @@ public final class SinevaHudOverlay {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientSinevaHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientSinevaHudState.shouldDisplay()) {
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         int coreCooldown = ClientSinevaHudState.bombSuitEquipTicks() > 0
                 ? ClientSinevaHudState.bombSuitEquipTicks()
@@ -66,6 +66,50 @@ public final class SinevaHudOverlay {
                 Component.translatable("character.dealt_force_skills.sineva.skill.blade_wire"),
                 active1Cooldown,
                 ClientSinevaHudState.bladeWireCharges() + "/" + ClientSinevaHudState.bladeWireMaxCharges());
+
+        drawShieldDurability(graphics, font, x, y, SLOT * 3 + GAP * 2);
+        drawGrappleChargeBar(graphics);
+    }
+
+    private static void drawGrappleChargeBar(GuiGraphics graphics) {
+        if (!SinevaInputHandler.isGrappleCharging()) {
+            return;
+        }
+        int width = 52;
+        int height = 5;
+        int x = graphics.guiWidth() / 2 - width / 2;
+        int y = graphics.guiHeight() / 2 + 16;
+        int fillWidth = Math.round((width - 2) * SinevaInputHandler.grappleChargeProgress());
+        boolean locked = SinevaInputHandler.grappleLockTarget(Minecraft.getInstance()) != null;
+        int accent = locked ? 0xFFFFD166 : 0xFF4AC4FF;
+        graphics.fill(x, y, x + width, y + height, 0xAA000000);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xAA0C1720);
+        if (fillWidth > 0) {
+            graphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + height - 1, accent);
+        }
+    }
+
+    private static void drawShieldDurability(GuiGraphics graphics, Font font, int skillX, int skillY, int skillWidth) {
+        if (!ClientSinevaHudState.bombSuitActive()) {
+            return;
+        }
+        int max = Math.max(1, ClientSinevaHudState.shieldMaxDurability());
+        int value = Math.max(0, Math.min(max, ClientSinevaHudState.shieldDurability()));
+        int width = skillWidth;
+        int height = 5;
+        int x = skillX;
+        int y = Math.max(8, skillY - 12);
+        int fill = Math.round((width - 2) * value / (float) max);
+        int accent = value <= 0 ? 0xFFDD4A4A : 0xFF4AC4FF;
+        graphics.fill(x, y, x + width, y + height, 0xAA000000);
+        graphics.fill(x + 1, y + 1, x + width - 1, y + height - 1, 0xAA0C1720);
+        if (fill > 0) {
+            graphics.fill(x + 1, y + 1, x + 1 + fill, y + height - 1, accent);
+        }
+        String text = value <= 0
+                ? Component.translatable("hud.dealt_force_skills.sineva.shield_broken").getString()
+                : Component.translatable("hud.dealt_force_skills.sineva.shield_durability", value, max).getString();
+        HudTextHelper.drawCenteredFitted(graphics, font, text, x + width / 2, y - 9, width, 0xFFE8F7FF);
     }
 
     private static void drawSlot(
@@ -79,7 +123,8 @@ public final class SinevaHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA071018);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA071018);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -96,7 +141,8 @@ public final class SinevaHudOverlay {
         }
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

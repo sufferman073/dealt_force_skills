@@ -1,9 +1,11 @@
 package com.rzy.dealt_force_skills.character.manba;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.sineva.SinevaKnockdownState;
+import com.rzy.dealt_force_skills.compat.PlayerReviveCompat;
 import com.rzy.dealt_force_skills.effect.ManbaBlindedEffect;
 import com.rzy.dealt_force_skills.effect.StunEffect;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -19,6 +21,7 @@ import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
 import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -61,6 +64,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.registries.RegistryObject;
 
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -74,13 +78,19 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class ManbaStateManager {
-    public static final int ELBOW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_max_charges", 6);
-    public static final int ELBOW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_recharge_ticks", 6 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.core_cooldown_ticks", 5 * 20);
-    public static final int DUEL_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_duration_ticks", 183 * 20);
-    public static final int DUEL_STALE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_stale_ticks", 30 * 20);
-    private static final long DUEL_AFFECTION_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("characters.manba.manba_state_manager.duel_affection_decay_interval_ticks", 2L * 20L);
-    private static final int DUEL_DAMAGE_AFFECTION_GAIN = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_damage_affection_gain", 2);
+    public static volatile int ELBOW_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_max_charges", 6));
+    public static volatile int ELBOW_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_recharge_ticks", 120));
+    public static final int CORE_COOLDOWN_TICKS = Math.max(90 * 20,
+            com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.core_cooldown_ticks", 90 * 20));
+    public static volatile int DUEL_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_duration_ticks", 3660));
+    public static volatile int DUEL_STALE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_STALE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_stale_ticks", 600));
+    private static volatile long DUEL_AFFECTION_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_AFFECTION_DECAY_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue(
+      "characters.manba.manba_state_manager.duel_affection_decay_interval_ticks", 40L
+   ));
+    private static volatile int DUEL_DAMAGE_AFFECTION_GAIN = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_DAMAGE_AFFECTION_GAIN", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.duel_damage_affection_gain", 2));
+    private static volatile int DUEL_CONTROL_AFFECTION_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_CONTROL_AFFECTION_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.duel_control_affection_cooldown_ticks", 20
+   ));
     public static final UUID BASE_SLOW_UUID = UUID.fromString("9176e91f-98c8-4b40-a38c-35e71cb1a210");
     public static final UUID LIGHT_WARRIOR_SPEED_UUID = UUID.fromString("a6c6dd8e-7c8b-4f2d-97e1-067f4af0d73d");
     public static final UUID UNYIELDING_SPEED_UUID = UUID.fromString("597bbf92-2763-4d0a-b02b-9d4d7d60dd64");
@@ -116,38 +126,57 @@ public final class ManbaStateManager {
     private static final String DAMAGE_SPEED_UNTIL = "DamageSpeedUntil";
 
     private static final int FLASHLIGHT_SCALE = 100;
-    private static final int FLASHLIGHT_BLIND_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_blind_cost", 10 * FLASHLIGHT_SCALE);
-    private static final int FLASHLIGHT_FULL_PROGRESS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_full_progress", 1000);
-    private static final int FLASHLIGHT_BEAM_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_beam_sync_interval_ticks", 2);
-    private static final int FLASHLIGHT_BEAM_TTL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_beam_ttl_ticks", 6);
-    private static final int FLASHLIGHT_LIGHT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_light_interval_ticks", 4);
-    private static final int FLASHLIGHT_LIGHT_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_light_level", 15);
-    private static final int FLASHLIGHT_MAX_LIGHT_BLOCKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_max_light_blocks", 120);
-    private static final int STEEL_BODY_MIN_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.steel_body_min_cooldown_ticks", 3 * 20);
-    private static final double DUEL_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_lock_range", 32.0D);
-    private static final double DUEL_BGM_TRACK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_bgm_track_radius", 96.0D);
-    private static final double DAMAGE_DECAY_START_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.damage_decay_start_distance", 4.0D);
-    private static final double DAMAGE_DECAY_PER_BLOCK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.damage_decay_per_block", 0.12D);
-    private static final double ELBOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_range", 3.2D);
-    private static final double ELBOW_FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_front_dot", Math.cos(Math.toRadians(65.0D)));
-    private static final double ELBOW_KNOCKBACK_HORIZONTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_knockback_horizontal", 2.65D);
-    private static final double ELBOW_KNOCKBACK_VERTICAL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_knockback_vertical", 0.42D);
-    private static final int ELBOW_KNOCKBACK_STUN_GRACE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.elbow_knockback_stun_grace_ticks", 6);
-    private static final double BRAVE_DASH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.brave_dash_range", 4.25D);
-    private static final double FLASHLIGHT_TARGET_LOOK_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.flashlight_target_look_dot", Math.cos(Math.toRadians(85.0D)));
-    public static final double OPPORTUNITY_WINDOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.opportunity_window_range", 45.0D);
-    public static final int OPPORTUNITY_WINDOW_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.opportunity_window_sync_interval_ticks", 10);
-    private static final int OPPORTUNITY_WINDOW_MAX_MARKERS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.opportunity_window_max_markers", 256);
+    private static volatile int FLASHLIGHT_BLIND_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_BLIND_COST", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_blind_cost", 1000));
+    private static volatile int FLASHLIGHT_FULL_PROGRESS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_FULL_PROGRESS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_full_progress", 1000));
+    private static volatile int FLASHLIGHT_BEAM_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_BEAM_SYNC_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.flashlight_beam_sync_interval_ticks", 2
+   ));
+    private static volatile int FLASHLIGHT_BEAM_TTL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_BEAM_TTL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_beam_ttl_ticks", 6));
+    private static volatile int FLASHLIGHT_LIGHT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_LIGHT_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.flashlight_light_interval_ticks", 4
+   ));
+    private static volatile int FLASHLIGHT_LIGHT_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_LIGHT_LEVEL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_light_level", 15));
+    private static volatile int FLASHLIGHT_MAX_LIGHT_BLOCKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_MAX_LIGHT_BLOCKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.flashlight_max_light_blocks", 120));
+    private static volatile int STEEL_BODY_MIN_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STEEL_BODY_MIN_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.steel_body_min_cooldown_ticks", 60));
+    private static volatile double DUEL_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_lock_range", 32.0));
+    private static volatile double DUEL_BGM_TRACK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_BGM_TRACK_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.duel_bgm_track_radius", 96.0));
+    private static volatile double DAMAGE_DECAY_START_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DAMAGE_DECAY_START_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.manba.manba_state_manager.damage_decay_start_distance", 4.0
+   ));
+    private static volatile double DAMAGE_DECAY_PER_BLOCK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DAMAGE_DECAY_PER_BLOCK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.damage_decay_per_block", 0.12));
+    private static volatile double ELBOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_range", 3.2));
+    private static volatile double ELBOW_FRONT_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_FRONT_DOT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.manba.manba_state_manager.elbow_front_dot", Math.cos(Math.toRadians(65.0))
+   ));
+    private static volatile double ELBOW_KNOCKBACK_HORIZONTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_KNOCKBACK_HORIZONTAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.manba.manba_state_manager.elbow_knockback_horizontal", 2.65
+   ));
+    private static volatile double ELBOW_KNOCKBACK_VERTICAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_KNOCKBACK_VERTICAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.elbow_knockback_vertical", 0.42));
+    private static volatile int ELBOW_KNOCKBACK_STUN_GRACE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ELBOW_KNOCKBACK_STUN_GRACE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.elbow_knockback_stun_grace_ticks", 6
+   ));
+    private static volatile double BRAVE_DASH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BRAVE_DASH_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.brave_dash_range", 4.25));
+    private static volatile double FLASHLIGHT_TARGET_LOOK_DOT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASHLIGHT_TARGET_LOOK_DOT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.manba.manba_state_manager.flashlight_target_look_dot", Math.cos(Math.toRadians(85.0))
+   ));
+    public static volatile double OPPORTUNITY_WINDOW_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OPPORTUNITY_WINDOW_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_state_manager.opportunity_window_range", 45.0));
+    public static volatile int OPPORTUNITY_WINDOW_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OPPORTUNITY_WINDOW_SYNC_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.opportunity_window_sync_interval_ticks", 10
+   ));
+    private static volatile int OPPORTUNITY_WINDOW_MAX_MARKERS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OPPORTUNITY_WINDOW_MAX_MARKERS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.manba.manba_state_manager.opportunity_window_max_markers", 256
+   ));
     private static final Map<UUID, Map<UUID, FlashProgress>> FLASH_PROGRESS = new HashMap<>();
     private static final Map<UUID, Set<BlockPos>> FLASHLIGHT_LIGHT_BLOCKS = new HashMap<>();
     private static final Map<UUID, UUID> DUEL_TARGET_TO_OWNER = new HashMap<>();
-    private static final Map<UUID, LivingEntity> DUEL_TARGET_ENTITIES = new HashMap<>();
+    private static final Map<UUID, WeakReference<LivingEntity>> DUEL_TARGET_ENTITIES = new HashMap<>();
     private static final Map<UUID, Set<UUID>> DUEL_BGM_LISTENERS = new HashMap<>();
+    private static final Map<ControlAffectionKey, Long> DUEL_CONTROL_AFFECTION_READY_AT = new HashMap<>();
     private static final Set<UUID> EXECUTING_DUEL_TARGETS = new HashSet<>();
     private static boolean opportunityLootTableFieldChecked;
     private static Field opportunityLootTableField;
     private static final ResourceLocation DUEL_BGM_SOUND_FILE =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "manba/duel_bgm");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "manba/duel_bgm");
 
     private ManbaStateManager() {
     }
@@ -211,6 +240,7 @@ public final class ManbaStateManager {
         }
         DUEL_TARGET_ENTITIES.remove(player.getUUID());
         DUEL_BGM_LISTENERS.remove(player.getUUID());
+        clearControlAffectionCooldowns(player.getUUID());
         player.getPersistentData().remove(ROOT_TAG);
     }
 
@@ -243,6 +273,45 @@ public final class ManbaStateManager {
         syncToClient(player);
     }
 
+    public static void clearRuntimeOnLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        FLASH_PROGRESS.remove(playerId);
+        removeTransientModifiers(player);
+        clearFlashlightLightBlocks(player);
+        if (player.getPersistentData().contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            endDuel(player, false, false);
+            setFlashlightActive(player, false);
+        }
+        DUEL_TARGET_TO_OWNER.entrySet().removeIf(entry -> entry.getKey().equals(playerId) || entry.getValue().equals(playerId));
+        DUEL_TARGET_ENTITIES.entrySet().removeIf(entry -> {
+            LivingEntity target = entry.getValue() == null ? null : entry.getValue().get();
+            return entry.getKey().equals(playerId)
+                    || target == null
+                    || target.getUUID().equals(playerId)
+                    || target.isRemoved();
+        });
+        DUEL_BGM_LISTENERS.remove(playerId);
+        DUEL_BGM_LISTENERS.values().removeIf(listeners -> {
+            listeners.remove(playerId);
+            return listeners.isEmpty();
+        });
+        EXECUTING_DUEL_TARGETS.remove(playerId);
+        clearControlAffectionCooldowns(playerId);
+    }
+
+    public static void clearTransientRuntimeCaches() {
+        FLASH_PROGRESS.clear();
+        FLASHLIGHT_LIGHT_BLOCKS.clear();
+        DUEL_TARGET_TO_OWNER.clear();
+        DUEL_TARGET_ENTITIES.clear();
+        DUEL_BGM_LISTENERS.clear();
+        DUEL_CONTROL_AFFECTION_READY_AT.clear();
+        EXECUTING_DUEL_TARGETS.clear();
+    }
+
     public static void tick(ServerPlayer player) {
         if (!isManba(player)) {
             removeTransientModifiers(player);
@@ -250,7 +319,7 @@ public final class ManbaStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         applyMovementModifiers(player);
         rechargeElbow(player, now);
         tickFlashlight(player, now);
@@ -342,14 +411,14 @@ public final class ManbaStateManager {
         tag.putInt(ELBOW_CHARGES, charges - 1);
         if (charges == ELBOW_MAX_CHARGES) {
             tag.putLong(ELBOW_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), ELBOW_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), ELBOW_RECHARGE_TICKS));
         }
         return true;
     }
 
     public static void useElbow(ServerPlayer player) {
         if (!consumeElbow(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.elbow_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.manba.elbow_empty"));
             return;
         }
 
@@ -367,7 +436,7 @@ public final class ManbaStateManager {
         Vec3 forward = player.getLookAngle().normalize();
         AABB box = player.getBoundingBox().inflate(ELBOW_RANGE, 1.0D, ELBOW_RANGE);
         for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
-                entity -> entity != player && TargetingUtil.isTargetableLiving(entity))) {
+                entity -> TargetingUtil.isHostileLivingFor(player, entity))) {
             Vec3 center = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
             Vec3 toTarget = center.subtract(eye);
             if (toTarget.length() > ELBOW_RANGE || toTarget.lengthSqr() < 0.0001D) {
@@ -411,7 +480,7 @@ public final class ManbaStateManager {
         }
         initializeIfNeeded(player);
         if (active && data(player).getInt(FLASHLIGHT_DURABILITY) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.flashlight_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.manba.flashlight_empty"));
             active = false;
         }
         boolean changed = data(player).getBoolean(FLASHLIGHT_ACTIVE) != active;
@@ -444,7 +513,7 @@ public final class ManbaStateManager {
     }
 
     public static boolean isDuelActive(Player player) {
-        return data(player).hasUUID(DUEL_TARGET) && data(player).getLong(DUEL_END_TICK) > player.level().getGameTime();
+        return data(player).hasUUID(DUEL_TARGET) && data(player).getLong(DUEL_END_TICK) > SkillCooldownHelper.now(player);
     }
 
     public static int duelAffection(Player player) {
@@ -457,20 +526,21 @@ public final class ManbaStateManager {
 
     public static boolean startDuel(ServerPlayer player, int targetEntityId) {
         if (!coreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.manba.core_cooldown"));
             return true;
         }
         Entity entity = player.level().getEntity(targetEntityId);
         if (!(entity instanceof LivingEntity target)
                 || target == player
-                || !TargetingUtil.isTargetableLiving(target)
+                || !TargetingUtil.isHostileLivingFor(player, target)
                 || target.distanceToSqr(player) > DUEL_LOCK_RANGE * DUEL_LOCK_RANGE
                 || !player.hasLineOfSight(target)) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.no_duel_target"), true);
             return true;
         }
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         tag.putUUID(DUEL_TARGET, target.getUUID());
         tag.putLong(DUEL_END_TICK, now + DUEL_DURATION_TICKS);
@@ -479,7 +549,7 @@ public final class ManbaStateManager {
         tag.putLong(DUEL_NEXT_DECAY, now + DUEL_AFFECTION_DECAY_INTERVAL_TICKS);
         tag.putInt(DUEL_REVIVES_USED, 0);
         DUEL_TARGET_TO_OWNER.put(target.getUUID(), player.getUUID());
-        DUEL_TARGET_ENTITIES.put(player.getUUID(), target);
+        DUEL_TARGET_ENTITIES.put(player.getUUID(), new WeakReference<>(target));
         target.setGlowingTag(true);
         player.level().playSound(null, player.blockPosition(), ModSounds.MANBA_DUEL_BGM.get(),
                 SoundSource.PLAYERS, 0.8f, 1.0f);
@@ -496,7 +566,9 @@ public final class ManbaStateManager {
     }
 
     public static void addAffectionForControlledTarget(LivingEntity target, MobEffectInstance effectInstance) {
-        if (target.level().isClientSide || effectInstance == null || !isControlOrNegativeEffect(effectInstance.getEffect())) {
+        if (target.level().isClientSide || effectInstance == null
+                || !isControlOrNegativeEffect(effectInstance.getEffect())
+                || isDuelDownedEffect(effectInstance.getEffect())) {
             return;
         }
         UUID ownerId = DUEL_TARGET_TO_OWNER.get(target.getUUID());
@@ -505,6 +577,14 @@ public final class ManbaStateManager {
         }
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         if (owner == null || !isManba(owner) || !isDuelActive(owner)) {
+            return;
+        }
+        if (target instanceof Player targetPlayer && PlayerReviveCompat.isBleeding(targetPlayer)) {
+            return;
+        }
+        LivingEntity currentTarget = duelTarget(owner);
+        if (currentTarget == null || !currentTarget.getUUID().equals(target.getUUID())
+                || !consumeControlAffectionCooldown(owner, target)) {
             return;
         }
         addDuelAffection(owner, 10);
@@ -549,7 +629,7 @@ public final class ManbaStateManager {
                 || amount <= 0.0f || !hasTalent(player, ManbaTalent.STEEL_BODY)) {
             return false;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(STEEL_COOLDOWN_UNTIL)) {
             return false;
@@ -600,14 +680,16 @@ public final class ManbaStateManager {
         if (hasTalent(player, ManbaTalent.GOOD_REWARD) && tag.getBoolean(GOOD_REWARD_ACTIVE)) {
             tag.putBoolean(GOOD_REWARD_ACTIVE, false);
             player.setHealth(Math.max(1.0f, player.getMaxHealth() * 0.5f));
+            DfsAchievements.recordFatalAvoidance(player);
             syncToClient(player);
             return true;
         }
         if (hasTalent(player, ManbaTalent.INDESTRUCTIBLE)) {
-            long now = player.level().getGameTime();
+            long now = SkillCooldownHelper.now(player);
             if (now >= tag.getLong(INDESTRUCTIBLE_COOLDOWN_UNTIL)) {
                 tag.putLong(INDESTRUCTIBLE_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, 120 * 20));
                 player.setHealth(player.getMaxHealth());
+                DfsAchievements.recordFatalAvoidance(player);
                 player.level().playSound(null, player.blockPosition(), ModSounds.MANBA_DUEL_REVIVE.get(),
                         SoundSource.PLAYERS, 0.85f, 1.15f);
                 syncToClient(player);
@@ -615,6 +697,32 @@ public final class ManbaStateManager {
             }
         }
         return false;
+    }
+
+    public static void recordDuelDeathAchievement(ServerPlayer player, DamageSource source) {
+        if (!isManba(player) || !isDuelActive(player) || source == null) {
+            return;
+        }
+        CompoundTag tag = data(player);
+        if (!tag.hasUUID(DUEL_TARGET)) {
+            return;
+        }
+        UUID targetId = tag.getUUID(DUEL_TARGET);
+        Entity attacker = source.getEntity();
+        ServerPlayer killer = attacker instanceof ServerPlayer attackerPlayer
+                && attackerPlayer.getUUID().equals(targetId) ? attackerPlayer : null;
+        if (killer == null) {
+            Entity direct = source.getDirectEntity();
+            if (direct instanceof ServerPlayer directPlayer && directPlayer.getUUID().equals(targetId)) {
+                killer = directPlayer;
+            }
+        }
+        if (killer == null) {
+            return;
+        }
+        long remaining = Math.max(0L, tag.getLong(DUEL_END_TICK) - SkillCooldownHelper.now(player));
+        long elapsed = Math.max(0L, DUEL_DURATION_TICKS - remaining);
+        DfsAchievements.recordManbaDuelDeath(player, killer, elapsed);
     }
 
     public static float outgoingDamageMultiplier(ServerPlayer player, LivingEntity target) {
@@ -636,6 +744,45 @@ public final class ManbaStateManager {
             return 1.0f;
         }
         return distanceDamageMultiplier(attacker.distanceTo(player));
+    }
+
+    public static float applyDuelMeleeIncomingDamageFloor(Player player, DamageSource source, float amount) {
+        if (!isManba(player) || !isDuelActive(player) || amount <= 0.0F || !isMeleeDamage(player, source)) {
+            return amount;
+        }
+        return Math.max(amount, player.getMaxHealth() * 0.35F);
+    }
+
+    public static boolean shouldBlockPlayerDuelDamage(LivingEntity hurtEntity, DamageSource source) {
+        if (hurtEntity == null || source == null) {
+            return false;
+        }
+        Player attacker = damageSourcePlayer(source);
+        if (attacker != null) {
+            UUID attackerPartnerId = playerDuelPartnerId(attacker);
+            if (attackerPartnerId != null && !hurtEntity.getUUID().equals(attackerPartnerId)) {
+                return true;
+            }
+        }
+        if (hurtEntity instanceof Player targetPlayer) {
+            UUID targetPartnerId = playerDuelPartnerId(targetPlayer);
+            return targetPartnerId != null
+                    && attacker != null
+                    && !attacker.getUUID().equals(targetPartnerId);
+        }
+        return false;
+    }
+
+    public static boolean arePlayerDuelPartners(Player first, Player second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        UUID firstPartner = playerDuelPartnerId(first);
+        if (firstPartner != null && firstPartner.equals(second.getUUID())) {
+            return true;
+        }
+        UUID secondPartner = playerDuelPartnerId(second);
+        return secondPartner != null && secondPartner.equals(first.getUUID());
     }
 
     public static void enforceDuelTaunt(LivingEntity entity) {
@@ -683,7 +830,7 @@ public final class ManbaStateManager {
         if (!isManba(player)) {
             return;
         }
-        data(player).putLong(DAMAGE_SPEED_UNTIL, player.level().getGameTime() + 2L * 20L);
+        data(player).putLong(DAMAGE_SPEED_UNTIL, SkillCooldownHelper.now(player) + 2L * 20L);
         syncToClient(player);
     }
 
@@ -780,7 +927,7 @@ public final class ManbaStateManager {
                 tag.putBoolean(FLASHLIGHT_ACTIVE, false);
                 clearFlashProgress(player);
                 clearFlashlightLightBlocks(player);
-                player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.flashlight_empty"), true);
+                com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.manba.flashlight_empty"));
             } else {
                 tickFlashlightTargets(player, stats);
                 if (now % FLASHLIGHT_LIGHT_INTERVAL_TICKS == 0L) {
@@ -812,7 +959,7 @@ public final class ManbaStateManager {
         AABB box = player.getBoundingBox().inflate(maxRange, maxRange * 0.5D, maxRange);
 
         for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
-                entity -> entity != player && TargetingUtil.isTargetableLiving(entity))) {
+                entity -> TargetingUtil.isHostileLivingFor(player, entity))) {
             if (!isInFlashlightBeam(player, target, eye, look, maxRange, minDot)) {
                 continue;
             }
@@ -1031,6 +1178,10 @@ public final class ManbaStateManager {
         if (targetId != null) {
             DUEL_TARGET_TO_OWNER.remove(targetId);
         }
+        clearControlAffectionCooldowns(player.getUUID());
+        if (targetId != null) {
+            clearControlAffectionCooldowns(targetId);
+        }
         DUEL_TARGET_ENTITIES.remove(player.getUUID());
         if (target != null) {
             target.setGlowingTag(false);
@@ -1046,7 +1197,7 @@ public final class ManbaStateManager {
         tag.putLong(DUEL_NEXT_DECAY, 0L);
         tag.putInt(DUEL_REVIVES_USED, 0);
         tag.putLong(CORE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), CORE_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), CORE_COOLDOWN_TICKS));
         if (notify) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.manba.duel_ended"), true);
         }
@@ -1116,6 +1267,11 @@ public final class ManbaStateManager {
     }
 
     private static void executeDuelTarget(ServerPlayer player, LivingEntity target) {
+        if (!com.rzy.dealt_force_skills.boss.BossCombatRules.canInstantKill(target)) {
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.dealt_force_skills.beacon_boss.immune_execute"), true);
+            return;
+        }
         EXECUTING_DUEL_TARGETS.add(target.getUUID());
         try {
             player.level().playSound(null, target.blockPosition(), ModSounds.MANBA_DUEL_EXECUTE.get(),
@@ -1166,6 +1322,10 @@ public final class ManbaStateManager {
         }
         tag.putInt(DUEL_REVIVES_USED, used + 1);
         player.setHealth(player.getMaxHealth());
+        DfsAchievements.recordFatalAvoidance(player);
+        if (used == 1) {
+            DfsAchievements.recordManbaFavorSecondDeathSave(player, tag.getInt(DUEL_AFFECTION));
+        }
         player.level().playSound(null, player.blockPosition(), ModSounds.MANBA_DUEL_REVIVE.get(),
                 SoundSource.PLAYERS, 0.9f, 1.0f);
         syncToClient(player);
@@ -1181,7 +1341,7 @@ public final class ManbaStateManager {
         int next = Math.max(0, Math.min(999, old + delta));
         tag.putInt(DUEL_AFFECTION, next);
         if (next != old) {
-            tag.putLong(DUEL_LAST_CHANGE, player.level().getGameTime());
+            tag.putLong(DUEL_LAST_CHANGE, SkillCooldownHelper.now(player));
         }
         syncToClient(player);
     }
@@ -1258,7 +1418,7 @@ public final class ManbaStateManager {
 
         AABB box = player.getBoundingBox().expandTowards(direction.scale(BRAVE_DASH_RANGE)).inflate(1.0D, 0.8D, 1.0D);
         for (LivingEntity target : player.level().getEntitiesOfClass(LivingEntity.class, box,
-                entity -> entity != player && TargetingUtil.isTargetableLiving(entity))) {
+                entity -> TargetingUtil.isHostileLivingFor(player, entity))) {
             Vec3 toTarget = target.position().subtract(player.position());
             Vec3 horizontal = new Vec3(toTarget.x, 0.0D, toTarget.z);
             if (horizontal.lengthSqr() > 0.001D && direction.dot(horizontal.normalize()) < 0.15D) {
@@ -1267,7 +1427,8 @@ public final class ManbaStateManager {
             target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.3.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_state_manager.effect.stun.3.amplifier", 0), false, true, true), player);
             SinevaKnockdownState.apply(player, target, 30);
         }
-        player.level().playSound(null, player.blockPosition(), ModSounds.VYRON_DASH.get(), SoundSource.PLAYERS, 0.8f, 0.8f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.VYRON_DASH.get(),
+                SoundSource.PLAYERS, 0.8f, 0.8f, 32.0D);
     }
 
     private static void tickDiversionWatch(ServerPlayer player, long now) {
@@ -1301,7 +1462,7 @@ public final class ManbaStateManager {
     }
 
     private static void recordDiversionHurt(ServerPlayer player) {
-        data(player).putLong(DIVERSION_LAST_HURT, player.level().getGameTime());
+        data(player).putLong(DIVERSION_LAST_HURT, SkillCooldownHelper.now(player));
     }
 
     private static void syncOpportunityWindow(ServerPlayer player, long now) {
@@ -1432,7 +1593,7 @@ public final class ManbaStateManager {
         } else if (!unyielding && attr.getModifier(UNYIELDING_SPEED_UUID) != null) {
             attr.removeModifier(UNYIELDING_SPEED_UUID);
         }
-        boolean damageSpeed = data(player).getLong(DAMAGE_SPEED_UNTIL) > player.level().getGameTime();
+        boolean damageSpeed = data(player).getLong(DAMAGE_SPEED_UNTIL) > SkillCooldownHelper.now(player);
         if (damageSpeed && attr.getModifier(DAMAGE_SPEED_UUID) == null) {
             attr.addTransientModifier(new AttributeModifier(DAMAGE_SPEED_UUID, "manba_damage_speed",
                     0.50D, AttributeModifier.Operation.MULTIPLY_TOTAL));
@@ -1454,6 +1615,36 @@ public final class ManbaStateManager {
             return false;
         }
         return attacker.distanceToSqr(player) <= 5.0D * 5.0D;
+    }
+
+    private static UUID playerDuelPartnerId(Player player) {
+        if (player instanceof ServerPlayer serverPlayer && isManba(player) && isDuelActive(player)) {
+            LivingEntity target = duelTarget(serverPlayer);
+            if (target instanceof Player targetPlayer) {
+                return targetPlayer.getUUID();
+            }
+        }
+        UUID ownerId = DUEL_TARGET_TO_OWNER.get(player.getUUID());
+        if (ownerId == null || !(player.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner == null || !isManba(owner) || !isDuelActive(owner)) {
+            return null;
+        }
+        LivingEntity currentTarget = duelTarget(owner);
+        return currentTarget instanceof Player targetPlayer && targetPlayer.getUUID().equals(player.getUUID())
+                ? ownerId
+                : null;
+    }
+
+    private static Player damageSourcePlayer(DamageSource source) {
+        Entity attacker = source.getEntity();
+        if (attacker instanceof Player player) {
+            return player;
+        }
+        Entity direct = source.getDirectEntity();
+        return direct instanceof Player player ? player : null;
     }
 
     private static boolean isAllowedDuelIncomingDamage(Player player, DamageSource source) {
@@ -1571,6 +1762,32 @@ public final class ManbaStateManager {
                 || effect == ModEffects.CORROSION.get();
     }
 
+    private static boolean isDuelDownedEffect(MobEffect effect) {
+        return effect == ModEffects.STINGER_DOWNED.get()
+                || effect == ModEffects.VLINDER_VITAL_DOWNED.get()
+                || effect == ModEffects.TEMPEST_EMERGENCY_DOWNED.get()
+                || effect == ModEffects.CATDAD_DOWNED.get();
+    }
+
+    private static boolean consumeControlAffectionCooldown(ServerPlayer owner, LivingEntity target) {
+        long now = SkillCooldownHelper.now(owner);
+        ControlAffectionKey key = new ControlAffectionKey(owner.getUUID(), target.getUUID());
+        Long readyAt = DUEL_CONTROL_AFFECTION_READY_AT.get(key);
+        if (readyAt != null && readyAt > now) {
+            return false;
+        }
+        if (now % 200L == 0L) {
+            DUEL_CONTROL_AFFECTION_READY_AT.entrySet().removeIf(entry -> entry.getValue() <= now);
+        }
+        DUEL_CONTROL_AFFECTION_READY_AT.put(key, now + Math.max(1, DUEL_CONTROL_AFFECTION_COOLDOWN_TICKS));
+        return true;
+    }
+
+    private static void clearControlAffectionCooldowns(UUID playerId) {
+        DUEL_CONTROL_AFFECTION_READY_AT.keySet().removeIf(key ->
+                key.owner().equals(playerId) || key.target().equals(playerId));
+    }
+
     private static boolean sameUuid(Entity entity, UUID uuid) {
         return entity != null && entity.getUUID().equals(uuid);
     }
@@ -1595,16 +1812,23 @@ public final class ManbaStateManager {
     }
 
     private static LivingEntity duelTarget(ServerPlayer player, UUID uuid) {
-        LivingEntity remembered = DUEL_TARGET_ENTITIES.get(player.getUUID());
-        if (remembered != null && remembered.getUUID().equals(uuid) && !remembered.isRemoved()) {
+        WeakReference<LivingEntity> rememberedReference = DUEL_TARGET_ENTITIES.get(player.getUUID());
+        LivingEntity remembered = rememberedReference == null ? null : rememberedReference.get();
+        if (rememberedReference != null && (remembered == null || !remembered.getUUID().equals(uuid))) {
+            DUEL_TARGET_ENTITIES.remove(player.getUUID());
+            remembered = null;
+        }
+        if (remembered != null && !remembered.isRemoved()) {
             return remembered;
         }
         LivingEntity currentLevelTarget = livingByUuid(player.serverLevel(), uuid);
         if (currentLevelTarget != null) {
+            DUEL_TARGET_ENTITIES.put(player.getUUID(), new WeakReference<>(currentLevelTarget));
             return currentLevelTarget;
         }
         ServerPlayer playerTarget = player.server.getPlayerList().getPlayer(uuid);
         if (playerTarget != null) {
+            DUEL_TARGET_ENTITIES.put(player.getUUID(), new WeakReference<>(playerTarget));
             return playerTarget;
         }
         for (ServerLevel level : player.server.getAllLevels()) {
@@ -1613,10 +1837,12 @@ public final class ManbaStateManager {
             }
             LivingEntity target = livingByUuid(level, uuid);
             if (target != null) {
+                DUEL_TARGET_ENTITIES.put(player.getUUID(), new WeakReference<>(target));
                 return target;
             }
         }
-        return remembered != null && remembered.getUUID().equals(uuid) ? remembered : null;
+        DUEL_TARGET_ENTITIES.remove(player.getUUID());
+        return null;
     }
 
     private static LivingEntity livingByUuid(ServerLevel level, UUID uuid) {
@@ -1643,8 +1869,7 @@ public final class ManbaStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static EnumSet<ManbaTalent> defaultTalents() {
@@ -1697,6 +1922,9 @@ public final class ManbaStateManager {
             persistent.put(ROOT_TAG, new CompoundTag());
         }
         return persistent.getCompound(ROOT_TAG);
+    }
+
+    private record ControlAffectionKey(UUID owner, UUID target) {
     }
 
     private static final class FlashProgress {

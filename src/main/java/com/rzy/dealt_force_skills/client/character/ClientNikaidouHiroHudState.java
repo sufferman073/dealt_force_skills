@@ -15,6 +15,11 @@ public final class ClientNikaidouHiroHudState {
     private static int coreActiveTicks;
     private static int doomedTicks;
     private static int attackCooldownTicks;
+    private static boolean anchorMarkerActive;
+    private static String anchorMarkerDimension = "";
+    private static double anchorMarkerX;
+    private static double anchorMarkerY;
+    private static double anchorMarkerZ;
 
     private ClientNikaidouHiroHudState() {
     }
@@ -31,11 +36,25 @@ public final class ClientNikaidouHiroHudState {
         coreActiveTicks = 0;
         doomedTicks = 0;
         attackCooldownTicks = 0;
+        anchorMarkerActive = false;
+        anchorMarkerDimension = "";
+        anchorMarkerX = 0.0D;
+        anchorMarkerY = 0.0D;
+        anchorMarkerZ = 0.0D;
     }
 
     public static void sync(int riftStacks, int riftTicks, int active1CooldownTicks, int active1Ticks,
                             int equippedToolOrdinal, int coreCooldownTicks, boolean coreActive,
                             int coreActiveTicks, int doomedTicks, int attackCooldownTicks) {
+        sync(riftStacks, riftTicks, active1CooldownTicks, active1Ticks, equippedToolOrdinal, coreCooldownTicks,
+                coreActive, coreActiveTicks, doomedTicks, attackCooldownTicks, false, "", 0.0D, 0.0D, 0.0D);
+    }
+
+    public static void sync(int riftStacks, int riftTicks, int active1CooldownTicks, int active1Ticks,
+                            int equippedToolOrdinal, int coreCooldownTicks, boolean coreActive,
+                            int coreActiveTicks, int doomedTicks, int attackCooldownTicks,
+                            boolean anchorMarkerActive, String anchorMarkerDimension,
+                            double anchorMarkerX, double anchorMarkerY, double anchorMarkerZ) {
         synced = true;
         ClientNikaidouHiroHudState.riftStacks = riftStacks;
         ClientNikaidouHiroHudState.riftTicks = riftTicks;
@@ -50,10 +69,15 @@ public final class ClientNikaidouHiroHudState {
         ClientNikaidouHiroHudState.coreActiveTicks = coreActiveTicks;
         ClientNikaidouHiroHudState.doomedTicks = doomedTicks;
         ClientNikaidouHiroHudState.attackCooldownTicks = attackCooldownTicks;
+        ClientNikaidouHiroHudState.anchorMarkerActive = anchorMarkerActive;
+        ClientNikaidouHiroHudState.anchorMarkerDimension = anchorMarkerDimension == null ? "" : anchorMarkerDimension;
+        ClientNikaidouHiroHudState.anchorMarkerX = anchorMarkerX;
+        ClientNikaidouHiroHudState.anchorMarkerY = anchorMarkerY;
+        ClientNikaidouHiroHudState.anchorMarkerZ = anchorMarkerZ;
     }
 
     public static void tick() {
-        if (riftTicks > 0) riftTicks--;
+        if (!isWitchificationDisplayed() && riftTicks > 0) riftTicks--;
         if (active1CooldownTicks > 0) active1CooldownTicks--;
         if (active1Ticks > 0) active1Ticks--;
         if (coreCooldownTicks > 0) coreCooldownTicks--;
@@ -63,11 +87,25 @@ public final class ClientNikaidouHiroHudState {
     }
 
     public static boolean shouldRender() {
-        return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_ID);
+        return synced && (ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_ID)
+                || ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID));
+    }
+
+    public static boolean shouldDisplay() {
+        return synced && (ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.NIKAIDOU_HIRO_ID)
+                || ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID));
+    }
+
+    public static boolean isWitchificationDisplayed() {
+        return ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID);
     }
 
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != NikaidouHiroTool.NONE;
+    }
+
+    public static boolean hasAnchorMarker() {
+        return shouldRender() && anchorMarkerActive && !anchorMarkerDimension.isEmpty();
     }
 
     public static int riftStacks() { return riftStacks; }
@@ -80,4 +118,8 @@ public final class ClientNikaidouHiroHudState {
     public static int coreActiveTicks() { return coreActiveTicks; }
     public static int doomedTicks() { return doomedTicks; }
     public static int attackCooldownTicks() { return attackCooldownTicks; }
+    public static String anchorMarkerDimension() { return anchorMarkerDimension; }
+    public static double anchorMarkerX() { return anchorMarkerX; }
+    public static double anchorMarkerY() { return anchorMarkerY; }
+    public static double anchorMarkerZ() { return anchorMarkerZ; }
 }

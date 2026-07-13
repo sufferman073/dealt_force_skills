@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:soul_lantern"
+    },
+    "title": {
+      "text": "不死不休"
+    },
+    "description": {
+      "text": "使用不死人时，生命值低于20%时，8秒内切换3个职业并击杀伤害者"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

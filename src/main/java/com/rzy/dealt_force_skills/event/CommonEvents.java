@@ -59,8 +59,10 @@ import com.rzy.dealt_force_skills.effect.ModItemEffectHelper;
 import com.rzy.dealt_force_skills.effect.ManbaBlindedEffect;
 import com.rzy.dealt_force_skills.effect.HackclawFlashBlindEffect;
 import com.rzy.dealt_force_skills.effect.MorseFlashedEffect;
+import com.rzy.dealt_force_skills.effect.ShakehandsCombatHandler;
 import com.rzy.dealt_force_skills.effect.ToxikTearGasBlindEffect;
 import com.rzy.dealt_force_skills.effect.ToxikFireflyInterferenceEffect;
+import com.rzy.dealt_force_skills.team.TeamCombatRules;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.SaeedGuardEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
@@ -78,6 +80,7 @@ import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.shop.HaffCoinManager;
 import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
 import com.rzy.dealt_force_skills.shop.UndeadSoulManager;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -184,11 +187,11 @@ public class CommonEvents {
     private static final String TACZ_GUN_OPERATOR = "com.tacz.guns.api.entity.IGunOperator";
     private static final String TACZ_CLIENT_GUN_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
     private static final TagKey<DamageType> TACZ_BULLETS_TAG = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.tryBuild("tacz", "bullets"));
-    private static final int EFFECT_REAPPLY_GRACE_TICKS = DealtForceConfig.intValue("events.common_events.effect_reapply_grace_ticks", 2);
-    private static final double SHIELD_DEPLOYED_SLOW_AMOUNT = DealtForceConfig.doubleValue("events.common_events.shield_deployed_slow_amount", -0.1);
-    private static final double SHIELD_DAMAGE_SLOW_MAX_TOTAL = DealtForceConfig.doubleValue("events.common_events.shield_damage_slow_max_total", 0.95D);
-    private static final double EQUIPMENT_PROJECTILE_NEAR_INFLATE = DealtForceConfig.doubleValue("events.common_events.equipment_projectile_near_inflate", 0.75D);
-    private static final double EQUIPMENT_RANGED_TRACE_INFLATE = DealtForceConfig.doubleValue("events.common_events.equipment_ranged_trace_inflate", 0.25D);
+    private static volatile int EFFECT_REAPPLY_GRACE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EFFECT_REAPPLY_GRACE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("events.common_events.effect_reapply_grace_ticks", 2));
+    private static volatile double SHIELD_DEPLOYED_SLOW_AMOUNT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DEPLOYED_SLOW_AMOUNT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.shield_deployed_slow_amount", -0.1));
+    private static volatile double SHIELD_DAMAGE_SLOW_MAX_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DAMAGE_SLOW_MAX_TOTAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.shield_damage_slow_max_total", 0.95));
+    private static volatile double EQUIPMENT_PROJECTILE_NEAR_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EQUIPMENT_PROJECTILE_NEAR_INFLATE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.equipment_projectile_near_inflate", 0.75));
+    private static volatile double EQUIPMENT_RANGED_TRACE_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EQUIPMENT_RANGED_TRACE_INFLATE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.equipment_ranged_trace_inflate", 0.25));
     private static final String EQUIPMENT_FATAL_GUARD_UNTIL = "dealt_force_skills.equipment_fatal_guard_until";
     private static final String ASARA_SET_FATAL_GUARD_UNTIL = "dealt_force_skills.asara_set_fatal_guard_until";
     private static final String GLOBAL_FORCES_LOCK_TARGET = "dealt_force_skills.global_forces_lock_target";
@@ -217,21 +220,35 @@ public class CommonEvents {
     private static final String EQUIPMENT_LAST_Y = "dealt_force_skills.equipment_last_y";
     private static final String EQUIPMENT_LAST_Z = "dealt_force_skills.equipment_last_z";
     private static final String EQUIPMENT_STATIONARY_DAMAGE_TICKS = "dealt_force_skills.equipment_stationary_damage_ticks";
-    private static final float H09_STATIONARY_MIN_SELF_DAMAGE = DealtForceConfig.floatValue("events.common_events.h09_stationary_min_self_damage", 0.5F);
-    private static final float H09_STATIONARY_SELF_DAMAGE_MAX_HEALTH_FRACTION = DealtForceConfig.floatValue("events.common_events.h09_stationary_self_damage_max_health_fraction", 0.01F);
-    private static final double PREMIUM_COFFEE_FAILURE_BASE = DealtForceConfig.doubleValue("events.common_events.premium_coffee_failure_base", 0.95D);
-    private static final double PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL = DealtForceConfig.doubleValue("events.common_events.premium_coffee_failure_reduction_per_level", 0.15D);
-    private static final double PREMIUM_COFFEE_DROP_BASE = DealtForceConfig.doubleValue("events.common_events.premium_coffee_drop_base", 0.01D);
-    private static final double PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL = DealtForceConfig.doubleValue("events.common_events.premium_coffee_drop_bonus_per_level", 0.01D);
-    private static final double NEW_RECRUIT_MINING_DUPLICATE_CHANCE = DealtForceConfig.doubleValue("events.common_events.new_recruit_mining_duplicate_chance", 0.25D);
-    private static final int GLOBAL_FORCES_LOCK_TICKS_REQUIRED = DealtForceConfig.intValue("events.common_events.global_forces_lock_ticks_required", 4 * 20);
-    private static final double GLOBAL_FORCES_ALLY_RANGE = DealtForceConfig.doubleValue("events.common_events.global_forces_ally_range", 20.0D);
-    private static final double GLOBAL_FORCES_LOCK_RAY_RADIUS = DealtForceConfig.doubleValue("events.common_events.global_forces_lock_ray_radius", 1.0D);
-    private static final double SAEED_HAKIM_ROCKET_DAMAGE_RADIUS = DealtForceConfig.doubleValue("events.common_events.saeed_hakim_rocket_damage_radius", 3.0D);
-    private static final float SAEED_HAKIM_ROCKET_DAMAGE = DealtForceConfig.floatValue("events.common_events.saeed_hakim_rocket_damage", 40.0F);
-    private static final double GTI_OVERLOAD_LIMIT_MULTIPLIER = DealtForceConfig.doubleValue("events.common_events.gti_overload_limit_multiplier", 2.0D);
-    private static final int MHS_FURY_DURATION_TICKS = DealtForceConfig.intValue("events.common_events.mhs_fury_duration_ticks", 15 * 20);
-    private static final double MHS_FURY_TRIGGER_RANGE = DealtForceConfig.doubleValue("events.common_events.mhs_fury_trigger_range", 2.0D);
+    private static volatile float H09_STATIONARY_MIN_SELF_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("H09_STATIONARY_MIN_SELF_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("events.common_events.h09_stationary_min_self_damage", 0.5F));
+    private static volatile float H09_STATIONARY_SELF_DAMAGE_MAX_HEALTH_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("H09_STATIONARY_SELF_DAMAGE_MAX_HEALTH_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "events.common_events.h09_stationary_self_damage_max_health_fraction", 0.01F
+   ));
+    /** Multiplier applied to unprotected limb hits when {@code dealtlimbsdamage} is on. */
+    private static volatile float LIMBS_UNPROTECTED_DAMAGE_REDUCTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIMBS_UNPROTECTED_DAMAGE_REDUCTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("events.common_events.limbs_unprotected_damage_reduction", 0.35F));
+    /** When hit height cannot be estimated, prefer torso absorption over a full miss. */
+    private static volatile double EQUIPMENT_UNKNOWN_HIT_HEIGHT_RATIO = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EQUIPMENT_UNKNOWN_HIT_HEIGHT_RATIO", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "events.common_events.equipment_unknown_hit_height_ratio", 0.55
+   ));
+    private static volatile double PREMIUM_COFFEE_FAILURE_BASE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PREMIUM_COFFEE_FAILURE_BASE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.premium_coffee_failure_base", 0.95));
+    private static volatile double PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "events.common_events.premium_coffee_failure_reduction_per_level", 0.15
+   ));
+    private static volatile double PREMIUM_COFFEE_DROP_BASE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PREMIUM_COFFEE_DROP_BASE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.premium_coffee_drop_base", 0.01));
+    private static volatile double PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PREMIUM_COFFEE_DROP_BONUS_PER_LEVEL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "events.common_events.premium_coffee_drop_bonus_per_level", 0.01
+   ));
+    private static volatile double NEW_RECRUIT_MINING_DUPLICATE_CHANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NEW_RECRUIT_MINING_DUPLICATE_CHANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "events.common_events.new_recruit_mining_duplicate_chance", 0.25
+   ));
+    private static volatile int GLOBAL_FORCES_LOCK_TICKS_REQUIRED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GLOBAL_FORCES_LOCK_TICKS_REQUIRED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("events.common_events.global_forces_lock_ticks_required", 80));
+    private static volatile double GLOBAL_FORCES_ALLY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GLOBAL_FORCES_ALLY_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.global_forces_ally_range", 20.0));
+    private static volatile double GLOBAL_FORCES_LOCK_RAY_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GLOBAL_FORCES_LOCK_RAY_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.global_forces_lock_ray_radius", 1.0));
+    private static volatile double SAEED_HAKIM_ROCKET_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SAEED_HAKIM_ROCKET_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.saeed_hakim_rocket_damage_radius", 3.0));
+    private static volatile float SAEED_HAKIM_ROCKET_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SAEED_HAKIM_ROCKET_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("events.common_events.saeed_hakim_rocket_damage", 40.0F));
+    private static volatile double GTI_OVERLOAD_LIMIT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GTI_OVERLOAD_LIMIT_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.gti_overload_limit_multiplier", 2.0));
+    private static volatile int MHS_FURY_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MHS_FURY_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("events.common_events.mhs_fury_duration_ticks", 300));
+    private static volatile double MHS_FURY_TRIGGER_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MHS_FURY_TRIGGER_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("events.common_events.mhs_fury_trigger_range", 2.0));
     private static final String KING_KONG_COOLDOWN_UNTIL = "dealt_force_skills.king_kong_cooldown_until";
     private static final String KING_KONG_TARGET_ID = "dealt_force_skills.king_kong_target_id";
     private static final String KING_KONG_STRIKE_TICK = "dealt_force_skills.king_kong_strike_tick";
@@ -264,9 +281,17 @@ public class CommonEvents {
     private static final String UNDEAD_EXPLORER_LOOT_CLAIMED =
             DealtForceSkillsMod.MODID + ".undead_explorer_loot_claimed";
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLivingAttack(LivingAttackEvent event) {
         DamageSource source = event.getSource();
+        if (TeamCombatRules.shouldCancelFriendlyDamage(event.getEntity(), source)) {
+            event.setCanceled(true);
+            return;
+        }
+        ShakehandsCombatHandler.handleLivingAttack(event);
+        if (event.isCanceled()) {
+            return;
+        }
         if (UndeadSupportManager.shouldCancelFriendlyFire(event.getEntity(), source)) {
             event.setCanceled(true);
             return;
@@ -394,10 +419,19 @@ public class CommonEvents {
         MorseStateManager.onPlayerSound(source, source.position());
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLivingHurt(LivingHurtEvent event) {
         LivingEntity hurtEntity = event.getEntity();
         DamageSource source = event.getSource();
+        if (TeamCombatRules.shouldCancelFriendlyDamage(hurtEntity, source)) {
+            event.setCanceled(true);
+            event.setAmount(0.0f);
+            return;
+        }
+        ShakehandsCombatHandler.handleLivingHurt(event);
+        if (event.isCanceled() || event.getAmount() <= 0.0f) {
+            return;
+        }
         if (SaeedStateManager.shouldCancelTeamDamage(hurtEntity, source)) {
             event.setCanceled(true);
             event.setAmount(0.0f);
@@ -1028,9 +1062,13 @@ public class CommonEvents {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMobEffectApplicable(MobEffectEvent.Applicable event) {
         MobEffectInstance effect = event.getEffectInstance();
+        // Team rules: deny teammate debuffs / enemy buffs before the effect is applied.
+        // Note: Applicable has no effect-source API in all Forge versions; Added still strips
+        // with source. When source is unavailable here, only same-team harmful self-checks
+        // cannot run — source-aware blocking remains in onMobEffectAddedTeamRules.
         if (event.getEntity() instanceof Player player
                 && (SinevaStateManager.isBombSuitActive(player) || DWolfStateManager.isOverloadActive(player))
                 && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
@@ -1065,6 +1103,23 @@ public class CommonEvents {
                 && effect.getEffect().getCategory() == MobEffectCategory.HARMFUL
                 && CatDadStateManager.tryBlockIncoming(player)) {
             event.setResult(Event.Result.DENY);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onMobEffectAddedTeamRules(MobEffectEvent.Added event) {
+        if (event.getEntity().level().isClientSide) {
+            return;
+        }
+        if (TeamCombatRules.shouldBlockPlayerEffect(
+                event.getEntity(), event.getEffectSource(), event.getEffectInstance())) {
+            MobEffect effect = event.getEffectInstance().getEffect();
+            // Effect is already applied when Added fires; strip it immediately.
+            event.getEntity().removeEffect(effect);
+            return;
+        }
+        if (ShakehandsCombatHandler.handleEffectAdded(event)) {
+            return;
         }
     }
 
@@ -1516,21 +1571,7 @@ public class CommonEvents {
     @SubscribeEvent
     public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
         handleFrugalDisassemblyCraft(event);
-        ItemStack crafted = event.getCrafting();
-        if (crafted.isEmpty() || !crafted.is(ModItems.PREMIUM_COFFEE_BEANS.get())) {
-            return;
-        }
-        Player player = event.getEntity();
-        int bonusLevel = premiumCoffeeBonusLevel(player, 0);
-        double failureChance = Math.max(0.0D,
-                PREMIUM_COFFEE_FAILURE_BASE - bonusLevel * PREMIUM_COFFEE_FAILURE_REDUCTION_PER_LEVEL);
-        if (player.getRandom().nextDouble() >= failureChance) {
-            return;
-        }
-        crafted.setCount(0);
-        player.displayClientMessage(Component.translatable(
-                "message.dealt_force_skills.premium_coffee_beans.failed",
-                Math.round(failureChance * 100.0D)), true);
+        // Premium coffee beans crafting recipe removed; boss drop / cocoa chance only.
     }
 
     @SubscribeEvent
@@ -1562,6 +1603,32 @@ public class CommonEvents {
             return;
         }
         tryAwardCoarseSalt(event.getEntity(), event.getLevel(), event.getPos(), 0);
+    }
+
+    /**
+     * Adventure-mode safe HVK brain summon: sneak + right-click activated beacon.
+     * Server-only so the interact packet always reaches the server; cancel after
+     * success so the beacon GUI cannot consume the action.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onHvkBrainBeaconSummon(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getLevel().isClientSide) {
+            return;
+        }
+        Player player = event.getEntity();
+        ItemStack stack = event.getItemStack();
+        if (player == null || stack.isEmpty() || !player.isShiftKeyDown()) {
+            return;
+        }
+        if (!(stack.getItem() instanceof com.rzy.dealt_force_skills.item.HvkBrainUnitItem)) {
+            return;
+        }
+        if (!com.rzy.dealt_force_skills.item.HvkBrainUnitItem.tryActivateFromEvent(
+                event.getLevel(), player, event.getHand(), stack, event.getPos())) {
+            return;
+        }
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.SUCCESS);
     }
 
     @SubscribeEvent
@@ -1662,6 +1729,11 @@ public class CommonEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onAttackEntity(AttackEntityEvent event) {
         Player player = event.getEntity();
+        if (event.getTarget() instanceof LivingEntity target
+                && TeamCombatRules.shouldCancelFriendlyDamage(target, player)) {
+            event.setCanceled(true);
+            return;
+        }
         if (player instanceof ServerPlayer serverPlayer) {
             MorseStateManager.recordPlayerAction(serverPlayer);
         }
@@ -1975,6 +2047,9 @@ public class CommonEvents {
         if (event.phase != TickEvent.Phase.END) return;
         if (event.level.isClientSide) return;
         SinevaSkills.tickChargingPlayers(event.level);
+        if (event.level instanceof ServerLevel serverLevel && serverLevel == serverLevel.getServer().overworld()) {
+            com.rzy.dealt_force_skills.team.TeammateRevealSync.serverTick(serverLevel.getServer());
+        }
     }
 
     @SubscribeEvent
@@ -2065,6 +2140,12 @@ public class CommonEvents {
             return;
         }
         if (TACZ_ENTITY_HURT_BY_GUN_PRE_EVENT.equals(eventName)) {
+            if (cancelTeamTaczPreDamage(event)) {
+                return;
+            }
+            if (handleShakehandsTaczPreDamage(event)) {
+                return;
+            }
             handleGhrothTaczPreDamage(event);
             return;
         }
@@ -2126,6 +2207,50 @@ public class CommonEvents {
         }
     }
 
+
+    private static boolean cancelTeamTaczPreDamage(Event event) {
+        try {
+            Object attackerObject = event.getClass().getMethod("getAttacker").invoke(event);
+            Object hurtObject = event.getClass().getMethod("getHurtEntity").invoke(event);
+            if (!(attackerObject instanceof LivingEntity attacker)
+                    || !(hurtObject instanceof LivingEntity target)) {
+                return false;
+            }
+            if (!TeamCombatRules.shouldCancelFriendlyDamage(target, attacker)) {
+                return false;
+            }
+            if (event.isCancelable()) {
+                event.setCanceled(true);
+            }
+            return true;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static boolean handleShakehandsTaczPreDamage(Event event) {
+        try {
+            Object attackerObject = event.getClass().getMethod("getAttacker").invoke(event);
+            Object hurtObject = event.getClass().getMethod("getHurtEntity").invoke(event);
+            if (!(attackerObject instanceof LivingEntity attacker)
+                    || !(hurtObject instanceof LivingEntity target)) {
+                return false;
+            }
+            float amount = reflectedFloat(event, "getBaseAmount", 0.0F);
+            float headshotMultiplier = reflectedFloat(event, "getHeadshotMultiplier", 1.0F);
+            boolean headshot = reflectedBoolean(event, "isHeadShot", false);
+            float total = headshot ? amount * Math.max(1.0F, headshotMultiplier) : amount;
+            if (!ShakehandsCombatHandler.tryReflectFromAttacker(target, attacker, Math.max(1.0F, total))) {
+                return false;
+            }
+            if (event.isCancelable()) {
+                event.setCanceled(true);
+            }
+            return true;
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            return false;
+        }
+    }
 
     private static void handleGhrothTaczPreDamage(Event event) {
         try {
@@ -2551,13 +2676,14 @@ public class CommonEvents {
 
     private static TaczSpeedMultipliers taczSpeedMultipliers(LivingEntity entity) {
         double adrenaline = ToxikStateManager.adrenalineSpeedMultiplier(entity);
+        double adrenalineFireRate = ToxikStateManager.adrenalineFireRateSpeedMultiplier(entity);
         double equipment = equipmentTaczAssaultMultiplier(entity);
         double ghrothFireRate = GhrothTaczEnhancement.fireRateMultiplier(entity);
         double ghrothReload = GhrothTaczEnhancement.reloadMultiplier(entity);
         double ghrothAim = GhrothTaczEnhancement.aimMultiplier(entity);
         double ghrothBolt = GhrothTaczEnhancement.boltMultiplier(entity);
         return new TaczSpeedMultipliers(
-                adrenaline * equipment * ghrothFireRate * ModItemEffectHelper.medicineTaczFireRateMultiplier(entity),
+                adrenalineFireRate * equipment * ghrothFireRate * ModItemEffectHelper.medicineTaczFireRateMultiplier(entity),
                 adrenaline * ghrothReload * ModItemEffectHelper.medicineTaczReloadMultiplier(entity),
                 adrenaline * equipment * ghrothAim * ModItemEffectHelper.medicineTaczAimSpeedMultiplier(entity),
                 adrenaline * ghrothBolt,
@@ -3012,8 +3138,10 @@ public class CommonEvents {
             return false;
         }
 
+        // Viewport hits wear glass; body hits wear shield durability (was previously never applied).
         boolean broken = viewportHit
-                && SinevaStateManager.damageViewport(player, amount);
+                ? SinevaStateManager.damageViewport(player, amount)
+                : SinevaStateManager.damageShield(player, amount);
         if (!player.level().isClientSide) {
             if (viewportHit) {
                 SoundEvent glassSound = broken
@@ -3028,11 +3156,15 @@ public class CommonEvents {
                     NetworkHandler.sendToPlayer(new S2C_CharacterHitFeedback(sp.getId(), amount), attacker);
                 }
             } else {
-                player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_SHIELD_BLOCK.get(),
+                player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_SHIELD_HIT.get(),
                         SoundSource.PLAYERS, 0.9f, 1.0f);
+                if (broken && player instanceof ServerPlayer serverPlayer) {
+                    SinevaStateManager.syncToClient(serverPlayer);
+                    SinevaStateManager.syncRenderStateToClients(serverPlayer);
+                }
             }
         }
-        if (broken && player instanceof ServerPlayer serverPlayer) {
+        if (viewportHit && broken && player instanceof ServerPlayer serverPlayer) {
             serverPlayer.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.viewport_broken"), true);
             SinevaStateManager.syncToClient(serverPlayer);
             SinevaStateManager.syncRenderStateToClients(serverPlayer);
@@ -3149,41 +3281,56 @@ public class CommonEvents {
         return look.dot(toSourceDir) > 0.97D; // ~14° cone
     }
 
+    /** SpecialAbility only; night vision / thermal vision are NOT special abilities. */
+    private static boolean armorSpecialsEnabled(Player player) {
+        return ModGameRules.areArmorSpecialsEnabled(player);
+    }
+
+    private static SpecialAbility equipmentAbility(Player player, Profile profile) {
+        if (profile == null || !armorSpecialsEnabled(player)) {
+            return SpecialAbility.NONE;
+        }
+        return profile.ability();
+    }
+
     private static float equipmentOutgoingDamageMultiplier(ServerPlayer attacker, LivingEntity target, DamageSource source) {
+        if (!armorSpecialsEnabled(attacker)) {
+            return 1.0F;
+        }
         double multiplier = 1.0D;
         ItemStack chest = attacker.getItemBySlot(EquipmentSlot.CHEST);
         ItemStack head = attacker.getItemBySlot(EquipmentSlot.HEAD);
         Profile chestProfile = DfsEquipmentItem.profile(chest);
         Profile headProfile = DfsEquipmentItem.profile(head);
 
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.LONELY_DAMAGE
+        if (equipmentAbility(attacker, chestProfile) == SpecialAbility.LONELY_DAMAGE
                 && attacker.level().getEntitiesOfClass(Player.class,
                 attacker.getBoundingBox().inflate(5.0D),
                 other -> other != attacker && other.isAlive()).isEmpty()) {
             multiplier *= 1.75D;
         }
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.RED_OWL_REVENGE) {
+        if (equipmentAbility(attacker, chestProfile) == SpecialAbility.RED_OWL_REVENGE) {
             String revengeType = attacker.getPersistentData().getString(RED_OWL_REVENGE_TYPE);
             if (!revengeType.isBlank() && revengeType.equals(target.getType().getDescriptionId())) {
                 multiplier *= 1.75D;
             }
         }
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+        if (equipmentAbility(attacker, chestProfile) == SpecialAbility.STATIONARY_STACKS) {
             multiplier *= 1.0D + chest.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
+        if (equipmentAbility(attacker, headProfile) == SpecialAbility.STATIONARY_STACKS) {
             multiplier *= 1.0D + head.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+        if (equipmentAbility(attacker, headProfile) == SpecialAbility.GN_HEAVY) {
             multiplier *= 1.10D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+        if (equipmentAbility(attacker, headProfile) == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
             multiplier *= 1.20D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT) {
+        if (equipmentAbility(attacker, headProfile) == SpecialAbility.DICH9_ASSAULT) {
             addTimedEquipmentStacks(head, DICH9_STACKS, DICH9_UNTIL, attacker.level().getGameTime(), 20, 7 * 20L);
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.ELBOW_SPIRIT
+        if (equipmentAbility(attacker, headProfile) == SpecialAbility.ELBOW_SPIRIT
                 && chestProfile != null && chestProfile.id().equals("samurai_ballistic_vest")
                 && isMeleeDamage(source, attacker)) {
             multiplier *= 12.45D;
@@ -3217,10 +3364,11 @@ public class CommonEvents {
             }
         }
 
-        boolean chestCovered = chestProfile != null && isEquipmentCoveredHit(player, source, chestProfile);
-        boolean headCovered = headProfile != null && isEquipmentCoveredHit(player, source, headProfile);
+        Double hitRatio = resolveEquipmentHitHeightRatio(player, source);
+        boolean chestCovered = chestProfile != null && isEquipmentCoveredByRatio(chestProfile, hitRatio);
+        boolean headCovered = headProfile != null && isEquipmentCoveredByRatio(headProfile, hitRatio);
         if (!chestCovered && !headCovered) {
-            return amount;
+            return applyLimbUnprotectedReduction(player, amount, hitRatio);
         }
 
         if (tryEquipmentHurtTriggers(player, source, amount, chest, chestProfile, chestCovered,
@@ -3234,6 +3382,7 @@ public class CommonEvents {
             return 0.0F;
         }
 
+        // Prefer absorb first (helmet then chest) so protection resolves before later modifiers starve durability.
         if (headCovered) {
             adjusted = absorbWithEquipment(player, head, headProfile, adjusted);
         }
@@ -3246,7 +3395,7 @@ public class CommonEvents {
 
         long now = player.level().getGameTime();
         if (adjusted >= player.getHealth()) {
-            if (chestCovered && chestProfile.ability() == SpecialAbility.FATAL_GUARD
+            if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.FATAL_GUARD
                     && now >= player.getPersistentData().getLong(EQUIPMENT_FATAL_GUARD_UNTIL)) {
                 player.getPersistentData().putLong(EQUIPMENT_FATAL_GUARD_UNTIL, now + 600L * 20L);
                 player.invulnerableTime = Math.max(player.invulnerableTime, 10);
@@ -3288,10 +3437,11 @@ public class CommonEvents {
             }
         }
 
-        boolean chestCovered = chestProfile != null && isEquipmentCoveredHit(guard, source, chestProfile);
-        boolean headCovered = headProfile != null && isEquipmentCoveredHit(guard, source, headProfile);
+        Double hitRatio = resolveEquipmentHitHeightRatio(guard, source);
+        boolean chestCovered = chestProfile != null && isEquipmentCoveredByRatio(chestProfile, hitRatio);
+        boolean headCovered = headProfile != null && isEquipmentCoveredByRatio(headProfile, hitRatio);
         if (!chestCovered && !headCovered) {
-            return amount;
+            return applyLimbUnprotectedReduction(player, amount, hitRatio);
         }
 
         float adjusted = applyEquipmentPassiveReductions(player, source, amount, chestProfile, chestCovered,
@@ -3312,16 +3462,19 @@ public class CommonEvents {
     private static boolean tryEquipmentHurtTriggers(ServerPlayer player, DamageSource source, float amount,
                                                     ItemStack chest, Profile chestProfile, boolean chestCovered,
                                                     ItemStack head, Profile headProfile, boolean headCovered) {
+        if (!armorSpecialsEnabled(player)) {
+            return false;
+        }
         Entity attackerEntity = source.getEntity();
         LivingEntity livingAttacker = attackerEntity instanceof LivingEntity living ? living : null;
         Vec3 sourcePos = damageSourcePosition(source);
 
-        if (chestCovered && chestProfile.ability() == SpecialAbility.FRONT_IMMUNE
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.FRONT_IMMUNE
                 && sourcePos != null && Util.isFromFront(player, sourcePos, 70.0F)
                 && player.getRandom().nextFloat() < 0.25F) {
             return true;
         }
-        if (chestCovered && chestProfile.ability() == SpecialAbility.RANDOM_F4) {
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.RANDOM_F4) {
             int roll = player.getRandom().nextInt(4);
             if (roll == 0) {
                 return true;
@@ -3337,24 +3490,24 @@ public class CommonEvents {
                 return true;
             }
         }
-        if (headCovered && headProfile.ability() == SpecialAbility.H09_RIOT_DODGE
+        if (headCovered && equipmentAbility(player, headProfile) == SpecialAbility.H09_RIOT_DODGE
                 && chestProfile != null && chestProfile.id().equals("elite_ballistic_vest")
                 && !head.getOrCreateTag().getBoolean(EQUIPMENT_STATIONARY)
                 && player.getRandom().nextFloat() < 0.75F) {
             return true;
         }
-        if (chestCovered && chestProfile.ability() == SpecialAbility.HEAVY_DODGE_SUMMON
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.HEAVY_DODGE_SUMMON
                 && livingAttacker != null && livingAttacker != player
                 && player.getRandom().nextFloat() < 0.50F) {
             spawnEquipmentSupport(player, livingAttacker, 2, true, true);
             return true;
         }
-        if (chestCovered && chestProfile.ability() == SpecialAbility.KING_KONG_EXECUTION
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.KING_KONG_EXECUTION
                 && livingAttacker != null && livingAttacker != player
                 && livingAttacker.distanceToSqr(player) <= 9.0D) {
             tryStartKingKongExecution(player, chest, livingAttacker);
         }
-        if (chestCovered && chestProfile.ability() == SpecialAbility.SUMMON_REINFORCEMENTS) {
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.SUMMON_REINFORCEMENTS) {
             CompoundTag tag = chest.getOrCreateTag();
             long now = player.level().getGameTime();
             if (now >= tag.getLong(EQUIPMENT_SUMMON_UNTIL)) {
@@ -3362,7 +3515,7 @@ public class CommonEvents {
                 spawnEquipmentSupport(player, livingAttacker, 1 + player.getRandom().nextInt(4), false);
             }
         }
-        if (chestCovered && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT) {
+        if (chestCovered && equipmentAbility(player, chestProfile) == SpecialAbility.TRICK_ASSAULT) {
             addTimedEquipmentStacks(chest, TRICK_STACKS, TRICK_UNTIL, player.level().getGameTime(), 20, 7 * 20L);
         }
         if (chestCovered) {
@@ -3375,7 +3528,7 @@ public class CommonEvents {
     }
 
     private static boolean tryRedOwlMaskDodge(ServerPlayer player, DamageSource source, Profile headProfile) {
-        if (headProfile == null || headProfile.ability() != SpecialAbility.RED_OWL_MASK
+        if (equipmentAbility(player, headProfile) != SpecialAbility.RED_OWL_MASK
                 || player.getRandom().nextFloat() >= 0.50F) {
             return false;
         }
@@ -3388,7 +3541,7 @@ public class CommonEvents {
     }
 
     private static void triggerCounterKick(ServerPlayer player, DamageSource source, float amount, Profile profile) {
-        if (profile == null || profile.ability() != SpecialAbility.COUNTER_KICK || !isMeleeDamage(source, source.getEntity())) {
+        if (equipmentAbility(player, profile) != SpecialAbility.COUNTER_KICK || !isMeleeDamage(source, source.getEntity())) {
             return;
         }
         Entity attacker = source.getEntity();
@@ -3416,13 +3569,13 @@ public class CommonEvents {
                 multiplier *= 1.0D - Math.min(0.95D, headProfile.bluntResistance());
             }
         }
-        if (headCovered && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+        if (headCovered && equipmentAbility(player, headProfile) == SpecialAbility.GN_HEAVY) {
             multiplier *= 0.95D;
         }
-        if (headCovered && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+        if (headCovered && equipmentAbility(player, headProfile) == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
             multiplier *= 0.90D;
         }
-        if (headCovered && headProfile.ability() == SpecialAbility.GT5_STATIONARY_REDUCTION
+        if (headCovered && equipmentAbility(player, headProfile) == SpecialAbility.GT5_STATIONARY_REDUCTION
                 && player.getItemBySlot(EquipmentSlot.HEAD).getOrCreateTag().getBoolean(EQUIPMENT_STATIONARY)) {
             multiplier *= 0.20D;
         }
@@ -3433,7 +3586,7 @@ public class CommonEvents {
         if (amount <= 0.0F || stack.isEmpty()) {
             return amount;
         }
-        boolean noDurabilityLoss = profile.ability() == SpecialAbility.NO_DURABILITY_LOSS
+        boolean noDurabilityLoss = equipmentAbility(player, profile) == SpecialAbility.NO_DURABILITY_LOSS
                 || stack.hasTag() && stack.getTag().getBoolean("Unbreakable");
         if (!noDurabilityLoss && !stack.isDamageableItem()) {
             return amount;
@@ -3448,7 +3601,7 @@ public class CommonEvents {
         if (equipmentFactionCount(player, Faction.HVK) >= 1) {
             ratio += 0.04D;
         }
-        if (profile.ability() == SpecialAbility.STATIONARY_STACKS) {
+        if (equipmentAbility(player, profile) == SpecialAbility.STATIONARY_STACKS) {
             ratio += stack.getOrCreateTag().getInt(FS_STATIONARY_STACKS) * 0.04D;
         }
         ratio = Math.min(0.98D, ratio);
@@ -3493,13 +3646,13 @@ public class CommonEvents {
         if (equipmentFactionCount(player, Faction.HVK) >= 1) {
             multiplier *= 0.90D;
         }
-        if (profile.ability() == SpecialAbility.DURABLE) {
+        if (equipmentAbility(player, profile) == SpecialAbility.DURABLE) {
             multiplier *= 0.50D;
         }
-        if (profile.ability() == SpecialAbility.GN_HEAVY) {
+        if (equipmentAbility(player, profile) == SpecialAbility.GN_HEAVY) {
             multiplier *= 0.80D;
         }
-        if (profile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+        if (equipmentAbility(player, profile) == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
             multiplier *= 0.70D;
         }
         return multiplier;
@@ -3531,7 +3684,8 @@ public class CommonEvents {
             stack.shrink(1);
             return;
         }
-        if (newDamage >= DfsEquipmentItem.breakDamageLimit(stack) && profile.ability() == SpecialAbility.DURABILITY_RESTORE) {
+        if (newDamage >= DfsEquipmentItem.breakDamageLimit(stack)
+                && equipmentAbility(player, profile) == SpecialAbility.DURABILITY_RESTORE) {
             CompoundTag tag = stack.getOrCreateTag();
             long now = player.level().getGameTime();
             if (now >= tag.getLong(EQUIPMENT_RESTORE_UNTIL)) {
@@ -3564,39 +3718,46 @@ public class CommonEvents {
         Profile headProfile = DfsEquipmentItem.profile(head);
         Profile chestProfile = DfsEquipmentItem.profile(chest);
 
+        // Helmet night vision / thermal vision are NOT special abilities — always tick.
         tickHelmetVisionEffect(player, head);
         if (equipmentFactionCount(player, Faction.GLOBAL_FORCES) >= 1 && player.tickCount % 100 == 0) {
             regenerateEquipmentDurability(head);
             regenerateEquipmentDurability(chest);
         }
+        // Faction set bonuses / handling stay; ability procs respect dealtarmorspecial.
         tickGlobalForcesAllyLock(player);
-        tickEquipmentStationaryFlag(player, head);
-        tickEquipmentStationaryFlag(player, chest);
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
-            tickFsStationaryStacks(player, chest);
+        if (armorSpecialsEnabled(player)) {
+            tickEquipmentStationaryFlag(player, head);
+            tickEquipmentStationaryFlag(player, chest);
+            if (equipmentAbility(player, chestProfile) == SpecialAbility.STATIONARY_STACKS) {
+                tickFsStationaryStacks(player, chest);
+            }
+            if (equipmentAbility(player, headProfile) == SpecialAbility.STATIONARY_STACKS) {
+                tickFsStationaryStacks(player, head);
+            }
+            if (equipmentAbility(player, headProfile) == SpecialAbility.H09_RIOT_DODGE
+                    && chestProfile != null && chestProfile.id().equals("elite_ballistic_vest")) {
+                tickH09StationaryDamage(player, head);
+            }
+            if (equipmentAbility(player, headProfile) == SpecialAbility.ENDURANCE_TRANSFORM) {
+                tickEnduranceHelmetTransform(player, head);
+            }
+            if (equipmentAbility(player, chestProfile) == SpecialAbility.TRICK_ASSAULT
+                    && player.level().getGameTime() > chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
+                chest.getOrCreateTag().remove(TRICK_STACKS);
+            }
+            if (equipmentAbility(player, headProfile) == SpecialAbility.DICH9_ASSAULT
+                    && player.level().getGameTime() > head.getOrCreateTag().getLong(DICH9_UNTIL)) {
+                head.getOrCreateTag().remove(DICH9_STACKS);
+            }
+            tickMhsFury(player, head, headProfile);
+            updateEquipmentMovementBonus(player, chest, chestProfile, head, headProfile);
+            tickKingKongExecution(player);
+        } else {
+            // Clear ability-sourced movement modifiers when specials are disabled.
+            updateEquipmentMovementBonus(player, chest, null, head, null);
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.STATIONARY_STACKS) {
-            tickFsStationaryStacks(player, head);
-        }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.H09_RIOT_DODGE
-                && chestProfile != null && chestProfile.id().equals("elite_ballistic_vest")) {
-            tickH09StationaryDamage(player, head);
-        }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.ENDURANCE_TRANSFORM) {
-            tickEnduranceHelmetTransform(player, head);
-        }
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
-                && player.level().getGameTime() > chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
-            chest.getOrCreateTag().remove(TRICK_STACKS);
-        }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
-                && player.level().getGameTime() > head.getOrCreateTag().getLong(DICH9_UNTIL)) {
-            head.getOrCreateTag().remove(DICH9_STACKS);
-        }
-        tickMhsFury(player, head, headProfile);
         GhrothTaczEnhancement.tickEnhancedGunRuntime(player);
-        updateEquipmentMovementBonus(player, chest, chestProfile, head, headProfile);
-        tickKingKongExecution(player);
     }
 
     private static void tickGlobalForcesAllyLock(ServerPlayer player) {
@@ -3843,11 +4004,15 @@ public class CommonEvents {
     }
 
     private static void tickMhsFury(ServerPlayer player, ItemStack head, Profile headProfile) {
+        if (!armorSpecialsEnabled(player)) {
+            MHS_TACTICAL_AMMO_SNAPSHOTS.remove(player.getUUID());
+            return;
+        }
         long now = player.level().getGameTime();
-        boolean active = headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+        boolean active = equipmentAbility(player, headProfile) == SpecialAbility.MHS_FURY
                 && now <= head.getOrCreateTag().getLong(MHS_FURY_UNTIL);
 
-        if (!active && headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+        if (!active && equipmentAbility(player, headProfile) == SpecialAbility.MHS_FURY
                 && isTaczGunStack(player.getMainHandItem()) && hasMhsFuryTriggerTarget(player)) {
             CompoundTag tag = head.getOrCreateTag();
             tag.putLong(MHS_FURY_UNTIL, now + MHS_FURY_DURATION_TICKS);
@@ -3903,9 +4068,12 @@ public class CommonEvents {
     }
 
     private static boolean isMhsFuryActive(Player player) {
+        if (!armorSpecialsEnabled(player)) {
+            return false;
+        }
         ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
         Profile headProfile = DfsEquipmentItem.profile(head);
-        return headProfile != null && headProfile.ability() == SpecialAbility.MHS_FURY
+        return equipmentAbility(player, headProfile) == SpecialAbility.MHS_FURY
                 && player.level().getGameTime() <= head.getOrCreateTag().getLong(MHS_FURY_UNTIL);
     }
 
@@ -3984,18 +4152,20 @@ public class CommonEvents {
 
         double bonus = 0.0D;
         long now = player.level().getGameTime();
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
+        if (chest != null && !chest.isEmpty()
+                && equipmentAbility(player, chestProfile) == SpecialAbility.TRICK_ASSAULT
                 && now <= chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
             bonus += chest.getOrCreateTag().getInt(TRICK_STACKS) * 0.05D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
+        if (head != null && !head.isEmpty()
+                && equipmentAbility(player, headProfile) == SpecialAbility.DICH9_ASSAULT
                 && now <= head.getOrCreateTag().getLong(DICH9_UNTIL)) {
             bonus += head.getOrCreateTag().getInt(DICH9_STACKS) * 0.04D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY) {
+        if (equipmentAbility(player, headProfile) == SpecialAbility.GN_HEAVY) {
             bonus += 0.05D;
         }
-        if (headProfile != null && headProfile.ability() == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
+        if (equipmentAbility(player, headProfile) == SpecialAbility.GN_HEAVY_NIGHT_VISION) {
             bonus += 0.10D;
         }
         if (bonus > 0.0001D) {
@@ -4019,20 +4189,20 @@ public class CommonEvents {
     }
 
     private static double equipmentTaczAssaultMultiplier(LivingEntity entity) {
-        if (!(entity instanceof Player player)) {
+        if (!(entity instanceof Player player) || !armorSpecialsEnabled(player)) {
             return 1.0D;
         }
         double multiplier = 1.0D;
         long now = entity.level().getGameTime();
         ItemStack chest = player.getItemBySlot(EquipmentSlot.CHEST);
         Profile chestProfile = DfsEquipmentItem.profile(chest);
-        if (chestProfile != null && chestProfile.ability() == SpecialAbility.TRICK_ASSAULT
+        if (equipmentAbility(player, chestProfile) == SpecialAbility.TRICK_ASSAULT
                 && now <= chest.getOrCreateTag().getLong(TRICK_UNTIL)) {
             multiplier *= 1.0D + chest.getOrCreateTag().getInt(TRICK_STACKS) * 0.04D;
         }
         ItemStack head = player.getItemBySlot(EquipmentSlot.HEAD);
         Profile headProfile = DfsEquipmentItem.profile(head);
-        if (headProfile != null && headProfile.ability() == SpecialAbility.DICH9_ASSAULT
+        if (equipmentAbility(player, headProfile) == SpecialAbility.DICH9_ASSAULT
                 && now <= head.getOrCreateTag().getLong(DICH9_UNTIL)) {
             multiplier *= 1.0D + head.getOrCreateTag().getInt(DICH9_STACKS) * 0.06D;
         }
@@ -4077,22 +4247,28 @@ public class CommonEvents {
         if (equipmentFactionCount(player, Faction.GTI) >= 1) {
             return 1.0D;
         }
+        if (!armorSpecialsEnabled(player)) {
+            return 0.0D;
+        }
         double chance = 0.0D;
         Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
         Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
-        if (chest != null && chest.ability() == SpecialAbility.LOOT_DUPLICATE) {
+        if (equipmentAbility(player, chest) == SpecialAbility.LOOT_DUPLICATE) {
             chance = Math.max(chance, chest.lootDuplicateChance());
         }
-        if (head != null && head.ability() == SpecialAbility.LOOT_DUPLICATE) {
+        if (equipmentAbility(player, head) == SpecialAbility.LOOT_DUPLICATE) {
             chance = Math.max(chance, head.lootDuplicateChance());
         }
         return chance;
     }
 
     private static void recordRedOwlRevengeOnDeath(ServerPlayer player, DamageSource source) {
+        if (!armorSpecialsEnabled(player)) {
+            return;
+        }
         Profile chest = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
         Entity attacker = source.getEntity();
-        if (chest != null && chest.ability() == SpecialAbility.RED_OWL_REVENGE && attacker != null) {
+        if (equipmentAbility(player, chest) == SpecialAbility.RED_OWL_REVENGE && attacker != null) {
             player.getPersistentData().putString(RED_OWL_REVENGE_TYPE, attacker.getType().getDescriptionId());
         }
     }
@@ -4153,25 +4329,52 @@ public class CommonEvents {
     }
 
     private static boolean isEquipmentCoveredHit(LivingEntity entity, DamageSource source, Profile profile) {
-        if (profile == null) {
-            return false;
-        }
+        return isEquipmentCoveredByRatio(profile, resolveEquipmentHitHeightRatio(entity, source));
+    }
+
+    /**
+     * Prefer equipment absorb: widen zones slightly and fall back to torso when height is unknown
+     * (explosions, skill AOE, self-sourced blasts) so helmet/armor still get a chance to protect.
+     */
+    private static Double resolveEquipmentHitHeightRatio(LivingEntity entity, DamageSource source) {
         Double ratio = estimateEquipmentHitHeightRatio(entity, source);
-        if (ratio == null) {
+        return ratio != null ? ratio : EQUIPMENT_UNKNOWN_HIT_HEIGHT_RATIO;
+    }
+
+    private static boolean isEquipmentCoveredByRatio(Profile profile, Double ratio) {
+        if (profile == null || ratio == null) {
             return false;
         }
         if (profile.isHelmet()) {
-            return ratio >= 0.78D;
+            // Slightly lower threshold so more upper-body hits count as helmet protection.
+            return ratio >= 0.74D;
         }
         return switch (profile.coverageKey()) {
-            case "upper_torso" -> ratio >= 0.46D && ratio < 0.74D;
-            case "full_torso" -> ratio >= 0.40D && ratio < 0.74D;
-            case "full_torso_arms" -> ratio >= 0.36D && ratio < 0.80D;
-            default -> ratio >= 0.40D && ratio < 0.74D;
+            case "upper_torso" -> ratio >= 0.42D && ratio < 0.78D;
+            case "full_torso" -> ratio >= 0.36D && ratio < 0.78D;
+            case "full_torso_arms" -> ratio >= 0.32D && ratio < 0.82D;
+            default -> ratio >= 0.36D && ratio < 0.78D;
         };
     }
 
-    private static Double estimateEquipmentHitHeightRatio(LivingEntity entity, DamageSource source) {
+    private static boolean isLimbHitRatio(double ratio) {
+        // Below lowest torso/arm coverage band = legs / unprotected limbs.
+        return ratio < 0.32D;
+    }
+
+    private static float applyLimbUnprotectedReduction(ServerPlayer player, float amount, Double hitRatio) {
+        if (amount <= 0.0F
+                || hitRatio == null
+                || !isLimbHitRatio(hitRatio)
+                || !ModGameRules.areLimbsDamageReductionsEnabled(player)) {
+            return amount;
+        }
+        // Config is a reduction fraction: 0.35 => keep 65% of limb damage.
+        float reduction = Math.max(0.0F, Math.min(1.0F, LIMBS_UNPROTECTED_DAMAGE_REDUCTION));
+        return amount * (1.0F - reduction);
+    }
+
+    static Double estimateEquipmentHitHeightRatio(LivingEntity entity, DamageSource source) {
         if (isMeleeDamage(source, source.getEntity())) {
             return 0.55D;
         }
@@ -4189,11 +4392,22 @@ public class CommonEvents {
             }
         }
 
+        // Skill/explosion entities often sit near the player without being Projectiles.
+        if (direct != null && direct != entity
+                && isNearPlayerHitbox(entity, direct.position(), EQUIPMENT_PROJECTILE_NEAR_INFLATE)) {
+            return playerHeightRatio(entity, direct.getBoundingBox().getCenter().y);
+        }
+
         if (isLikelyRangedDamage(source)) {
             Double ratio = estimateRangedAttackerHitHeightRatio(entity, source);
             if (ratio != null) {
                 return ratio;
             }
+        }
+
+        // Explosion / area damage with a known blast origin near the player.
+        if (impact != null && isNearPlayerHitbox(entity, impact, EQUIPMENT_PROJECTILE_NEAR_INFLATE * 2.0D)) {
+            return playerHeightRatio(entity, impact.y);
         }
         return null;
     }
@@ -4273,6 +4487,10 @@ public class CommonEvents {
     private static boolean isMeleeDamage(DamageSource source, Entity expectedAttacker) {
         Entity attacker = source.getEntity();
         Entity direct = source.getDirectEntity();
+        // Beacon boss is a gunfighter; never treat its hits as melee for equipment/height.
+        if (attacker instanceof com.rzy.dealt_force_skills.entity.BeaconBossEntity) {
+            return false;
+        }
         if (!(attacker instanceof LivingEntity) || direct instanceof Projectile || isLikelyRangedDamage(source)) {
             return false;
         }
@@ -4284,6 +4502,9 @@ public class CommonEvents {
         if (direct instanceof Projectile || source.is(TACZ_BULLETS_TAG)) {
             return true;
         }
+        if (source.getEntity() instanceof com.rzy.dealt_force_skills.entity.BeaconBossEntity) {
+            return true;
+        }
         String msgId = source.getMsgId();
         return msgId != null
                 && (msgId.contains("bullet") || msgId.contains("projectile") || msgId.contains("arrow"));
@@ -4291,7 +4512,7 @@ public class CommonEvents {
 
     private static void tryStartKingKongExecution(ServerPlayer player, ItemStack chest, LivingEntity target) {
         CompoundTag chestTag = chest.getOrCreateTag();
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < chestTag.getLong(KING_KONG_COOLDOWN_UNTIL)) {
             return;
         }
@@ -4410,9 +4631,9 @@ public class CommonEvents {
     private static double supportAttributeMultiplier(ServerPlayer player) {
         Profile head = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
         double multiplier = 5.0D;
-        if (head != null && head.ability() == SpecialAbility.H70_FOLLOWER_BOOST) {
+        if (equipmentAbility(player, head) == SpecialAbility.H70_FOLLOWER_BOOST) {
             multiplier *= 2.0D;
-        } else if (head != null && head.ability() == SpecialAbility.H70_NIGHT_FOLLOWER_BOOST) {
+        } else if (equipmentAbility(player, head) == SpecialAbility.H70_NIGHT_FOLLOWER_BOOST) {
             multiplier *= 3.5D;
         }
         return multiplier;
@@ -4441,7 +4662,15 @@ public class CommonEvents {
         if (source.getEntity() instanceof Player || source.getDirectEntity() instanceof Player) {
             return true;
         }
-        return source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player;
+        if (source.getDirectEntity() instanceof Projectile projectile && projectile.getOwner() instanceof Player) {
+            return true;
+        }
+        // Treat Beacon boss gunfire like player-sourced for Sineva bomb-suit shield stamina/slow bookkeeping.
+        if (source.getEntity() instanceof com.rzy.dealt_force_skills.entity.BeaconBossEntity) {
+            return true;
+        }
+        return source.getDirectEntity() instanceof Projectile projectile
+                && projectile.getOwner() instanceof com.rzy.dealt_force_skills.entity.BeaconBossEntity;
     }
 
     private static boolean effectApplies(LivingEntity entity, MobEffect effect) {
@@ -4599,12 +4828,15 @@ public class CommonEvents {
     }
 
     private static boolean hasEquipmentAbility(Player player, SpecialAbility ability) {
+        if (!armorSpecialsEnabled(player) || ability == null || ability == SpecialAbility.NONE) {
+            return false;
+        }
         Profile chestProfile = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.CHEST));
-        if (chestProfile != null && chestProfile.ability() == ability) {
+        if (equipmentAbility(player, chestProfile) == ability) {
             return true;
         }
         Profile headProfile = DfsEquipmentItem.profile(player.getItemBySlot(EquipmentSlot.HEAD));
-        return headProfile != null && headProfile.ability() == ability;
+        return equipmentAbility(player, headProfile) == ability;
     }
 
     private static void handleFrugalDisassemblyCraft(PlayerEvent.ItemCraftedEvent event) {
@@ -4658,6 +4890,38 @@ public class CommonEvents {
     private static void giveOrDrop(Player player, ItemStack stack) {
         if (!player.addItem(stack)) {
             player.level().addFreshEntity(new ItemEntity(player.level(), player.getX(), player.getY(), player.getZ(), stack));
+        }
+    }
+
+    /**
+     * Shared HVK work-block loot bonuses (new-recruit equipment + undead explorer gamerule).
+     * Called by advanced work-block entities after they produce a bonus stack.
+     */
+    public static void grantHvkBlockLootBonuses(Player player, Level level, BlockPos pos, ItemStack stack) {
+        if (!(level instanceof ServerLevel serverLevel)
+                || player == null
+                || player.isCreative()
+                || stack == null
+                || stack.isEmpty()
+                || !serverLevel.getGameRules().getBoolean(GameRules.RULE_DOBLOCKDROPS)) {
+            return;
+        }
+        if (hasEquipmentAbility(player, SpecialAbility.NEW_RECRUIT)
+                && player.getRandom().nextDouble() < NEW_RECRUIT_MINING_DUPLICATE_CHANCE) {
+            spawnHvkBlockLootBonus(serverLevel, pos, stack);
+        }
+        if (player instanceof ServerPlayer
+                && UndeadStateManager.isUndead(player)
+                && UndeadStateManager.profession(player) == UndeadProfession.EXPLORER
+                && serverLevel.getGameRules().getBoolean(ModGameRules.DEALT_UNDEAD_EXTRA_DROP)) {
+            spawnHvkBlockLootBonus(serverLevel, pos, stack);
+        }
+    }
+
+    private static void spawnHvkBlockLootBonus(ServerLevel level, BlockPos pos, ItemStack stack) {
+        if (!stack.isEmpty()) {
+            level.addFreshEntity(new ItemEntity(level,
+                    pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, stack.copy()));
         }
     }
 

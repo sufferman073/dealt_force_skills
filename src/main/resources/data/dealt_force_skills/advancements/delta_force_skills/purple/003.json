@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:firework_rocket"
+    },
+    "title": {
+      "text": "虎蹲龙盘"
+    },
+    "description": {
+      "text": "使用威龙时，使用一枚虎蹲炮至少经过一次弹射后击倒4个目标"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

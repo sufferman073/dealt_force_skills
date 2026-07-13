@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
@@ -36,17 +37,17 @@ public class ShepherdDroneEntity extends Entity implements ItemSupplier {
     private static final int PHASE_FORWARD = 1;
     private static final int PHASE_TAP_COUNTDOWN = 2;
     private static final int PHASE_PATROL_COUNTDOWN = 3;
-    private static final int ASCEND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.ascend_ticks", 40);
-    private static final int FORWARD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.forward_ticks", 40);
-    private static final int TAP_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.tap_countdown_ticks", 40);
-    private static final int PATROL_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.patrol_countdown_ticks", 80);
-    private static final int TAP_STUN_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.tap_stun_duration_ticks", 4 * 20);
-    private static final int PATROL_STUN_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.patrol_stun_duration_ticks", 2 * 20);
-    private static final int PATROL_MAX_PULSES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_drone_entity.patrol_max_pulses", 4);
-    private static final double STUN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.stun_radius", 22.5D);
-    private static final double SEEK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_radius", 40.0D);
-    private static final double SEEK_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_speed", 0.42D);
-    private static final double SEEK_STOP_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_stop_distance", 2.5D);
+    private static volatile int ASCEND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ASCEND_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.ascend_ticks", 40));
+    private static volatile int FORWARD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FORWARD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.forward_ticks", 40));
+    private static volatile int TAP_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TAP_COUNTDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.tap_countdown_ticks", 40));
+    private static volatile int PATROL_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PATROL_COUNTDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.patrol_countdown_ticks", 80));
+    private static volatile int TAP_STUN_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TAP_STUN_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.tap_stun_duration_ticks", 80));
+    private static volatile int PATROL_STUN_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PATROL_STUN_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherddroneentity.patrol_stun_duration_ticks", 40));
+    private static volatile int PATROL_MAX_PULSES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PATROL_MAX_PULSES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_drone_entity.patrol_max_pulses", 4));
+    private static volatile double STUN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STUN_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.stun_radius", 22.5));
+    private static volatile double SEEK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SEEK_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_radius", 40.0));
+    private static volatile double SEEK_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SEEK_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_speed", 0.42));
+    private static volatile double SEEK_STOP_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SEEK_STOP_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherddroneentity.seek_stop_distance", 2.5));
     private static final DustParticleOptions DRONE_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.82f, 0.26f), 1.2f);
 
     private UUID ownerId;
@@ -219,8 +220,9 @@ public class ShepherdDroneEntity extends Entity implements ItemSupplier {
         AABB box = new AABB(position(), position()).inflate(STUN_RADIUS);
         Entity owner = owner(level);
         boolean hitPlayer = false;
+        int affectedTargets = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (!TargetingUtil.isTargetableLiving(target)) {
+            if (!TargetingUtil.isHostileLivingFor(owner, target)) {
                 continue;
             }
             if (ownerId != null && target.getUUID().equals(ownerId)) {
@@ -231,12 +233,14 @@ public class ShepherdDroneEntity extends Entity implements ItemSupplier {
                 continue;
             }
             target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), durationTicks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_drone_entity.effect.sonic_shock.0.amplifier", 0), false, true, true), owner);
+            affectedTargets++;
             if (target instanceof ServerPlayer) {
                 hitPlayer = true;
             }
         }
 
         if (hitPlayer && owner instanceof ServerPlayer ownerPlayer) {
+            DfsAchievements.recordShepherdDroneShock(ownerPlayer, affectedTargets);
             ownerPlayer.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.drone_player_stunned"), true);
         }
     }
@@ -253,7 +257,7 @@ public class ShepherdDroneEntity extends Entity implements ItemSupplier {
 
         AABB box = new AABB(position(), position()).inflate(STUN_RADIUS);
         for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box, ServerPlayer::isAlive)) {
-            if (!TargetingUtil.isTargetablePlayer(player)
+            if (!TargetingUtil.isHostilePlayerFor(owner, player)
                     || (ownerId != null && player.getUUID().equals(ownerId))) {
                 continue;
             }
@@ -278,8 +282,9 @@ public class ShepherdDroneEntity extends Entity implements ItemSupplier {
 
     private Optional<ServerPlayer> nearestNonOwnerPlayer(ServerLevel level) {
         AABB box = new AABB(position(), position()).inflate(SEEK_RADIUS);
+        Entity owner = owner(level);
         return level.getEntitiesOfClass(ServerPlayer.class, box,
-                        player -> TargetingUtil.isTargetablePlayer(player)
+                        player -> TargetingUtil.isHostilePlayerFor(owner, player)
                                 && (ownerId == null || !player.getUUID().equals(ownerId)))
                 .stream()
                 .min(Comparator.comparingDouble(player -> player.distanceToSqr(this)));

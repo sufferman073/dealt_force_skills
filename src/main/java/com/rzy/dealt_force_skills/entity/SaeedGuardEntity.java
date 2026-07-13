@@ -17,6 +17,7 @@ import com.tacz.guns.entity.shooter.LivingEntitySprint;
 import com.tacz.guns.entity.shooter.ShooterDataHolder;
 import com.tacz.guns.entity.sync.ModSyncedEntityData;
 import com.tacz.guns.resource.modifier.AttachmentCacheProperty;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.saeed.SaeedTaczGunBridge;
 import com.rzy.dealt_force_skills.character.saeed.SaeedGuardType;
@@ -24,6 +25,7 @@ import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedTaczEquipment;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.BlockPos;
@@ -107,26 +109,26 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
     private static final String SHARP_EAGLE_SENTRY_Y = "SharpEagleSentryY";
     private static final String SHARP_EAGLE_SENTRY_Z = "SharpEagleSentryZ";
     private static final String SHARP_EAGLE_HAS_SENTRY = "SharpEagleHasSentry";
-    private static final int FIREEYE_DETONATE_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.fireeye_detonate_delay_ticks", 4 * 20);
-    private static final int ATTACK_VOICE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.attack_voice_cooldown_ticks", 6 * 20);
-    private static final int BREAK_TASK_REACH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.break_task_reach_ticks", 4);
-    private static final int HAKIM_SMOKE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.hakim_smoke_life_ticks", 15 * 20);
-    private static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.smoke_max_charges", 2);
-    private static final int ROCKET_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.rocket_max_charges", 3);
-    private static final int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.flash_max_charges", 2);
-    private static final int KARIM_MAX_FUEL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_guard_entity.karim_max_fuel", 180);
-    private static final int KARIM_AUTO_FUEL_THRESHOLD = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.karim_auto_fuel_threshold", 120);
-    private static final int KARIM_FUEL_TICKS_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.karim_fuel_ticks_per_point", 10);
-    private static final int HAKIM_ROCKET_RELOAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.hakim_rocket_reload_ticks", 50);
-    private static final long SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.smoke_recharge_ticks", 35L * 20L);
-    private static final long ROCKET_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.rocket_recharge_ticks", 45L * 20L);
-    private static final long FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.flash_recharge_ticks", 35L * 20L);
-    private static final long SHARP_EAGLE_SENTRY_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.sharp_eagle_sentry_duration_ticks", 90L * 20L);
-    private static final long SHARP_EAGLE_SENTRY_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.sharp_eagle_sentry_cooldown_ticks", 20L * 20L);
-    private static final double FIREEYE_DETONATE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.fireeye_detonate_radius", 2.5D);
-    private static final float FIREEYE_DETONATE_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedguardentity.fireeye_detonate_damage", 20.0F);
-    private static final double COMMAND_POINT_HOLD_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.command_point_hold_distance", 3.0D);
-    private static final double COMMAND_POINT_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.command_point_target_range", 35.0D);
+    private static volatile int FIREEYE_DETONATE_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIREEYE_DETONATE_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.fireeye_detonate_delay_ticks", 80));
+    private static volatile int ATTACK_VOICE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ATTACK_VOICE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.attack_voice_cooldown_ticks", 120));
+    private static volatile int BREAK_TASK_REACH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BREAK_TASK_REACH_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.break_task_reach_ticks", 4));
+    private static volatile int HAKIM_SMOKE_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HAKIM_SMOKE_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.hakim_smoke_life_ticks", 300));
+    private static volatile int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.smoke_max_charges", 2));
+    private static volatile int ROCKET_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROCKET_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.rocket_max_charges", 3));
+    private static volatile int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.flash_max_charges", 2));
+    private static volatile int KARIM_MAX_FUEL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KARIM_MAX_FUEL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_guard_entity.karim_max_fuel", 180));
+    private static volatile int KARIM_AUTO_FUEL_THRESHOLD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KARIM_AUTO_FUEL_THRESHOLD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.karim_auto_fuel_threshold", 120));
+    private static volatile int KARIM_FUEL_TICKS_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KARIM_FUEL_TICKS_PER_POINT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.karim_fuel_ticks_per_point", 10));
+    private static volatile int HAKIM_ROCKET_RELOAD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HAKIM_ROCKET_RELOAD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedguardentity.hakim_rocket_reload_ticks", 50));
+    private static volatile long SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.smoke_recharge_ticks", 700L));
+    private static volatile long ROCKET_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROCKET_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.rocket_recharge_ticks", 900L));
+    private static volatile long FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.flash_recharge_ticks", 700L));
+    private static volatile long SHARP_EAGLE_SENTRY_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHARP_EAGLE_SENTRY_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.sharp_eagle_sentry_duration_ticks", 1800L));
+    private static volatile long SHARP_EAGLE_SENTRY_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHARP_EAGLE_SENTRY_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("summons.saeedguardentity.sharp_eagle_sentry_cooldown_ticks", 400L));
+    private static volatile double FIREEYE_DETONATE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIREEYE_DETONATE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.fireeye_detonate_radius", 2.5));
+    private static volatile float FIREEYE_DETONATE_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIREEYE_DETONATE_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedguardentity.fireeye_detonate_damage", 20.0F));
+    private static volatile double COMMAND_POINT_HOLD_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMMAND_POINT_HOLD_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.command_point_hold_distance", 3.0));
+    private static volatile double COMMAND_POINT_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMMAND_POINT_TARGET_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedguardentity.command_point_target_range", 35.0));
     private static final ReloadState IDLE_RELOAD_STATE = new ReloadState();
 
     private final ShooterDataHolder taczData = new ShooterDataHolder();
@@ -613,6 +615,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         Vec3 center = position().add(0.0D, getBbHeight() * 0.45D, 0.0D);
         level.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y, center.z,
                 8, 0.35D, 0.25D, 0.35D, 0.02D);
+        LivingEntity damageOwner = owner().<LivingEntity>map(player -> player).orElse(this);
         AABB box = new AABB(center, center).inflate(FIREEYE_DETONATE_RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (target == this
@@ -621,8 +624,8 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
                 continue;
             }
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, this, this),
-                    FIREEYE_DETONATE_DAMAGE);
+            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(level, this, damageOwner),
+                    damageOwner, FIREEYE_DETONATE_DAMAGE);
         }
         if (!getPersistentData().getBoolean(REMOVING_BY_MANAGER)) {
             getPersistentData().putBoolean(REMOVING_BY_MANAGER, true);
@@ -900,13 +903,25 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
 
     private void tickGuardResources(long now) {
         SaeedGuardType type = guardType();
+        ServerPlayer owner = owner().orElse(null);
         if (type == SaeedGuardType.HAKIM) {
-            storedCharges(SMOKE_CHARGES, SMOKE_RECHARGE_AT, SMOKE_MAX_CHARGES, SMOKE_RECHARGE_TICKS, now);
-            storedCharges(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES, ROCKET_RECHARGE_TICKS, now);
+            storedCharges(SMOKE_CHARGES, SMOKE_RECHARGE_AT, SMOKE_MAX_CHARGES,
+                    scaledCooldownTicks(owner, SMOKE_RECHARGE_TICKS), now);
+            storedCharges(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES,
+                    scaledCooldownTicks(owner, ROCKET_RECHARGE_TICKS), now);
         } else if (type == SaeedGuardType.KARIM) {
-            storedCharges(FLASH_CHARGES, FLASH_RECHARGE_AT, FLASH_MAX_CHARGES, FLASH_RECHARGE_TICKS, now);
+            storedCharges(FLASH_CHARGES, FLASH_RECHARGE_AT, FLASH_MAX_CHARGES,
+                    scaledCooldownTicks(owner, FLASH_RECHARGE_TICKS), now);
             karimFuel(now);
         }
+    }
+
+    private static int scaledCooldownTicks(ServerPlayer owner, long baseTicks) {
+        if (baseTicks <= 0L) {
+            return 0;
+        }
+        long capped = Math.min(Integer.MAX_VALUE, baseTicks);
+        return SkillCooldownHelper.ticks(owner, (int) capped);
     }
 
     private int storedCharges(String chargeKey, String rechargeKey, int maxCharges, long rechargeTicks, long now) {
@@ -988,7 +1003,8 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         SaeedGuardType type = guardType();
         long now = level.getGameTime();
         if (type == SaeedGuardType.HAKIM) {
-            if (storedCharges(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES, ROCKET_RECHARGE_TICKS, now) < 2
+            if (storedCharges(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES,
+                    scaledCooldownTicks(owner, ROCKET_RECHARGE_TICKS), now) < 2
                     || now < getPersistentData().getLong(ROCKET_RELOAD_UNTIL)
                     || distanceToSqr(target) > type.attackRange() * type.attackRange()
                     || !hasLineOfSight(target)) {
@@ -1016,7 +1032,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
             return launchSmokeGrenade(level, owner, aimPointFor(target, aimPoint));
         }
         if (type == SaeedGuardType.KARIM && slot != SkillSlot.CORE) {
-            return launchFlashGrenade(level, aimPointFor(target, aimPoint));
+            return launchFlashGrenade(level, owner, aimPointFor(target, aimPoint));
         }
         if (type == SaeedGuardType.SHARP_EAGLE) {
             return startSharpEagleSentry(level, owner, target, aimPoint);
@@ -1059,7 +1075,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         getPersistentData().putDouble(SHARP_EAGLE_SENTRY_Y, pos.y);
         getPersistentData().putDouble(SHARP_EAGLE_SENTRY_Z, pos.z);
         getPersistentData().putLong(WEAPON_SKILL_UNTIL, now + SHARP_EAGLE_SENTRY_DURATION_TICKS);
-        getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, now + SHARP_EAGLE_SENTRY_COOLDOWN_TICKS);
+        getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, now + scaledCooldownTicks(owner, SHARP_EAGLE_SENTRY_COOLDOWN_TICKS));
         teleportTo(pos.x, pos.y, pos.z);
         setYRot(owner.getYRot());
         setYHeadRot(owner.getYRot());
@@ -1116,7 +1132,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
             default -> 30L * 20L;
         };
         getPersistentData().putLong(WEAPON_SKILL_UNTIL, level.getGameTime() + duration);
-        getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, level.getGameTime() + cooldown);
+        getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, level.getGameTime() + scaledCooldownTicks(owner, cooldown));
         playAttackVoice(level, guardSkillSound(type), type == SaeedGuardType.SHARP_EAGLE ? 0.78F : 0.66F);
         if (target != null || aimPoint != null) {
             tryPrimaryAttack(level, owner, target, aimPoint, true);
@@ -1151,7 +1167,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
                 : Math.max(1L, (long) karimFuel(now) * KARIM_FUEL_TICKS_PER_POINT);
         getPersistentData().putLong(FIRE_STREAM_UNTIL, now + duration);
         if (type == SaeedGuardType.FIREEYE) {
-            getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, now + 25L * 20L);
+            getPersistentData().putLong(SKILL_COOLDOWN_UNTIL, now + scaledCooldownTicks(owner, 25L * 20L));
         }
         playAttackVoice(level, guardSkillSound(type), commanded ? 0.68F : 0.54F);
         performFireStream(level, owner, directTarget, aimPoint, true);
@@ -1197,6 +1213,7 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
                 damage *= 1.25F;
             }
             AABB box = getBoundingBox().inflate(range);
+            int burningTargets = 0;
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, target -> canTarget(owner, target))) {
                 Vec3 center = target.getEyePosition();
                 Vec3 toTarget = center.subtract(start);
@@ -1209,7 +1226,12 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
                 }
                 target.invulnerableTime = 0;
                 target.setSecondsOnFire(type == SaeedGuardType.KARIM ? 8 : 5);
-                SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, this, this), damage);
+                if (SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(level, this, owner), owner, damage)) {
+                    burningTargets++;
+                }
+            }
+            if (burningTargets > 0) {
+                DfsAchievements.recordSaeedFireTargets(owner, burningTargets);
             }
             if (tickCount % 20 == 0) {
                 placeFireField(level, start.add(direction.scale(Math.min(range, 12.0D))), type);
@@ -1281,7 +1303,8 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         if (aimPoint == null) {
             return false;
         }
-        if (!consumeCharge(SMOKE_CHARGES, SMOKE_RECHARGE_AT, SMOKE_MAX_CHARGES, SMOKE_RECHARGE_TICKS,
+        if (!consumeCharge(SMOKE_CHARGES, SMOKE_RECHARGE_AT, SMOKE_MAX_CHARGES,
+                scaledCooldownTicks(owner, SMOKE_RECHARGE_TICKS),
                 level.getGameTime())) {
             return false;
         }
@@ -1296,11 +1319,12 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         return true;
     }
 
-    private boolean launchFlashGrenade(ServerLevel level, Vec3 aimPoint) {
+    private boolean launchFlashGrenade(ServerLevel level, ServerPlayer owner, Vec3 aimPoint) {
         if (aimPoint == null) {
             return false;
         }
-        if (!consumeCharge(FLASH_CHARGES, FLASH_RECHARGE_AT, FLASH_MAX_CHARGES, FLASH_RECHARGE_TICKS,
+        if (!consumeCharge(FLASH_CHARGES, FLASH_RECHARGE_AT, FLASH_MAX_CHARGES,
+                scaledCooldownTicks(owner, FLASH_RECHARGE_TICKS),
                 level.getGameTime())) {
             return false;
         }
@@ -1322,10 +1346,11 @@ public class SaeedGuardEntity extends PathfinderMob implements IGunOperator {
         if (now < getPersistentData().getLong(ROCKET_RELOAD_UNTIL)) {
             return false;
         }
-        if (!consumeCharge(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES, ROCKET_RECHARGE_TICKS, now)) {
+        if (!consumeCharge(ROCKET_CHARGES, ROCKET_RECHARGE_AT, ROCKET_MAX_CHARGES,
+                scaledCooldownTicks(owner, ROCKET_RECHARGE_TICKS), now)) {
             return false;
         }
-        getPersistentData().putLong(ROCKET_RELOAD_UNTIL, now + HAKIM_ROCKET_RELOAD_TICKS);
+        getPersistentData().putLong(ROCKET_RELOAD_UNTIL, now + scaledCooldownTicks(owner, HAKIM_ROCKET_RELOAD_TICKS));
         facePoint(aimPoint);
         Vec3 muzzle = muzzlePosition(aimPoint);
         SaeedHakimMissileEntity missile = new SaeedHakimMissileEntity(

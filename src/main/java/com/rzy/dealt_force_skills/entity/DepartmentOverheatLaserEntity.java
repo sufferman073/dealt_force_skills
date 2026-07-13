@@ -33,9 +33,9 @@ import java.util.Set;
 import java.util.UUID;
 
 public class DepartmentOverheatLaserEntity extends Entity implements ItemSupplier {
-    private static final double MAX_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.max_distance", 15.0D);
-    private static final int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentoverheatlaserentity.max_lifetime_ticks", 20);
-    private static final double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.hit_radius", 0.55D);
+    private static volatile double MAX_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.max_distance", 15.0));
+    private static volatile int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LIFETIME_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentoverheatlaserentity.max_lifetime_ticks", 20));
+    private static volatile double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HIT_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentoverheatlaserentity.hit_radius", 0.55));
     private static final DustParticleOptions LASER_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.92F, 0.18F), 1.15F);
 
     private UUID ownerId;

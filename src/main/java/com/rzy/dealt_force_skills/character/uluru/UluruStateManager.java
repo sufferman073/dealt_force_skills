@@ -14,12 +14,11 @@ import net.minecraft.world.entity.player.Player;
 import java.util.Optional;
 
 public final class UluruStateManager {
-    public static final int INCENDIARY_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_max_charges", 2);
-    public static final int INCENDIARY_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_recharge_ticks", 45 * 20);
-    public static final int COVER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_max_charges", 2);
-    public static final int COVER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_recharge_ticks", 30 * 20);
-    public static final int MISSILE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.missile_cooldown_ticks", 90 * 20);
-
+    public static volatile int INCENDIARY_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("INCENDIARY_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_max_charges", 2));
+    public static volatile int INCENDIARY_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("INCENDIARY_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.incendiary_recharge_ticks", 900));
+    public static volatile int COVER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COVER_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_max_charges", 2));
+    public static volatile int COVER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COVER_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.cover_recharge_ticks", 600));
+    public static volatile int MISSILE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MISSILE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.uluru.uluru_state_manager.missile_cooldown_ticks", 1800));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".uluru";
     private static final String INITIALIZED = "Initialized";
     private static final String INCENDIARY_CHARGES = "IncendiaryCharges";
@@ -74,7 +73,7 @@ public final class UluruStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, INCENDIARY_CHARGES, INCENDIARY_MAX_CHARGES, INCENDIARY_NEXT_RECHARGE, INCENDIARY_RECHARGE_TICKS);
         recharge(player, now, COVER_CHARGES, COVER_MAX_CHARGES, COVER_NEXT_RECHARGE, COVER_RECHARGE_TICKS);
     }
@@ -111,7 +110,7 @@ public final class UluruStateManager {
     }
 
     public static boolean isMissileReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(MISSILE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(MISSILE_COOLDOWN_UNTIL);
     }
 
     public static int missileCooldownRemainingTicks(Player player) {
@@ -120,7 +119,7 @@ public final class UluruStateManager {
 
     public static void setMissileCooldown(ServerPlayer player) {
         data(player).putLong(MISSILE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), MISSILE_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), MISSILE_COOLDOWN_TICKS));
     }
 
     public static UluruTool equippedTool(Player player) {
@@ -174,7 +173,7 @@ public final class UluruStateManager {
         }
         tag.putInt(chargesKey, charges - 1);
         if (charges == maxCharges) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -193,8 +192,7 @@ public final class UluruStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

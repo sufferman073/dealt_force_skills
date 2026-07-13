@@ -103,6 +103,10 @@ public final class ClientNoxHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.NOX_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.NOX_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != NoxTool.NONE;
     }

@@ -1,18 +1,21 @@
 package com.rzy.dealt_force_skills.character.catdad;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.entity.CatDadRoadTruckEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncCatDadState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
 import com.rzy.dealt_force_skills.skill.SkillModelVisualSync;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -43,18 +46,16 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class CatDadStateManager {
-    public static final int HISS_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.hiss_cooldown_ticks", 10 * 20);
-    public static final int BLOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_recharge_ticks", 30 * 20);
-    public static final int BLOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_max_charges", 3);
-    public static final int BLOCK_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_window_ticks", 3 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.core_cooldown_ticks", 45 * 20);
-    public static final int DOWNED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.downed_ticks", 40 * 20);
-    public static final int SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.self_rescue_ticks", 4 * 20);
-    public static final int FATAL_DOWNED_MAX_USES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.fatal_downed_max_uses", 9);
-
-    private static final double HISS_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.hiss_range", 14.0D);
-    private static final double EMPOWERED_STRIKE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.empowered_strike_range", 14.0D);
-
+    public static volatile int HISS_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HISS_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.hiss_cooldown_ticks", 200));
+    public static volatile int BLOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLOCK_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_recharge_ticks", 600));
+    public static volatile int BLOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLOCK_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_max_charges", 3));
+    public static volatile int BLOCK_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLOCK_WINDOW_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.block_window_ticks", 60));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.core_cooldown_ticks", 900));
+    public static volatile int DOWNED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOWNED_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.downed_ticks", 400));
+    public static volatile int SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_RESCUE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.self_rescue_ticks", 80));
+    public static volatile int FATAL_DOWNED_MAX_USES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FATAL_DOWNED_MAX_USES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.fatal_downed_max_uses", 9));
+    private static volatile double HISS_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HISS_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.hiss_range", 14.0));
+    private static volatile double EMPOWERED_STRIKE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EMPOWERED_STRIKE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.catdad.cat_dad_state_manager.empowered_strike_range", 14.0));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".catdad";
     private static final String INITIALIZED = "Initialized";
     private static final String HISS_STAGE = "HissStage";
@@ -115,7 +116,7 @@ public final class CatDadStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         rechargeBlock(player, now);
         if (hissStage(player) > 0 && now > data(player).getLong(HISS_EXPIRES)) {
             enterHissCooldown(player);
@@ -133,7 +134,8 @@ public final class CatDadStateManager {
         }
         initializeIfNeeded(player);
         if (hissCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.catdad.hiss_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.catdad.hiss_cooldown"));
             return true;
         }
         return switch (hissStage(player)) {
@@ -155,12 +157,12 @@ public final class CatDadStateManager {
             return true;
         }
         if (blockCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.catdad.block_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.catdad.block_empty"));
             return true;
         }
         consumeBlockCharge(player);
         CompoundTag tag = data(player);
-        tag.putLong(BLOCK_UNTIL, player.level().getGameTime() + BLOCK_WINDOW_TICKS);
+        tag.putLong(BLOCK_UNTIL, SkillCooldownHelper.now(player) + BLOCK_WINDOW_TICKS);
         tag.putBoolean(BLOCK_USED, false);
         SkillModelVisualSync.play(player, SkillModelVisual.CATDAD_GUARD, BLOCK_WINDOW_TICKS);
         play(player, ModSounds.CATDAD_BLOCK_START.get(), 0.8F, 1.0F);
@@ -174,10 +176,11 @@ public final class CatDadStateManager {
             return true;
         }
         if (coreCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.catdad.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.catdad.core_cooldown"));
             return true;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         data(player).putLong(CORE_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, CORE_COOLDOWN_TICKS));
         data(player).putFloat(SNAPSHOT_HEALTH, Math.max(1.0F, player.getHealth()));
         spawnRoad(player);
@@ -239,19 +242,22 @@ public final class CatDadStateManager {
             return false;
         }
         CompoundTag tag = data(player);
-        tag.putInt(FATAL_DOWNED_USES, Math.min(FATAL_DOWNED_MAX_USES, tag.getInt(FATAL_DOWNED_USES) + 1));
+        int used = Math.min(FATAL_DOWNED_MAX_USES, tag.getInt(FATAL_DOWNED_USES) + 1);
+        tag.putInt(FATAL_DOWNED_USES, used);
         tag.putFloat(SNAPSHOT_HEALTH, Math.max(1.0F, player.getHealth()));
+        DfsAchievements.recordFatalAvoidance(player);
+        notifyFatalDownedAttacker(player, source);
         enterRoadDowned(player);
         syncToClient(player);
         return true;
     }
 
     public static boolean blockActive(Player player) {
-        return data(player).getLong(BLOCK_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(BLOCK_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isDowned(Player player) {
-        return data(player).getLong(DOWNED_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(DOWNED_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static void enterRoadDowned(ServerPlayer player) {
@@ -259,7 +265,7 @@ public final class CatDadStateManager {
             return;
         }
         CompoundTag tag = data(player);
-        tag.putLong(DOWNED_UNTIL, player.level().getGameTime() + DOWNED_TICKS);
+        tag.putLong(DOWNED_UNTIL, SkillCooldownHelper.now(player) + DOWNED_TICKS);
         tag.putInt(SELF_RESCUE_PROGRESS, 0);
         player.setHealth(1.0F);
         player.stopUsingItem();
@@ -307,8 +313,13 @@ public final class CatDadStateManager {
         return data(player).getInt(SELF_RESCUE_PROGRESS);
     }
 
+    public static int fatalDownedRemainingUses(Player player) {
+        return Math.max(0, FATAL_DOWNED_MAX_USES - data(player).getInt(FATAL_DOWNED_USES));
+    }
+
     public static boolean truckBreakBlocks(Player player) {
-        return data(player).getBoolean(TRUCK_BREAK_BLOCKS);
+        return data(player).getBoolean(TRUCK_BREAK_BLOCKS)
+                && ModGameRules.areSkillBlockBreaksEnabled(player.level());
     }
 
     public static void syncToClient(ServerPlayer player) {
@@ -328,6 +339,8 @@ public final class CatDadStateManager {
                 downedRemainingTicks(player),
                 selfRescueProgress(player),
                 isDowned(player) ? SELF_RESCUE_TICKS : 0,
+                fatalDownedRemainingUses(player),
+                FATAL_DOWNED_MAX_USES,
                 truckBreakBlocks(player)
         ), player);
     }
@@ -351,15 +364,18 @@ public final class CatDadStateManager {
             target.addEffect(new MobEffectInstance(ModEffects.CATDAD_HISS_SLOW.get(),
                     com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_hiss_slow.1.duration_ticks", 15 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_hiss_slow.1.amplifier", 0), false, true, true), player);
             rememberHissTarget(player, target);
+            DfsAchievements.recordCatDadHissStageHit(player, target, stage);
         } else if (stage == 2) {
             target.addEffect(new MobEffectInstance(ModEffects.CATDAD_ARMOR_REDUCED.get(),
                     com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_armor_reduced.2.duration_ticks", 9 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.catdad.cat_dad_state_manager.effect.catdad_armor_reduced.2.amplifier", 0), false, true, true), player);
             rememberHissTarget(player, target);
+            DfsAchievements.recordCatDadHissStageHit(player, target, stage);
         } else {
             forceLookAtCaster(target, player);
+            DfsAchievements.recordCatDadHissStageHit(player, target, stage);
         }
         data(player).putInt(HISS_STAGE, nextStage);
-        data(player).putLong(HISS_EXPIRES, player.level().getGameTime() + nextWindow);
+        data(player).putLong(HISS_EXPIRES, SkillCooldownHelper.now(player) + nextWindow);
         play(player, ModSounds.CATDAD_HISS.get(), 0.85F, 0.9F + stage * 0.08F);
         return true;
     }
@@ -409,7 +425,7 @@ public final class CatDadStateManager {
         tag.putInt(HISS_STAGE, 0);
         tag.putLong(HISS_EXPIRES, 0L);
         tag.putLong(HISS_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), HISS_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), HISS_COOLDOWN_TICKS));
     }
 
     private static void spawnRoad(ServerPlayer player) {
@@ -431,6 +447,17 @@ public final class CatDadStateManager {
         }
         initializeIfNeeded(player);
         return data(player).getInt(FATAL_DOWNED_USES) < FATAL_DOWNED_MAX_USES;
+    }
+
+    private static void notifyFatalDownedAttacker(ServerPlayer player, DamageSource source) {
+        Entity attacker = source.getEntity() != null ? source.getEntity() : source.getDirectEntity();
+        if (attacker instanceof ServerPlayer enemy && enemy != player) {
+            enemy.displayClientMessage(Component.translatable(
+                    "message.dealt_force_skills.catdad.enemy_lives_remaining",
+                    player.getDisplayName(),
+                    fatalDownedRemainingUses(player),
+                    FATAL_DOWNED_MAX_USES), true);
+        }
     }
 
     private static Vec3 snapToGround(ServerLevel level, Vec3 position) {
@@ -458,7 +485,7 @@ public final class CatDadStateManager {
             }
             return;
         }
-        int remaining = (int) Math.min(Integer.MAX_VALUE, until - player.level().getGameTime());
+        int remaining = (int) Math.min(Integer.MAX_VALUE, until - SkillCooldownHelper.now(player));
         if (remaining <= 0) {
             expireDowned(player);
             return;
@@ -484,7 +511,9 @@ public final class CatDadStateManager {
             tag.putLong(DOWNED_UNTIL, 0L);
             tag.putInt(SELF_RESCUE_PROGRESS, 0);
             player.removeEffect(ModEffects.CATDAD_DOWNED.get());
-            player.setHealth(Math.max(1.0F, Math.min(player.getMaxHealth(), tag.getFloat(SNAPSHOT_HEALTH))));
+            float minimumHealth = player.getMaxHealth() * 0.30F;
+            float restoredHealth = Math.max(tag.getFloat(SNAPSHOT_HEALTH), minimumHealth);
+            player.setHealth(Math.max(1.0F, Math.min(player.getMaxHealth(), restoredHealth)));
             play(player, ModSounds.CATDAD_SELF_RESCUE_COMPLETE.get(), 0.9F, 1.05F);
         }
     }
@@ -503,7 +532,7 @@ public final class CatDadStateManager {
         tag.putInt(BLOCK_CHARGES, charges);
         if (charges < BLOCK_MAX_CHARGES && tag.getLong(BLOCK_NEXT_RECHARGE) <= 0L) {
             tag.putLong(BLOCK_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), BLOCK_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), BLOCK_RECHARGE_TICKS));
         }
     }
 
@@ -548,7 +577,7 @@ public final class CatDadStateManager {
         Vec3 end = eye.add(look.scale(range));
         AABB search = player.getBoundingBox().expandTowards(look.scale(range)).inflate(radius);
         return player.level().getEntitiesOfClass(LivingEntity.class, search,
-                        target -> target.isAlive() && target != player && !target.isSpectator() && player.hasLineOfSight(target))
+                        target -> TargetingUtil.isHostileLivingFor(player, target) && player.hasLineOfSight(target))
                 .stream()
                 .map(target -> new TargetScore(target, distanceToSegment(target.getBoundingBox().getCenter(), eye, end), eye.distanceTo(target.getEyePosition())))
                 .filter(score -> score.distanceToRay() <= radius)
@@ -597,8 +626,7 @@ public final class CatDadStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static void play(ServerPlayer player, SoundEvent sound, float volume, float pitch) {

@@ -37,7 +37,7 @@ public class C2S_UseCharacterSkill {
     public static void handle(C2S_UseCharacterSkill msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) return;
+            if (player == null || player.isSpectator()) return;
 
             SkillDispatcher.useSkill(player, msg.slot, msg.alternate);
         });

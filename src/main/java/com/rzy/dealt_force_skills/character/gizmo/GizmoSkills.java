@@ -56,7 +56,7 @@ public final class GizmoSkills {
             return true;
         }
         if (GizmoStateManager.smokeCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.smoke_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.gizmo.smoke_empty"));
             return true;
         }
         if (GizmoStateManager.countSmokeTraps(player) >= GizmoStateManager.SMOKE_ACTIVE_LIMIT) {
@@ -77,7 +77,7 @@ public final class GizmoSkills {
             return true;
         }
         if (GizmoStateManager.spiderCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.spider_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.gizmo.spider_empty"));
             return true;
         }
         if (GizmoStateManager.countSpiderNests(player) >= GizmoStateManager.SPIDER_ACTIVE_LIMIT) {
@@ -98,7 +98,8 @@ public final class GizmoSkills {
             return true;
         }
         if (!GizmoStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.t_boy_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.gizmo.t_boy_cooldown"));
             return true;
         }
 
@@ -127,7 +128,7 @@ public final class GizmoSkills {
             return true;
         }
         if (!GizmoStateManager.consumeSmokeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.smoke_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.gizmo.smoke_empty"));
             return true;
         }
 
@@ -151,7 +152,7 @@ public final class GizmoSkills {
             return true;
         }
         if (!GizmoStateManager.consumeSpiderCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.spider_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.gizmo.spider_empty"));
             return true;
         }
 
@@ -173,7 +174,8 @@ public final class GizmoSkills {
             return false;
         }
         if (!GizmoStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gizmo.t_boy_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.gizmo.t_boy_cooldown"));
             GizmoStateManager.setEquippedTool(player, GizmoTool.NONE);
             return true;
         }

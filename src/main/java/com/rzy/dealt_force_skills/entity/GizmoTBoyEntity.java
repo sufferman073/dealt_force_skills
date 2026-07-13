@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
@@ -41,14 +42,15 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
             SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_DIR_Z =
             SynchedEntityData.defineId(GizmoTBoyEntity.class, EntityDataSerializers.FLOAT);
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.life_ticks", 30 * 20);
-    private static final int AIM_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.aim_ticks", 6);
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.life_ticks", 600));
+    private static volatile int AIM_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AIM_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmotboyentity.aim_ticks", 6));
     private static final int CRAWL_SOUND_INTERVAL_TICKS = 7;
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.speed", 0.40D);
-    private static final double CHASE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.chase_radius", 7.0D);
-    private static final double STOP_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.stop_radius", 1.5D);
-    private static final double WEB_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmo_t_boy_entity.web_length", 2.5D);
-    private static final double WEB_HALF_WIDTH = DealtForceConfig.doubleValue("entities.gizmo_t_boy_entity.web_half_width", 0.75D);
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.speed", 0.4));
+    private static volatile double CHASE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHASE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.chase_radius", 2.0));
+    private static volatile double PLAYER_TARGET_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_TARGET_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.player_target_radius", 2.0));
+    private static volatile double STOP_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STOP_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmotboyentity.stop_radius", 1.5));
+    private static volatile double WEB_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WEB_LENGTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmo_t_boy_entity.web_length", 3.5));
+    private static volatile double WEB_HALF_WIDTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WEB_HALF_WIDTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("entities.gizmo_t_boy_entity.web_half_width", 1.75));
     private static final DustParticleOptions RED_MARKER = new DustParticleOptions(new Vector3f(1.0f, 0.05f, 0.02f), 1.2f);
 
     private UUID ownerId;
@@ -110,8 +112,11 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
             return;
         }
 
-        Optional<LivingEntity> corroded = findCorrodedTarget(serverLevel);
-        corroded.ifPresent(target -> setTravelDirection(target.position().subtract(position())));
+        Optional<LivingEntity> chaseTarget = findCorrodedTarget(serverLevel);
+        if (chaseTarget.isEmpty()) {
+            chaseTarget = findNearestPlayerTarget(serverLevel);
+        }
+        chaseTarget.ifPresent(target -> setTravelDirection(target.position().subtract(position())));
 
         crawl();
         playCrawlSound(serverLevel);
@@ -191,9 +196,19 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
     }
 
     private Optional<LivingEntity> findCorrodedTarget(ServerLevel level) {
-        AABB box = new AABB(position(), position()).inflate(CHASE_RADIUS);
+        AABB box = new AABB(position(), position()).inflate(Math.max(CHASE_RADIUS, PLAYER_TARGET_RADIUS));
         return level.getEntitiesOfClass(LivingEntity.class, box, target -> canTarget(target)
-                        && target.hasEffect(ModEffects.CORROSION.get()))
+                        && target.hasEffect(ModEffects.CORROSION.get())
+                        && target.distanceToSqr(this) <= CHASE_RADIUS * CHASE_RADIUS)
+                .stream()
+                .min(Comparator.comparingDouble(target -> target.distanceToSqr(this)));
+    }
+
+    private Optional<LivingEntity> findNearestPlayerTarget(ServerLevel level) {
+        AABB box = new AABB(position(), position()).inflate(PLAYER_TARGET_RADIUS);
+        return level.getEntitiesOfClass(LivingEntity.class, box, target -> canTarget(target)
+                        && target instanceof Player
+                        && target.distanceToSqr(this) <= PLAYER_TARGET_RADIUS * PLAYER_TARGET_RADIUS)
                 .stream()
                 .min(Comparator.comparingDouble(target -> target.distanceToSqr(this)));
     }
@@ -212,7 +227,11 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
         if (ownerId != null && target.getUUID().equals(ownerId)) {
             return false;
         }
-        return !(target instanceof Player player) || TargetingUtil.isTargetablePlayer(player);
+        Entity owner = null;
+        if (ownerId != null && level() instanceof ServerLevel serverLevel) {
+            owner = serverLevel.getEntity(ownerId);
+        }
+        return TargetingUtil.isHostileLivingFor(owner, target);
     }
 
     private void beginAimingAt(LivingEntity target) {
@@ -276,16 +295,22 @@ public class GizmoTBoyEntity extends Entity implements ItemSupplier, BlockbenchM
                 24, 0.35D, 0.18D, 0.35D, 0.02D);
 
         AABB box = new AABB(origin, origin.add(direction.scale(WEB_LENGTH))).inflate(WEB_HALF_WIDTH + 0.5D);
-        boolean hit = false;
+        int hits = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, this::canTarget)) {
             if (!webHitsTarget(target, origin, direction)) {
                 continue;
             }
             target.addEffect(new MobEffectInstance(ModEffects.WEBBED.get(), GizmoStateManager.WEBBED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_t_boy_entity.effect.webbed.0.amplifier", 0), false, true, true));
-            hit = true;
+            hits++;
+            if (ownerId != null && level.getEntity(ownerId) instanceof ServerPlayer owner) {
+                DfsAchievements.recordGizmoComboTarget(owner, target, "t_boy");
+            }
         }
 
-        if (hit) {
+        if (ownerId != null && level.getEntity(ownerId) instanceof ServerPlayer owner) {
+            DfsAchievements.recordGizmoTBoyWeb(owner, hits);
+        }
+        if (hits > 0) {
             level.playSound(null, getX(), getY(), getZ(), ModSounds.GIZMO_T_BOY_HIT_VOICE_1.get(),
                     SoundSource.PLAYERS, 0.75f, 1.0f);
         }

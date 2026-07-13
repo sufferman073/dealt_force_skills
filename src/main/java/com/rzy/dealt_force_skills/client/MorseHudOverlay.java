@@ -28,13 +28,13 @@ public final class MorseHudOverlay {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientMorseHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientMorseHudState.shouldDisplay()) {
             return;
         }
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawSlot(graphics, font, x, y, 0xFF48B8FF, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.morse.skill.sonar_detector"),
@@ -82,7 +82,8 @@ public final class MorseHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101518);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101518);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -96,7 +97,8 @@ public final class MorseHudOverlay {
             drawCenteredClipped(graphics, font, detail, x + SLOT / 2, y + 22, 34, 0xFFE0E4EA);
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

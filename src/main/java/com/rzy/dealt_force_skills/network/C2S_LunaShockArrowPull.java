@@ -2,6 +2,7 @@ package com.rzy.dealt_force_skills.network;
 
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.entity.LunaShockArrowEntity;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -26,7 +27,8 @@ public class C2S_LunaShockArrowPull {
     public static void handle(C2S_LunaShockArrowPull msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null && !StingerStateManager.isDowned(player)) {
+            if (player != null && !player.isSpectator() && !StingerStateManager.isDowned(player)
+                    && !RoundStartFreezeManager.isFrozen(player)) {
                 LunaShockArrowEntity.reportPullHold(player, msg.holding);
             }
         });

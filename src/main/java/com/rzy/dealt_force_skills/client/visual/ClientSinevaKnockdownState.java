@@ -58,6 +58,10 @@ public final class ClientSinevaKnockdownState {
         }
     }
 
+    public static void reset() {
+        ACTIVE.clear();
+    }
+
     @SubscribeEvent
     public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Minecraft minecraft = Minecraft.getInstance();

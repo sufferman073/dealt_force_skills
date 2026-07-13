@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -12,6 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
@@ -33,15 +35,19 @@ import org.joml.Vector3f;
 import java.util.UUID;
 
 public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier {
-    public static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.fuse_ticks", 3 * 20);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.radius", 10.0D);
-    public static final int ACTION_PAUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.action_pause_ticks", 8);
-    public static final int EMI_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.emi_ticks", 20 * 20);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.bounce_factor", 0.7D);
+    public static volatile int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.fuse_ticks", 60));
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.radius", 10.0));
+    public static volatile int ACTION_PAUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ACTION_PAUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.action_pause_ticks", 8));
+    public static volatile int EMI_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EMI_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorpulsegrenadeentity.emi_ticks", 400));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorpulsegrenadeentity.bounce_factor", 0.7));
+    private static final int MAX_FLOOR_BOUNCES = 3;
+    private static final double FLOOR_REST_OFFSET = 0.18D;
     private static final DustParticleOptions BLUE_TRAIL = new DustParticleOptions(new Vector3f(0.35f, 0.56f, 1.0f), 1.0f);
     private static final DustParticleOptions BLUE_BURST = new DustParticleOptions(new Vector3f(0.48f, 0.76f, 1.0f), 1.6f);
 
     private UUID ownerId;
+    private int floorBounces;
+    private boolean stopped;
 
     public RaptorPulseGrenadeEntity(EntityType<? extends RaptorPulseGrenadeEntity> type, Level level) {
         super(type, level);
@@ -65,6 +71,15 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
     @Override
     public void tick() {
         super.tick();
+        if (stopped) {
+            setDeltaMovement(Vec3.ZERO);
+            if (level().isClientSide) {
+                level().addParticle(BLUE_TRAIL, getX(), getY() + 0.08D, getZ(), 0.0D, 0.01D, 0.0D);
+            } else {
+                tickFuse();
+            }
+            return;
+        }
         Vec3 motion = getDeltaMovement();
         Vec3 next = position().add(motion);
         HitResult hit = level().clip(new ClipContext(position(), next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, this));
@@ -80,14 +95,7 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
         if (level().isClientSide) {
             level().addParticle(BLUE_TRAIL, getX(), getY() + 0.08D, getZ(), 0.0D, 0.01D, 0.0D);
         } else {
-            if (tickCount % 20 == 1 && level() instanceof ServerLevel level) {
-                level.playSound(null, blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_COUNTDOWN.get(),
-                        SoundSource.PLAYERS, 0.45f, 1.0f + tickCount / 60.0f);
-            }
-            if (tickCount >= FUSE_TICKS) {
-                pulseAt((ServerLevel) level(), position(), owner((ServerLevel) level()), this);
-                discard();
-            }
+            tickFuse();
         }
     }
 
@@ -99,6 +107,8 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
+        floorBounces = tag.getInt("FloorBounces");
+        stopped = tag.getBoolean("Stopped");
     }
 
     @Override
@@ -106,6 +116,8 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
         if (ownerId != null) {
             tag.putUUID("Owner", ownerId);
         }
+        tag.putInt("FloorBounces", floorBounces);
+        tag.putBoolean("Stopped", stopped);
     }
 
     @Override
@@ -120,12 +132,15 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
                 180, RADIUS * 0.45D, RADIUS * 0.25D, RADIUS * 0.45D, 0.12D);
         level.sendParticles(BLUE_BURST, center.x, center.y + 0.4D, center.z,
                 120, RADIUS * 0.42D, RADIUS * 0.18D, RADIUS * 0.42D, 0.0D);
-        ElectronicInterferenceManager.disruptElectronicDevices(level, center, RADIUS);
+        int disruptedDevices = ElectronicInterferenceManager.disruptElectronicDevices(level, center, RADIUS);
+        if (owner instanceof ServerPlayer player && disruptedDevices > 0) {
+            DfsAchievements.onElectronicInterference(player, disruptedDevices);
+        }
 
         AABB box = new AABB(center, center).inflate(RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (!TargetingUtil.isTargetableLiving(target)
-                    || (owner != null && target.getUUID().equals(owner.getUUID()))) {
+            // Self-harm skill: pulse can hit thrower; teammates skipped.
+            if (!TargetingUtil.isSelfOrHostileLivingFor(owner, target)) {
                 continue;
             }
             Vec3 targetCenter = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
@@ -133,7 +148,8 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
                 continue;
             }
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.raptorPulse(level, directEntity, owner), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.raptor_pulse_grenade_entity.skill_hurt.0.damage", 1.0f));
+            SkillDamageHelper.hurt(target, SkillDamageHelper.raptorPulse(level, directEntity, owner), owner,
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.raptor_pulse_grenade_entity.skill_hurt.0.damage", 1.0f));
             target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ACTION_PAUSE.get(),
                     ACTION_PAUSE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptor_pulse_grenade_entity.effect.raptor_action_pause.0.amplifier", 0), false, true, true), owner);
             target.addEffect(new MobEffectInstance(ModEffects.RAPTOR_ELECTROMAGNETIC_INTERFERENCE.get(),
@@ -146,18 +162,43 @@ public class RaptorPulseGrenadeEntity extends Projectile implements ItemSupplier
     private void handleBlockHit(BlockHitResult hit) {
         Direction direction = hit.getDirection();
         Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
-        setPos(hit.getLocation().x + normal.x * 0.04D,
-                hit.getLocation().y + normal.y * 0.04D,
-                hit.getLocation().z + normal.z * 0.04D);
-        setDeltaMovement(bounce(direction, getDeltaMovement()));
+        double offset = direction == Direction.UP ? FLOOR_REST_OFFSET : 0.04D;
+        setPos(hit.getLocation().x + normal.x * offset,
+                hit.getLocation().y + normal.y * offset,
+                hit.getLocation().z + normal.z * offset);
+        Vec3 bounced = bounce(direction, getDeltaMovement());
+        if (direction == Direction.UP) {
+            floorBounces++;
+        }
+        if (direction == Direction.UP && (floorBounces >= MAX_FLOOR_BOUNCES || bounced.lengthSqr() < 0.02D)) {
+            stopped = true;
+            setDeltaMovement(Vec3.ZERO);
+            return;
+        }
+        setDeltaMovement(bounced);
+        if (level() instanceof ServerLevel level) {
+            level.playSound(null, blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_BOUNCE.get(),
+                    SoundSource.PLAYERS, 0.55f, 0.95f + random.nextFloat() * 0.1f);
+        }
+    }
+
+    private void tickFuse() {
+        if (!(level() instanceof ServerLevel level)) {
+            return;
+        }
+        if (tickCount % 20 == 1) {
+            level.playSound(null, blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_COUNTDOWN.get(),
+                    SoundSource.PLAYERS, 0.45f, 1.0f + tickCount / 60.0f);
+        }
+        if (tickCount >= FUSE_TICKS) {
+            pulseAt(level, position(), owner(level), this);
+            discard();
+        }
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * BOUNCE_FACTOR, motion.y * 0.86D, motion.z * BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * BOUNCE_FACTOR, -motion.y * 0.45D, motion.z * BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * BOUNCE_FACTOR, motion.y * 0.86D, -motion.z * BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, BOUNCE_FACTOR, 0.45D, 0.86D);
     }
 
     private LivingEntity owner(ServerLevel level) {

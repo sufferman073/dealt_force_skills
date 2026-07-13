@@ -135,6 +135,10 @@ public class NoxDelayedWoundEffect extends MobEffect {
         untrack(entity);
     }
 
+    public static void clearTrackedEntities() {
+        TRACKED_ENTITIES.clear();
+    }
+
     @Override
     public boolean isDurationEffectTick(int duration, int amplifier) {
         return true;

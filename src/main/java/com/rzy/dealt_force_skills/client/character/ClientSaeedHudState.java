@@ -66,6 +66,10 @@ public final class ClientSaeedHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.SAEED_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.SAEED_ID);
+    }
+
     public static boolean hasCrossbowEquipped() {
         return shouldRender() && crossbowEquipped;
     }

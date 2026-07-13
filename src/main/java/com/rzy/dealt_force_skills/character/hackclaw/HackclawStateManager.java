@@ -30,18 +30,22 @@ import java.util.List;
 import java.util.Optional;
 
 public final class HackclawStateManager {
-    public static final int KNIFE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.knife_max_charges", 2);
-    public static final int KNIFE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.knife_recharge_ticks", 35 * 20);
-    public static final int FLASH_DRONE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.flash_drone_max_charges", 2);
-    public static final int FLASH_DRONE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.flash_drone_recharge_ticks", 40 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_cooldown_ticks", 60 * 20);
-    private static final int CORE_CHANNEL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_channel_ticks", 16);
-    private static final int CORE_SCAN_ROUNDS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_scan_rounds", 4);
-    private static final int CORE_SCAN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_scan_interval_ticks", 80);
-    private static final int PATH_LINE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.path_line_ticks", CORE_SCAN_INTERVAL_TICKS);
-    private static final double CORE_SCAN_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_state_manager.core_scan_range", 60.0D);
-    private static final double CORE_SCAN_COS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_state_manager.core_scan_cos", Math.cos(Math.toRadians(55.0D)));
-    private static final double CHANNEL_MOVE_CANCEL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_state_manager.channel_move_cancel_distance_sqr", 0.08D);
+    public static volatile int KNIFE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNIFE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.knife_max_charges", 2));
+    public static volatile int KNIFE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNIFE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.knife_recharge_ticks", 700));
+    public static volatile int FLASH_DRONE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_DRONE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.flash_drone_max_charges", 2));
+    public static volatile int FLASH_DRONE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_DRONE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.flash_drone_recharge_ticks", 800));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_cooldown_ticks", 1200));
+    private static volatile int CORE_CHANNEL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_CHANNEL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_channel_ticks", 16));
+    private static volatile int CORE_SCAN_ROUNDS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_SCAN_ROUNDS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_scan_rounds", 4));
+    private static volatile int CORE_SCAN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_SCAN_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.core_scan_interval_ticks", 80));
+    private static volatile int PATH_LINE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PATH_LINE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.hackclaw.hackclaw_state_manager.path_line_ticks", CORE_SCAN_INTERVAL_TICKS));
+    private static volatile double CORE_SCAN_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_SCAN_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_state_manager.core_scan_range", 60.0));
+    private static volatile double CORE_SCAN_COS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_SCAN_COS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.hackclaw.hackclaw_state_manager.core_scan_cos", Math.cos(Math.toRadians(55.0))
+   ));
+    private static volatile double CHANNEL_MOVE_CANCEL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHANNEL_MOVE_CANCEL_DISTANCE_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.hackclaw.hackclaw_state_manager.channel_move_cancel_distance_sqr", 0.08
+   ));
     private static final int CORE_PHASE_NONE = 0;
     private static final int CORE_PHASE_CHANNEL = 1;
     private static final int CORE_PHASE_SCAN = 2;
@@ -113,7 +117,7 @@ public final class HackclawStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         boolean changed = recharge(player, now,
                 KNIFE_CHARGES, KNIFE_NEXT_RECHARGE, KNIFE_MAX_CHARGES, KNIFE_RECHARGE_TICKS);
         changed |= recharge(player, now,
@@ -133,7 +137,7 @@ public final class HackclawStateManager {
         if (knifeCharges(player) >= KNIFE_MAX_CHARGES) {
             return 0;
         }
-        long remaining = data(player).getLong(KNIFE_NEXT_RECHARGE) - player.level().getGameTime();
+        long remaining = data(player).getLong(KNIFE_NEXT_RECHARGE) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -145,7 +149,7 @@ public final class HackclawStateManager {
         if (flashDroneCharges(player) >= FLASH_DRONE_MAX_CHARGES) {
             return 0;
         }
-        long remaining = data(player).getLong(FLASH_DRONE_NEXT_RECHARGE) - player.level().getGameTime();
+        long remaining = data(player).getLong(FLASH_DRONE_NEXT_RECHARGE) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -176,12 +180,12 @@ public final class HackclawStateManager {
     public static boolean startAdvancedHack(ServerPlayer player) {
         initializeIfNeeded(player);
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         int cooldown = coreCooldownRemainingTicks(player);
         if (cooldown > 0) {
-            player.displayClientMessage(Component.translatable(
+            SkillCooldownHelper.notifyCooldown(player, Component.translatable(
                     "message.dealt_force_skills.hackclaw.advanced_hack_cooldown",
-                    cooldownText(cooldown)), true);
+                    cooldownText(cooldown)));
             return true;
         }
         if (tag.getInt(CORE_PHASE) != CORE_PHASE_NONE) {
@@ -208,7 +212,7 @@ public final class HackclawStateManager {
     }
 
     public static int coreCooldownRemainingTicks(Player player) {
-        long remaining = data(player).getLong(CORE_COOLDOWN_UNTIL) - player.level().getGameTime();
+        long remaining = data(player).getLong(CORE_COOLDOWN_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -217,7 +221,7 @@ public final class HackclawStateManager {
         if (tag.getInt(CORE_PHASE) != CORE_PHASE_CHANNEL) {
             return 0;
         }
-        long remaining = tag.getLong(CORE_PHASE_UNTIL) - player.level().getGameTime();
+        long remaining = tag.getLong(CORE_PHASE_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -229,7 +233,7 @@ public final class HackclawStateManager {
         if (tag.getInt(CORE_PHASE) == CORE_PHASE_CHANNEL) {
             return coreChannelRemainingTicks(player);
         }
-        long remaining = tag.getLong(CORE_NEXT_SCAN) - player.level().getGameTime();
+        long remaining = tag.getLong(CORE_NEXT_SCAN) - SkillCooldownHelper.now(player);
         int roundsRemaining = Math.max(0, CORE_SCAN_ROUNDS - tag.getInt(CORE_ROUND));
         return Math.max(0, (int) Math.min(Integer.MAX_VALUE,
                 Math.max(remaining, 0L) + (long) roundsRemaining * CORE_SCAN_INTERVAL_TICKS));
@@ -272,7 +276,7 @@ public final class HackclawStateManager {
         tag.putInt(chargeKey, charges - 1);
         if (charges == maxCharges) {
             tag.putLong(rechargeKey,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }

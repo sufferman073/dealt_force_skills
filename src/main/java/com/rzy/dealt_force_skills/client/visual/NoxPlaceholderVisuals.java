@@ -23,9 +23,9 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxPlaceholderVisuals {
     private static final ResourceLocation ROTOR_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "nox_rotor");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "nox_rotor");
     private static final ResourceLocation FLASH_GRENADE_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "nox_flash_grenade");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "nox_flash_grenade");
 
     private NoxPlaceholderVisuals() {
     }

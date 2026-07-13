@@ -35,22 +35,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class MorseStateManager {
-    public static final int SHOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_max_charges", 2);
-    public static final int SHOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_recharge_ticks", 40 * 20);
-    public static final int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_max_charges", 2);
-    public static final int FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_recharge_ticks", 40 * 20);
-    public static final int SONAR_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_cooldown_ticks", 75 * 20);
-    public static final int SONAR_DEPLOY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_deploy_ticks", 20);
-
-    private static final int SOUND_MARK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
-            "characters.morse.passive.sound_mark_ticks", 40);
-    private static final int SOUND_MARK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
-            "characters.morse.passive.sound_mark_cooldown_ticks", 10 * 20);
-    private static final double SOUND_MARK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "characters.morse.passive.sound_mark_range", 50.0D);
-    private static final double DEPLOY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.morse_state_manager.deploy_range", 5.0D);
-    private static final double DEPLOY_CANCEL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.morse_state_manager.deploy_cancel_distance_sqr", 2.25D);
-
+    public static volatile int SHOCK_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHOCK_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_max_charges", 2));
+    public static volatile int SHOCK_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHOCK_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.shock_recharge_ticks", 800));
+    public static volatile int FLASH_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_max_charges", 2));
+    public static volatile int FLASH_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.flash_recharge_ticks", 800));
+    public static volatile int SONAR_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SONAR_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_cooldown_ticks", 1500));
+    public static volatile int SONAR_DEPLOY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SONAR_DEPLOY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.morse_state_manager.sonar_deploy_ticks", 20));
+    private static volatile int SOUND_MARK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SOUND_MARK_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.passive.sound_mark_ticks", 40));
+    private static volatile int SOUND_MARK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SOUND_MARK_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.morse.passive.sound_mark_cooldown_ticks", 200));
+    private static volatile double SOUND_MARK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SOUND_MARK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.passive.sound_mark_range", 50.0));
+    private static volatile double DEPLOY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEPLOY_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.morse.morse_state_manager.deploy_range", 5.0));
+    private static volatile double DEPLOY_CANCEL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEPLOY_CANCEL_DISTANCE_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.morse.morse_state_manager.deploy_cancel_distance_sqr", 2.25
+   ));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".morse";
     private static final String INITIALIZED = "Initialized";
     private static final String SHOCK_CHARGES = "ShockCharges";
@@ -120,7 +117,7 @@ public final class MorseStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, SHOCK_CHARGES, SHOCK_NEXT_RECHARGE, SHOCK_MAX_CHARGES, SHOCK_RECHARGE_TICKS);
         recharge(player, now, FLASH_CHARGES, FLASH_NEXT_RECHARGE, FLASH_MAX_CHARGES, FLASH_RECHARGE_TICKS);
         tickSonarDeploy(player, now);
@@ -246,7 +243,7 @@ public final class MorseStateManager {
         if (owner == null) {
             return;
         }
-        long now = owner.level().getGameTime();
+        long now = SkillCooldownHelper.now(owner);
         CompoundTag tag = data(owner);
         tag.putLong(SONAR_COOLDOWN_UNTIL, SkillCooldownHelper.until(owner, now, SONAR_COOLDOWN_TICKS));
         tag.putBoolean(SONAR_HUD_ACTIVE, false);
@@ -266,7 +263,7 @@ public final class MorseStateManager {
         tag.putBoolean(SONAR_HUD_SCANNING, scanning);
         tag.putInt(SONAR_HUD_REMAINING, Math.max(0, remainingTicks));
         tag.putInt(SONAR_HUD_COUNT, Math.max(0, targetCount));
-        tag.putLong(SONAR_HUD_EXPIRES, owner.level().getGameTime() + 15L);
+        tag.putLong(SONAR_HUD_EXPIRES, SkillCooldownHelper.now(owner) + 15L);
     }
 
     public static int shockCharges(Player player) {
@@ -293,6 +290,21 @@ public final class MorseStateManager {
         cancelSonarDeploy(player);
         setEquippedTool(player, MorseTool.NONE);
         MorseSonarDetectorEntity.discardFor(player);
+        ACTION_SNAPSHOTS.remove(player.getUUID());
+        clearSoundExposureCooldowns(player.getUUID());
+    }
+
+    public static void clearRuntimeOnLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        MorseSonarDetectorEntity.discardFor(player);
+        ACTION_SNAPSHOTS.remove(player.getUUID());
+        clearSoundExposureCooldowns(player.getUUID());
+        if (player.getPersistentData().contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            cancelSonarDeploy(player);
+            setEquippedTool(player, MorseTool.NONE);
+        }
     }
 
     public static void syncToClient(ServerPlayer player) {
@@ -395,7 +407,7 @@ public final class MorseStateManager {
         }
         tag.putInt(chargeKey, charges - 1);
         if (charges - 1 < maxCharges && tag.getLong(rechargeKey) <= 0L) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -421,8 +433,7 @@ public final class MorseStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static Vec3 noisySoundPosition(ServerLevel level, Vec3 position) {

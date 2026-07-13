@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.toxik.ToxikFireflyMode;
 import com.rzy.dealt_force_skills.character.toxik.ToxikStateManager;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.ParticleTypes;
@@ -35,11 +37,11 @@ import java.util.Map;
 import java.util.UUID;
 
 public class ToxikFireflyEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.life_ticks", 80);
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.speed", 0.82D);
-    private static final double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.hit_radius", 0.42D);
-    private static final double AVOID_LOOKAHEAD = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxik_firefly_entity.avoid_lookahead", 1.15D);
-    private static final int TARGET_REHIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.target_rehit_cooldown_ticks", 10);
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.life_ticks", 80));
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.speed", 0.82));
+    private static volatile double HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HIT_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikfireflyentity.hit_radius", 0.42));
+    private static volatile double AVOID_LOOKAHEAD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AVOID_LOOKAHEAD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxik_firefly_entity.avoid_lookahead", 1.15));
+    private static volatile int TARGET_REHIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TARGET_REHIT_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikfireflyentity.target_rehit_cooldown_ticks", 10));
     private static final Map<UUID, Long> RECENT_TARGET_HITS = new HashMap<>();
 
     private UUID ownerId;
@@ -100,7 +102,8 @@ public class ToxikFireflyEntity extends Projectile implements ItemSupplier, Bloc
         return super.canHitEntity(target)
                 && target != getOwner()
                 && target instanceof LivingEntity living
-                && TargetingUtil.isTargetableLiving(living);
+                && TargetingUtil.isTargetableLiving(living)
+                && canAffectTarget(living);
     }
 
     @Override
@@ -155,11 +158,20 @@ public class ToxikFireflyEntity extends Projectile implements ItemSupplier, Bloc
             discard();
             return;
         }
+        if (mode == ToxikFireflyMode.AMPLIFY && !DealtTeamManager.isSelfOrTeammate(owner, target)) {
+            discard();
+            return;
+        }
+        if (mode != ToxikFireflyMode.AMPLIFY && DealtTeamManager.areTeammates(owner, target)) {
+            discard();
+            return;
+        }
         if (mode == ToxikFireflyMode.AMPLIFY && target instanceof Player) {
             ToxikStateManager.applyAdrenaline(owner, target, ToxikStateManager.FIREFLY_BASE_DURATION_TICKS);
         } else {
             ToxikStateManager.applyFireflyInterference(owner, target, ToxikStateManager.FIREFLY_BASE_DURATION_TICKS);
         }
+        DfsAchievements.recordToxikFireflyHit(owner, target, mode == ToxikFireflyMode.LETHAL);
         RangedSoundHelper.playThrottled(serverLevel, target.position(), ModSounds.TOXIK_FIREFLY_HIT.get(),
                 SoundSource.PLAYERS, 0.62F, mode == ToxikFireflyMode.LETHAL ? 0.95F : 1.12F, 12.0D, 5, 3.0D);
         discard();
@@ -182,6 +194,16 @@ public class ToxikFireflyEntity extends Projectile implements ItemSupplier, Bloc
             return player;
         }
         return ownerId == null ? null : level.getServer().getPlayerList().getPlayer(ownerId);
+    }
+
+    private boolean canAffectTarget(LivingEntity target) {
+        if (!(getOwner() instanceof ServerPlayer owner)) {
+            return true;
+        }
+        if (mode == ToxikFireflyMode.AMPLIFY) {
+            return target instanceof Player && DealtTeamManager.isSelfOrTeammate(owner, target);
+        }
+        return !DealtTeamManager.areTeammates(owner, target);
     }
 
     private void spawnClientTrail() {

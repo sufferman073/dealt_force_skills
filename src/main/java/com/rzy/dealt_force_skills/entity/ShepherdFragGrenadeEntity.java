@@ -1,5 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
+import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
@@ -10,6 +13,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
@@ -33,18 +37,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.default_fuse_ticks", 70);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.radius", 8.0D);
-    private static final double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.wall_bounce_factor", 0.50D);
-    private static final double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.ground_roll_factor", 0.30D);
-    private static final int MAX_AUDIBLE_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_frag_grenade_entity.max_audible_bounces", 1);
-    private static final int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.max_roll_ticks", 8);
-    private static final double SETTLE_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.settle_speed_sqr", 0.018D);
-    private static final double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.roll_stop_speed_sqr", 0.004D);
-    private static final float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.armor_damage_share", 0.65f);
-    private static final float HEALTH_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.health_damage_share", 1.0f - ARMOR_DAMAGE_SHARE);
-    private static final float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.armor_durability_damage_per_point", 10.0f);
-
+    private static volatile int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.default_fuse_ticks", 70));
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.radius", 8.0));
+    private static volatile double WALL_BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WALL_BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.wall_bounce_factor", 0.5));
+    private static volatile double GROUND_ROLL_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GROUND_ROLL_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.ground_roll_factor", 0.3));
+    private static final int MAX_PHYSICS_BOUNCES = 3;
+    private static volatile int MAX_AUDIBLE_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_AUDIBLE_BOUNCES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_frag_grenade_entity.max_audible_bounces", 1));
+    private static volatile int MAX_ROLL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_ROLL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdfraggrenadeentity.max_roll_ticks", 8));
+    private static volatile double SETTLE_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SETTLE_SPEED_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.settle_speed_sqr", 0.018));
+    private static volatile double ROLL_STOP_SPEED_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_STOP_SPEED_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdfraggrenadeentity.roll_stop_speed_sqr", 0.004));
+    private static volatile float ARMOR_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMOR_DAMAGE_SHARE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.shepherdfraggrenadeentity.armor_damage_share", 0.65F));
+    private static volatile float HEALTH_DAMAGE_SHARE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HEALTH_DAMAGE_SHARE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "summons.shepherdfraggrenadeentity.health_damage_share", 1.0F - ARMOR_DAMAGE_SHARE
+   ));
+    private static volatile float ARMOR_DURABILITY_DAMAGE_PER_POINT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMOR_DURABILITY_DAMAGE_PER_POINT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "summons.shepherdfraggrenadeentity.armor_durability_damage_per_point", 10.0F
+   ));
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
     private int audibleBounces;
     private int blockImpacts;
@@ -179,16 +187,16 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
         blockImpacts++;
         if (blockImpacts == 1) {
             playBounceSoundOnce(hit, motion);
-            if (direction != Direction.UP) {
-                Vec3 bounced = bounce(direction, motion);
-                if (bounced.lengthSqr() > SETTLE_SPEED_SQR) {
-                    setDeltaMovement(bounced);
-                    return;
-                }
-            }
+        }
+        Vec3 bounced = bounce(direction, motion);
+        if (blockImpacts <= MAX_PHYSICS_BOUNCES
+                && bounced.lengthSqr() > SETTLE_SPEED_SQR
+                && (direction != Direction.UP || bounced.y > 0.07D)) {
+            setDeltaMovement(bounced);
+            return;
         }
 
-        startRollingOrSettle(direction == Direction.UP ? motion : bounce(direction, motion));
+        startRollingOrSettle(direction == Direction.UP ? motion : bounced);
     }
 
     private void startRollingOrSettle(Vec3 motion) {
@@ -221,11 +229,8 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * WALL_BOUNCE_FACTOR, motion.y * 0.70D, motion.z * WALL_BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * WALL_BOUNCE_FACTOR, -motion.y * 0.35D, motion.z * WALL_BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * WALL_BOUNCE_FACTOR, motion.y * 0.70D, -motion.z * WALL_BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, WALL_BOUNCE_FACTOR, 0.35D, 0.70D);
     }
 
     private void explode(Vec3 center) {
@@ -235,6 +240,8 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
         }
 
         LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
+        boolean bounced = blockImpacts > 0 || audibleBounces > 0;
         RangedSoundHelper.playThrottled(serverLevel, center, ModSounds.SHEPHERD_FRAG_GRENADE_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.25f, 1.0f, 24.0D, 3, 4.0D);
         serverLevel.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.2D, center.z,
@@ -273,12 +280,18 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
                     SkillDamageHelper.shepherdFragGrenade(serverLevel, this, owner),
                     owner,
                     healthDamage);
+            if (ownerPlayer != null) {
+                DfsAchievements.recordShepherdFragArmorBreak(ownerPlayer, target, bounced,
+                        armorResult.brokenPieces, target.hasEffect(ModEffects.SONIC_SHOCK.get()), !target.isAlive());
+            }
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             if (damaged && healthBefore > target.getMaxHealth() * 0.5f && target.getHealth() <= target.getMaxHealth() * 0.5f) {
                 playHitByBlast(serverLevel, target, owner);
             }
         }
+        SuperbWarfareCompat.damageVehicles(serverLevel, center, RADIUS,
+                SkillDamageHelper.shepherdFragGrenade(serverLevel, this, owner), this, 1.0F, false);
         discard();
     }
 
@@ -296,13 +309,13 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
             }
         }
         if (slots.isEmpty()) {
-            return new ArmorDamageResult(false, 0.0f);
+            return new ArmorDamageResult(false, 0.0f, 0);
         }
 
         int requestedLoss = Math.max(1, Mth.ceil(armorDamage * ARMOR_DURABILITY_DAMAGE_PER_POINT));
         int overflowLoss = Math.max(0, requestedLoss - totalRemainingDurability);
         int totalLoss = Math.min(requestedLoss, totalRemainingDurability);
-        boolean brokeArmor = false;
+        int brokenPieces = 0;
         int remainingSlots = slots.size();
         for (EquipmentSlot slot : slots) {
             ItemStack stack = target.getItemBySlot(slot);
@@ -319,14 +332,14 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
             totalLoss -= loss;
             remainingSlots--;
             if (damageArmorStack(target, slot, stack, loss)) {
-                brokeArmor = true;
+                brokenPieces++;
             }
         }
 
-        if (brokeArmor) {
+        if (brokenPieces > 0) {
             playArmorBreak(serverLevel(), target, owner);
         }
-        return new ArmorDamageResult(true, overflowLoss / ARMOR_DURABILITY_DAMAGE_PER_POINT);
+        return new ArmorDamageResult(true, overflowLoss / ARMOR_DURABILITY_DAMAGE_PER_POINT, brokenPieces);
     }
 
     private int remainingArmorDurability(ItemStack stack) {
@@ -338,7 +351,7 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
 
     private boolean damageArmorStack(LivingEntity target, EquipmentSlot slot, ItemStack stack, int loss) {
         if (DfsEquipmentItem.profile(stack) != null) {
-            return DfsEquipmentItem.damageWithoutBreaking(stack, loss);
+            return DfsEquipmentItem.damageWithoutBreaking(stack, loss, target);
         }
         int beforeCount = stack.getCount();
         stack.hurtAndBreak(loss, target, broken -> broken.broadcastBreakEvent(slot));
@@ -381,10 +394,12 @@ public class ShepherdFragGrenadeEntity extends Projectile implements ItemSupplie
     private static final class ArmorDamageResult {
         private final boolean hadDamageableArmor;
         private final float overflowHealthDamage;
+        private final int brokenPieces;
 
-        private ArmorDamageResult(boolean hadDamageableArmor, float overflowHealthDamage) {
+        private ArmorDamageResult(boolean hadDamageableArmor, float overflowHealthDamage, int brokenPieces) {
             this.hadDamageableArmor = hadDamageableArmor;
             this.overflowHealthDamage = overflowHealthDamage;
+            this.brokenPieces = brokenPieces;
         }
     }
 }

@@ -57,7 +57,7 @@ public final class MorseSkills {
             return true;
         }
         if (MorseStateManager.shockCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.shock_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.morse.shock_empty"));
             return true;
         }
         MorseStateManager.setEquippedTool(player, MorseTool.SHOCK_ORB);
@@ -72,7 +72,7 @@ public final class MorseSkills {
             return true;
         }
         if (MorseStateManager.flashCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.flash_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.morse.flash_empty"));
             return true;
         }
         MorseStateManager.setEquippedTool(player, MorseTool.FLASH_GRENADE);
@@ -87,7 +87,8 @@ public final class MorseSkills {
             return true;
         }
         if (MorseStateManager.sonarCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.sonar_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.morse.sonar_cooldown"));
             return true;
         }
         if (com.rzy.dealt_force_skills.entity.MorseSonarDetectorEntity.activeFor(player) != null) {
@@ -105,7 +106,7 @@ public final class MorseSkills {
             return false;
         }
         if (!MorseStateManager.consumeShockCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.shock_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.morse.shock_empty"));
             MorseStateManager.setEquippedTool(player, MorseTool.NONE);
             return true;
         }
@@ -129,7 +130,7 @@ public final class MorseSkills {
             return false;
         }
         if (!MorseStateManager.consumeFlashCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.morse.flash_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.morse.flash_empty"));
             if (requireEquipped) {
                 MorseStateManager.setEquippedTool(player, MorseTool.NONE);
             }

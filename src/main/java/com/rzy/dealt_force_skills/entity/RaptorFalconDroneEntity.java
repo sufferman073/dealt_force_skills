@@ -1,6 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_RaptorFalconCamera;
 import com.rzy.dealt_force_skills.registry.ModEntities;
@@ -62,25 +64,35 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
             SynchedEntityData.defineId(RaptorFalconDroneEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_DIRECTION_Z =
             SynchedEntityData.defineId(RaptorFalconDroneEntity.class, EntityDataSerializers.FLOAT);
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.life_ticks", 30 * 20);
-    private static final double CONTROLLED_HORIZONTAL_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptor_falcon_drone_entity.controlled_horizontal_speed", 0.50D); // 10 blocks/sec at 20 TPS
-    private static final double CONTROLLED_VERTICAL_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptor_falcon_drone_entity.controlled_vertical_speed", 0.25D); // 5 blocks/sec at 20 TPS
-    private static final double SELF_DESTRUCT_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptor_falcon_drone_entity.self_destruct_speed", CONTROLLED_HORIZONTAL_SPEED * 2.0D); // 20 blocks/sec at 20 TPS
-    private static final double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.guide_distance", 34.0D);
-    private static final double REVEAL_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.reveal_radius", 30.0D);
-    private static final int REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.reveal_ticks", 70);
-    private static final int GUIDANCE_STALE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.guidance_stale_ticks", 10);
-    private static final int SERVER_CAMERA_REFRESH_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.server_camera_refresh_interval_ticks", 5);
-    private static final int OWNER_FALCON_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.owner_falcon_respawn_interval_ticks", 5);
-    private static final int OWNER_FALCON_FULL_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.owner_falcon_full_sync_interval_ticks", 10);
-    private static final double SELF_DESTRUCT_ENTITY_HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.self_destruct_entity_hit_radius", 0.55D);
-    private static final double SELF_DESTRUCT_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.self_destruct_damage_radius", 4.0D);
-    private static final float SELF_DESTRUCT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.raptorfalcondroneentity.self_destruct_damage", 10.0F);
-    private static final int FORCED_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.forced_chunk_radius", 2);
-    private static final int PRELOAD_CHUNK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.preload_chunk_radius", 2);
-    private static final int CRITICAL_TERRAIN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.critical_terrain_radius", 1);
-    private static final int MAX_TERRAIN_CHUNKS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.max_terrain_chunks_per_tick", 8);
-    private static final int CONTROLLED_CHUNK_CACHE_RADIUS = 6;
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.life_ticks", 600));
+    private static volatile double CONTROLLED_HORIZONTAL_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CONTROLLED_HORIZONTAL_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptor_falcon_drone_entity.controlled_horizontal_speed", 0.5));
+    private static volatile double CONTROLLED_VERTICAL_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CONTROLLED_VERTICAL_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptor_falcon_drone_entity.controlled_vertical_speed", 0.25));
+    private static volatile double SELF_DESTRUCT_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_DESTRUCT_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "summons.raptor_falcon_drone_entity.self_destruct_speed", CONTROLLED_HORIZONTAL_SPEED * 2.0
+   ));
+    private static volatile double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDE_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.guide_distance", 34.0));
+    private static volatile double REVEAL_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVEAL_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.reveal_radius", 30.0));
+    private static volatile int REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.reveal_ticks", 70));
+    private static volatile int GUIDANCE_STALE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDANCE_STALE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.raptorfalcondroneentity.guidance_stale_ticks", 10));
+    private static volatile int SERVER_CAMERA_REFRESH_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SERVER_CAMERA_REFRESH_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.raptorfalcondroneentity.server_camera_refresh_interval_ticks", 5
+   ));
+    private static volatile int OWNER_FALCON_RESPAWN_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OWNER_FALCON_RESPAWN_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.raptorfalcondroneentity.owner_falcon_respawn_interval_ticks", 5
+   ));
+    private static volatile int OWNER_FALCON_FULL_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("OWNER_FALCON_FULL_SYNC_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.raptorfalcondroneentity.owner_falcon_full_sync_interval_ticks", 10
+   ));
+    private static volatile double SELF_DESTRUCT_ENTITY_HIT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_DESTRUCT_ENTITY_HIT_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "summons.raptorfalcondroneentity.self_destruct_entity_hit_radius", 0.55
+   ));
+    private static volatile double SELF_DESTRUCT_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_DESTRUCT_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.raptorfalcondroneentity.self_destruct_damage_radius", 4.0));
+    private static volatile float SELF_DESTRUCT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_DESTRUCT_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.raptorfalcondroneentity.self_destruct_damage", 10.0F));
+    private static final int FORCED_CHUNK_RADIUS = clampedIntConfig("summons.raptorfalcondroneentity.forced_chunk_radius", 2, 0, 1);
+    private static final int PRELOAD_CHUNK_RADIUS = clampedIntConfig("summons.raptorfalcondroneentity.preload_chunk_radius", 2, 0, 1);
+    private static final int CRITICAL_TERRAIN_RADIUS = clampedIntConfig("summons.raptorfalcondroneentity.critical_terrain_radius", 1, 0, 1);
+    private static final int MAX_TERRAIN_CHUNKS_PER_TICK = clampedIntConfig("summons.raptorfalcondroneentity.max_terrain_chunks_per_tick", 8, 1, 4);
+    private static final int CONTROLLED_CHUNK_CACHE_RADIUS = 4;
     private static final Map<UUID, Integer> ACTIVE_CONTROLLED_FALCONS = new HashMap<>();
     private static final Map<UUID, ControlAnchor> ACTIVE_CONTROL_ANCHORS = new HashMap<>();
     private static final Map<ServerLevel, Map<Long, Integer>> FORCED_CHUNK_REFS = new WeakHashMap<>();
@@ -104,9 +116,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
     private boolean attachedModulesTriggered;
     private int batteryUsedTicks;
     private final Set<Long> forcedChunks = new HashSet<>();
+    private final Set<Long> desiredForcedChunks = new HashSet<>();
     private final Set<Long> streamedChunks = new HashSet<>();
     private final LinkedHashSet<Long> pendingTerrainChunks = new LinkedHashSet<>();
     private long lastStreamCenter = Long.MIN_VALUE;
+    private long lastLoadedCurrentCenter = Long.MIN_VALUE;
+    private long lastLoadedNextCenter = Long.MIN_VALUE;
 
     public RaptorFalconDroneEntity(EntityType<? extends RaptorFalconDroneEntity> type, Level level) {
         super(type, level);
@@ -323,6 +338,14 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
         }
     }
 
+    public static void clearPlayerControlState(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        ACTIVE_CONTROLLED_FALCONS.remove(player.getUUID());
+        ACTIVE_CONTROL_ANCHORS.remove(player.getUUID());
+    }
+
     public static void lockControllingPlayer(ServerPlayer player) {
         if (!ACTIVE_CONTROLLED_FALCONS.containsKey(player.getUUID())) {
             return;
@@ -362,8 +385,15 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
                 .toList();
         RaptorStateManager.revealEntities(owner, targets, REVEAL_TICKS);
         if (!targets.isEmpty()) {
-            level.playSound(null, blockPosition(), ModSounds.RAPTOR_FALCON_TARGET_FOUND.get(),
-                    SoundSource.PLAYERS, 0.65f, 1.0f);
+            for (LivingEntity target : targets) {
+                if (target instanceof ServerPlayer player) {
+                    DfsAchievements.recordRaptorFalconObservation(owner, player);
+                }
+            }
+            RangedSoundHelper.playFollowingPlayer(owner, ModSounds.RAPTOR_FALCON_TARGET_FOUND.get(),
+                    SoundSource.PLAYERS, 0.55f, 1.0f, 32.0D);
+            RangedSoundHelper.playFollowingPlayer(owner, ModSounds.RAPTOR_FALCON_POSITION_REVEAL.get(),
+                    SoundSource.PLAYERS, 0.65f, 1.0f, 32.0D);
             owner.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.falcon_revealed",
                     targets.size()), true);
         }
@@ -460,6 +490,8 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
     @Override
     public void remove(RemovalReason reason) {
         if (!level().isClientSide && level() instanceof ServerLevel level) {
+            RangedSoundHelper.stop(level, position(), ModSounds.RAPTOR_FALCON_FLY.get(),
+                    SoundSource.PLAYERS, 48.0D);
             discardAttachedModules(level);
         }
         releaseForcedChunks();
@@ -511,8 +543,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
                 continue;
             }
             target.invulnerableTime = 0;
-            target.hurt(SkillDamageHelper.raptorFalcon(level, this, owner), SkillDamageHelper.scale(owner, SELF_DESTRUCT_DAMAGE));
+            SkillDamageHelper.hurt(target, SkillDamageHelper.raptorFalcon(level, this, owner), owner, SELF_DESTRUCT_DAMAGE);
+            target.hurtMarked = true;
         }
+        SuperbWarfareCompat.damageVehicles(level, position(), SELF_DESTRUCT_DAMAGE_RADIUS,
+                SkillDamageHelper.raptorFalcon(level, this, owner), this,
+                SELF_DESTRUCT_DAMAGE / 100.0F, false);
         level.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.25D, getZ(),
                 1, 0.0D, 0.0D, 0.0D, 0.0D);
         level.sendParticles(FALCON_DUST, getX(), getY() + 0.25D, getZ(),
@@ -652,12 +688,14 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
         int curChunkZ = blockPosition().getZ() >> 4;
         int nextChunkX = (int) Math.floor((getX() + motion.x * 16.0D) / 16.0D);
         int nextChunkZ = (int) Math.floor((getZ() + motion.z * 16.0D) / 16.0D);
+        long currentPacked = ChunkPos.asLong(curChunkX, curChunkZ);
+        long nextPacked = ChunkPos.asLong(nextChunkX, nextChunkZ);
 
-        Set<Long> desired = new HashSet<>();
-        addChunkArea(desired, curChunkX, curChunkZ, FORCED_CHUNK_RADIUS);
-        addChunkArea(desired, nextChunkX, nextChunkZ, FORCED_CHUNK_RADIUS);
+        desiredForcedChunks.clear();
+        addChunkArea(desiredForcedChunks, curChunkX, curChunkZ, FORCED_CHUNK_RADIUS);
+        addChunkArea(desiredForcedChunks, nextChunkX, nextChunkZ, FORCED_CHUNK_RADIUS);
 
-        for (long packed : desired) {
+        for (long packed : desiredForcedChunks) {
             if (forcedChunks.add(packed)) {
                 retainForcedChunk(level, packed);
             }
@@ -666,15 +704,17 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
         Iterator<Long> iterator = forcedChunks.iterator();
         while (iterator.hasNext()) {
             long packed = iterator.next();
-            if (!desired.contains(packed)) {
+            if (!desiredForcedChunks.contains(packed)) {
                 releaseForcedChunk(level, packed);
                 iterator.remove();
             }
         }
 
-        ensureChunkLoaded(level, curChunkX, curChunkZ);
-        ensureChunkLoaded(level, nextChunkX, nextChunkZ);
-        streamTerrainForOwner(level, player, desired, curChunkX, curChunkZ);
+        ensureChunkLoadedIfNeeded(level, curChunkX, curChunkZ, currentPacked, true);
+        if (nextPacked != currentPacked) {
+            ensureChunkLoadedIfNeeded(level, nextChunkX, nextChunkZ, nextPacked, false);
+        }
+        streamTerrainForOwner(level, player, desiredForcedChunks, curChunkX, curChunkZ);
     }
 
     private static void addChunkArea(Set<Long> chunks, int centerX, int centerZ, int radius) {
@@ -688,9 +728,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
     private void releaseForcedChunks() {
         if (!(level() instanceof ServerLevel serverLevel)) {
             forcedChunks.clear();
+            desiredForcedChunks.clear();
             streamedChunks.clear();
             pendingTerrainChunks.clear();
             lastStreamCenter = Long.MIN_VALUE;
+            lastLoadedCurrentCenter = Long.MIN_VALUE;
+            lastLoadedNextCenter = Long.MIN_VALUE;
             return;
         }
 
@@ -698,9 +741,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
             releaseForcedChunk(serverLevel, packed);
         }
         forcedChunks.clear();
+        desiredForcedChunks.clear();
         streamedChunks.clear();
         pendingTerrainChunks.clear();
         lastStreamCenter = Long.MIN_VALUE;
+        lastLoadedCurrentCenter = Long.MIN_VALUE;
+        lastLoadedNextCenter = Long.MIN_VALUE;
     }
 
     private static void retainForcedChunk(ServerLevel level, long packed) {
@@ -729,6 +775,21 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
         } else {
             refs.put(packed, count - 1);
         }
+    }
+
+    private void ensureChunkLoadedIfNeeded(ServerLevel level, int centerX, int centerZ, long packed, boolean current) {
+        if (current) {
+            if (lastLoadedCurrentCenter == packed) {
+                return;
+            }
+            lastLoadedCurrentCenter = packed;
+        } else {
+            if (lastLoadedNextCenter == packed) {
+                return;
+            }
+            lastLoadedNextCenter = packed;
+        }
+        ensureChunkLoaded(level, centerX, centerZ);
     }
 
     private static void ensureChunkLoaded(ServerLevel level, int centerX, int centerZ) {
@@ -803,7 +864,12 @@ public class RaptorFalconDroneEntity extends Entity implements ItemSupplier, Blo
     }
 
     private static int controlledChunkCacheRadius(ServerPlayer player) {
-        return Math.max(CONTROLLED_CHUNK_CACHE_RADIUS, player.server.getPlayerList().getViewDistance());
+        return Math.max(2, Math.min(CONTROLLED_CHUNK_CACHE_RADIUS, player.server.getPlayerList().getViewDistance()));
+    }
+
+    private static int clampedIntConfig(String path, int fallback, int min, int max) {
+        int value = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(path, fallback);
+        return Math.max(min, Math.min(max, value));
     }
 
     private static void restoreTerrainCenter(ServerPlayer player) {

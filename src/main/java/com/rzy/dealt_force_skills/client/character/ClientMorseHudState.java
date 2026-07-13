@@ -130,6 +130,10 @@ public final class ClientMorseHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.MORSE_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.MORSE_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != MorseTool.NONE;
     }

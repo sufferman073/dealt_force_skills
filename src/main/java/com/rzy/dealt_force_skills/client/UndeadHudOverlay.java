@@ -33,7 +33,7 @@ public final class UndeadHudOverlay {
     @SubscribeEvent
     public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Post event) {
         if (!VanillaGuiOverlay.HOTBAR.id().equals(event.getOverlay().id())
-                || !ClientUndeadHudState.shouldRender()) {
+                || !ClientUndeadHudState.shouldDisplay()) {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
@@ -47,8 +47,8 @@ public final class UndeadHudOverlay {
         if (ClientUndeadHudState.explorerSpaceTicks() > 0) {
             graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), 0x223A3A3A);
         }
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
         UndeadProfession profession = ClientUndeadHudState.profession();
         String prefix = "character.dealt_force_skills.undead." + profession.id() + ".skill.";
 
@@ -232,7 +232,8 @@ public final class UndeadHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA10131A);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA10131A);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -248,7 +249,8 @@ public final class UndeadHudOverlay {
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
         HudTextHelper.drawCenteredFitted(graphics, font, keyName,
-                x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static String cooldownText(int ticks) {

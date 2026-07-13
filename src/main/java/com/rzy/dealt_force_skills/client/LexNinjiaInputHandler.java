@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LexNinjiaInputHandler {
-    private static final int LONG_HOLD_TICKS = DealtForceConfig.intValue("client.lex_ninjia_input_handler.long_hold_ticks", 10);
+    private static volatile int LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.lex_ninjia_input_handler.long_hold_ticks", 10));
     private static boolean sneakWasDown;
     private static boolean useWasDown;
     private static boolean jumpWasDown;

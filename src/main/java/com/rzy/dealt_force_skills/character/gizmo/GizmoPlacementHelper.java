@@ -11,9 +11,8 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 public final class GizmoPlacementHelper {
-    public static final double SMOKE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_placement_helper.smoke_range", 5.0D);
-    public static final double SPIDER_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_placement_helper.spider_range", 3.5D);
-
+    public static volatile double SMOKE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_placement_helper.smoke_range", 5.0));
+    public static volatile double SPIDER_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPIDER_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_placement_helper.spider_range", 3.5));
     private GizmoPlacementHelper() {
     }
 

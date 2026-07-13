@@ -2,7 +2,6 @@ package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.util.ClientVisionHooks;
 import com.rzy.dealt_force_skills.registry.ModParticles;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -22,8 +21,10 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfsmokecloudentity.life_ticks", 8 * 20);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfsmokecloudentity.radius", 7.5D);
+    public static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfsmokecloudentity.life_ticks", 160));
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfsmokecloudentity.radius", 6.0));
+    /** Client: refresh the single static billboard every N ticks. */
+    private static final int PARTICLE_REFRESH_TICKS = 15;
 
     private UUID ownerId;
     private int lifeTicks = LIFE_TICKS;
@@ -90,27 +91,12 @@ public class DWolfSmokeCloudEntity extends Entity implements ItemSupplier {
         if (ClientVisionHooks.isThermalVisionActive()) {
             return;
         }
-        // Custom large smoke particle renders at ~15-block quad size — a single particle
-        // already visually fills most of the smoke radius. Spawn just 3–5 per tick spread
-        // across the volume for dense opaque coverage with minimal performance cost.
-        int count = 4;
-        for (int i = 0; i < count; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = Math.sqrt(random.nextDouble()) * RADIUS * 0.75D;
-            double x = getX() + Math.cos(angle) * dist;
-            double z = getZ() + Math.sin(angle) * dist;
-            double y = getY() + 0.3D + random.nextDouble() * 4.5D;
-            level().addParticle(ModParticles.D_WOLF_LARGE_SMOKE.get(), x, y, z, 0.0D, 0.008D, 0.0D);
+        // One large static billboard at the cloud center — huge perf win vs multi-particle fog.
+        if (tickCount > 1 && tickCount % PARTICLE_REFRESH_TICKS != 0) {
+            return;
         }
-        // A few CAMPFIRE_COSY_SMOKE at the edges to fill gaps and give a billowing texture
-        for (int i = 0; i < 6; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = RADIUS * 0.6D + random.nextDouble() * RADIUS * 0.4D;
-            double x = getX() + Math.cos(angle) * dist;
-            double z = getZ() + Math.sin(angle) * dist;
-            double y = getY() + random.nextDouble() * 4.0D;
-            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, x, y, z, 0.0D, 0.01D, 0.0D);
-        }
+        level().addParticle(ModParticles.D_WOLF_LARGE_SMOKE.get(),
+                getX(), getY() + 1.5D, getZ(), 0.0D, 0.0D, 0.0D);
     }
 
     private void suppressTargetsThroughSmoke(ServerLevel level) {

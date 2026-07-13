@@ -24,7 +24,7 @@ import java.util.Map;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class RaptorWorldMarkersOverlay {
     private static final ResourceLocation FOOTPRINT_MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "raptor_footprint");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "raptor_footprint");
     private static final int UNSCANNED_FOOTPRINT_COLOR = 0x88FF3A3A;
     private static final int SCANNED_FOOTPRINT_COLOR = 0x88FFF0A0;
 

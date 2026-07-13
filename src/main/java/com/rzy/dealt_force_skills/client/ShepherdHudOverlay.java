@@ -36,7 +36,7 @@ public final class ShepherdHudOverlay {
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        if (ClientShepherdHudState.shouldRender()) {
+        if (ClientShepherdHudState.shouldDisplay()) {
             renderSkillHud(graphics, font);
         }
         if (minecraft.player.hasEffect(ModEffects.SONIC_SHOCK.get())) {
@@ -45,8 +45,8 @@ public final class ShepherdHudOverlay {
     }
 
     private static void renderSkillHud(GuiGraphics graphics, Font font) {
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
         drawSlot(graphics, font, x, y, 0xFFEDEDED, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.shepherd.skill.drone_stun"),
                 ClientShepherdHudState.coreCooldownTicks(),
@@ -86,7 +86,8 @@ public final class ShepherdHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101012);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA101012);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -102,7 +103,8 @@ public final class ShepherdHudOverlay {
         }
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void renderSonicShockOverlay(GuiGraphics graphics, Font font) {

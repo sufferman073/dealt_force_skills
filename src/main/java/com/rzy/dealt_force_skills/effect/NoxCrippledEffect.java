@@ -39,7 +39,7 @@ public class NoxCrippledEffect extends MobEffect {
 
         LivingEntity owner = owner(level, entity).orElse(null);
         entity.invulnerableTime = 0;
-        SkillDamageHelper.hurt(entity, SkillDamageHelper.noxRotor(level, null, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("effects.nox_crippled_effect.skill_hurt.0.damage", 4.0f));
+        SkillDamageHelper.hurt(entity, SkillDamageHelper.noxRotor(level, null, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("effects.nox_crippled_effect.skill_hurt.0.damage", 8.0f));
     }
 
     @Override

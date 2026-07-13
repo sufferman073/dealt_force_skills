@@ -38,26 +38,45 @@ import java.util.Comparator;
 import java.util.Optional;
 
 public final class NikaidouHiroStateManager {
-    public static final int MAX_RIFT_STACKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.max_rift_stacks", 25);
-    public static final int RIFT_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.rift_duration_ticks", 60 * 20);
-    public static final int CORRECTION_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.correction_cooldown_ticks", 15 * 20);
-    public static final int CORRECTION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.correction_duration_ticks", 8 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.core_cooldown_ticks", 90 * 20);
-    public static final int DOOMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.doomed_ticks", 10 * 20);
-    private static final int RIFT_EFFECT_LEVELS_PER_STACK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.rift_effect_levels_per_stack", 2);
-    private static final int HOT_IRON_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_cooldown_ticks", 23);
-    private static final int RITUAL_SWORD_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_cooldown_ticks", 13);
-    private static final double HOT_IRON_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_range", 3.0D);
-    private static final double RITUAL_SWORD_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_range", 3.0D);
-    private static final double MELEE_RAY_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "characters.nikaidou_hiro.melee_ray_inflate", 0.28D);
-    private static final double SWEEP_HITBOX_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "characters.nikaidou_hiro.sweep_hitbox_inflate", 0.35D);
-    private static final int CORE_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_interval_ticks", 5);
-    private static final double CORE_DECAY_INITIAL_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_initial_per_second", 0.001D);
-    private static final double CORE_DECAY_MAX_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_max_per_second", 0.15D);
-    private static final double CORE_DECAY_RAMP_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou.nikaidou_hiro_state_manager.core_decay_ramp_seconds", 10.0D);
-
+    public static volatile int MAX_RIFT_STACKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_RIFT_STACKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.max_rift_stacks", 25));
+    public static volatile int RIFT_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RIFT_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.rift_duration_ticks", 1200));
+    public static volatile int CORRECTION_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORRECTION_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.correction_cooldown_ticks", 300
+   ));
+    public static volatile int CORRECTION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORRECTION_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.correction_duration_ticks", 160
+   ));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.core_cooldown_ticks", 1800));
+    public static volatile int DOOMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOOMED_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.nikaidou.nikaidou_hiro_state_manager.doomed_ticks", 200));
+    private static volatile int RIFT_EFFECT_LEVELS_PER_STACK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RIFT_EFFECT_LEVELS_PER_STACK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.rift_effect_levels_per_stack", 2
+   ));
+    private static volatile int HOT_IRON_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HOT_IRON_ATTACK_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_cooldown_ticks", 23
+   ));
+    private static volatile int RITUAL_SWORD_ATTACK_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RITUAL_SWORD_ATTACK_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_cooldown_ticks", 13
+   ));
+    private static volatile double HOT_IRON_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HOT_IRON_ATTACK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.hot_iron_attack_range", 3.0
+   ));
+    private static volatile double RITUAL_SWORD_ATTACK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RITUAL_SWORD_ATTACK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.ritual_sword_attack_range", 3.0
+   ));
+    private static volatile double MELEE_RAY_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MELEE_RAY_INFLATE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou_hiro.melee_ray_inflate", 0.28));
+    private static volatile double SWEEP_HITBOX_INFLATE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SWEEP_HITBOX_INFLATE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nikaidou_hiro.sweep_hitbox_inflate", 0.35));
+    private static volatile int CORE_DECAY_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_DECAY_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.core_decay_interval_ticks", 5
+   ));
+    private static volatile double CORE_DECAY_INITIAL_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_DECAY_INITIAL_PER_SECOND", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.core_decay_initial_per_second", 0.001
+   ));
+    private static volatile double CORE_DECAY_MAX_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_DECAY_MAX_PER_SECOND", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.core_decay_max_per_second", 0.15
+   ));
+    private static volatile double CORE_DECAY_RAMP_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_DECAY_RAMP_SECONDS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.nikaidou.nikaidou_hiro_state_manager.core_decay_ramp_seconds", 10.0
+   ));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".nikaidou_hiro";
     private static final String INITIALIZED = "Initialized";
     private static final String RIFT_STACKS = "RiftStacks";
@@ -125,7 +144,7 @@ public final class NikaidouHiroStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
 
         if (tag.getLong(RIFT_UNTIL) <= now) {
@@ -147,10 +166,11 @@ public final class NikaidouHiroStateManager {
 
     public static boolean useCorrection(ServerPlayer player) {
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(ACTIVE1_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nikaidou_hiro.active1_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.nikaidou_hiro.active1_cooldown"));
             return true;
         }
         tag.putLong(ACTIVE1_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, CORRECTION_COOLDOWN_TICKS));
@@ -189,10 +209,11 @@ public final class NikaidouHiroStateManager {
             return true;
         }
         if (coreCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nikaidou_hiro.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.nikaidou_hiro.core_cooldown"));
             return true;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         tag.putBoolean(CORE_ACTIVE, true);
         tag.putLong(CORE_START_TICK, now);
@@ -227,7 +248,7 @@ public final class NikaidouHiroStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         int stacks = Math.min(MAX_RIFT_STACKS, tag.getInt(RIFT_STACKS) + 1);
         tag.putInt(RIFT_STACKS, stacks);
@@ -291,7 +312,7 @@ public final class NikaidouHiroStateManager {
         if (!isCoreActive(player)) {
             return 0;
         }
-        long elapsed = player.level().getGameTime() - data(player).getLong(CORE_START_TICK);
+        long elapsed = SkillCooldownHelper.now(player) - data(player).getLong(CORE_START_TICK);
         return elapsed > 0L ? (int) Math.min(Integer.MAX_VALUE, elapsed) : 0;
     }
 
@@ -346,10 +367,10 @@ public final class NikaidouHiroStateManager {
         SkillModelVisualSync.play(player, visual);
         if (tool == NikaidouHiroTool.HOT_IRON) {
             data(player).putLong(ATTACK_COOLDOWN_UNTIL,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), HOT_IRON_ATTACK_COOLDOWN_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), HOT_IRON_ATTACK_COOLDOWN_TICKS));
         } else {
             data(player).putLong(ATTACK_COOLDOWN_UNTIL,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), RITUAL_SWORD_ATTACK_COOLDOWN_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), RITUAL_SWORD_ATTACK_COOLDOWN_TICKS));
         }
         SkillAnimationScheduler.schedule(player, visual.impactTick(), delayedPlayer -> {
             if (tool == NikaidouHiroTool.HOT_IRON) {
@@ -550,7 +571,7 @@ public final class NikaidouHiroStateManager {
 
     private static void startDoomed(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         tag.putLong(DOOMED_UNTIL, now + DOOMED_TICKS);
         tag.putBoolean(CORE_ACTIVE, false);
         setEquippedTool(player, NikaidouHiroTool.RITUAL_SWORD);
@@ -617,8 +638,7 @@ public final class NikaidouHiroStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static int riftEffectAmplifier(int stacks) {

@@ -108,6 +108,10 @@ public final class ClientStingerHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.STINGER_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.STINGER_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != StingerTool.NONE;
     }

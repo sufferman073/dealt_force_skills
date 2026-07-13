@@ -61,7 +61,7 @@ public final class DWolfSlideVisuals {
     public static void tick() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
-            ACTIVE.clear();
+            reset();
             return;
         }
 
@@ -100,6 +100,11 @@ public final class DWolfSlideVisuals {
                 iterator.remove();
             }
         }
+    }
+
+    public static void reset() {
+        ACTIVE.clear();
+        YSM_PARCOOL_SNAPSHOTS.clear();
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)

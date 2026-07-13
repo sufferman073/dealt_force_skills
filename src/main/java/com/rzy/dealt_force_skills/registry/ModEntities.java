@@ -1,8 +1,13 @@
 package com.rzy.dealt_force_skills.registry;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.entity.BeaconBossEntity;
 import com.rzy.dealt_force_skills.entity.BladeWireProjectileEntity;
 import com.rzy.dealt_force_skills.entity.CatDadRoadTruckEntity;
+import com.rzy.dealt_force_skills.entity.ChamberCardProjectileEntity;
+import com.rzy.dealt_force_skills.entity.ChamberSlowFieldEntity;
+import com.rzy.dealt_force_skills.entity.ChamberTeleportAnchorEntity;
+import com.rzy.dealt_force_skills.entity.ChamberTripTrapEntity;
 import com.rzy.dealt_force_skills.entity.DepartmentExplosiveTrapEntity;
 import com.rzy.dealt_force_skills.entity.DepartmentOverheatLaserEntity;
 import com.rzy.dealt_force_skills.entity.DWolfHandCannonGrenadeEntity;
@@ -26,6 +31,10 @@ import com.rzy.dealt_force_skills.entity.MorseSonarDetectorEntity;
 import com.rzy.dealt_force_skills.entity.NoxDecoyEntity;
 import com.rzy.dealt_force_skills.entity.NoxFlashGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.NoxRotorDroneEntity;
+import com.rzy.dealt_force_skills.entity.NTwoCondensedGrenadeEntity;
+import com.rzy.dealt_force_skills.entity.NTwoDewarCanisterEntity;
+import com.rzy.dealt_force_skills.entity.NTwoIceFieldEntity;
+import com.rzy.dealt_force_skills.entity.NTwoTrackingStunGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.RaptorPulseGrenadeEntity;
 import com.rzy.dealt_force_skills.entity.SaeedFireArrowEntity;
@@ -183,6 +192,38 @@ public class ModEntities {
                             .clientTrackingRange(96)
                             .updateInterval(1)
                             .build("gizmo_t_boy"));
+
+    public static final RegistryObject<EntityType<ChamberCardProjectileEntity>> CHAMBER_CARD =
+            ENTITIES.register("chamber_card",
+                    () -> EntityType.Builder.<ChamberCardProjectileEntity>of(ChamberCardProjectileEntity::new, MobCategory.MISC)
+                            .sized(0.18f, 0.18f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("chamber_card"));
+
+    public static final RegistryObject<EntityType<ChamberTeleportAnchorEntity>> CHAMBER_TELEPORT_ANCHOR =
+            ENTITIES.register("chamber_teleport_anchor",
+                    () -> EntityType.Builder.<ChamberTeleportAnchorEntity>of(ChamberTeleportAnchorEntity::new, MobCategory.MISC)
+                            .sized(0.42f, 0.24f)
+                            .clientTrackingRange(320)
+                            .updateInterval(2)
+                            .build("chamber_teleport_anchor"));
+
+    public static final RegistryObject<EntityType<ChamberTripTrapEntity>> CHAMBER_TRAP =
+            ENTITIES.register("chamber_trap",
+                    () -> EntityType.Builder.<ChamberTripTrapEntity>of(ChamberTripTrapEntity::new, MobCategory.MISC)
+                            .sized(0.42f, 0.24f)
+                            .clientTrackingRange(320)
+                            .updateInterval(2)
+                            .build("chamber_trap"));
+
+    public static final RegistryObject<EntityType<ChamberSlowFieldEntity>> CHAMBER_SLOW_FIELD =
+            ENTITIES.register("chamber_slow_field",
+                    () -> EntityType.Builder.<ChamberSlowFieldEntity>of(ChamberSlowFieldEntity::new, MobCategory.MISC)
+                            .sized(0.1f, 0.1f)
+                            .clientTrackingRange(128)
+                            .updateInterval(5)
+                            .build("chamber_slow_field"));
 
     public static final RegistryObject<EntityType<ShepherdSonicTrapEntity>> SHEPHERD_SONIC_TRAP =
             ENTITIES.register("shepherd_sonic_trap",
@@ -381,7 +422,7 @@ public class ModEntities {
     public static final RegistryObject<EntityType<RaptorPulseGrenadeEntity>> RAPTOR_PULSE_GRENADE =
             ENTITIES.register("raptor_pulse_grenade",
                     () -> EntityType.Builder.<RaptorPulseGrenadeEntity>of(RaptorPulseGrenadeEntity::new, MobCategory.MISC)
-                            .sized(0.32f, 0.32f)
+                            .sized(0.36f, 0.36f)
                             .clientTrackingRange(96)
                             .updateInterval(1)
                             .build("raptor_pulse_grenade"));
@@ -465,6 +506,15 @@ public class ModEntities {
                             .updateInterval(2)
                             .build("saeed_guard"));
 
+    public static final RegistryObject<EntityType<BeaconBossEntity>> BEACON_BOSS =
+            ENTITIES.register("beacon_boss",
+                    () -> EntityType.Builder.<BeaconBossEntity>of(BeaconBossEntity::new, MobCategory.MONSTER)
+                            .sized(0.6f, 1.8f)
+                            .clientTrackingRange(128)
+                            .updateInterval(2)
+                            .fireImmune()
+                            .build("beacon_boss"));
+
     public static final RegistryObject<EntityType<SaeedFireArrowEntity>> SAEED_FIRE_ARROW =
             ENTITIES.register("saeed_fire_arrow",
                     () -> EntityType.Builder.<SaeedFireArrowEntity>of(SaeedFireArrowEntity::new, MobCategory.MISC)
@@ -488,4 +538,36 @@ public class ModEntities {
                             .clientTrackingRange(96)
                             .updateInterval(5)
                             .build("saeed_fire_field"));
+
+    public static final RegistryObject<EntityType<NTwoTrackingStunGrenadeEntity>> N_TWO_TRACKING_GRENADE =
+            ENTITIES.register("n_two_tracking_grenade",
+                    () -> EntityType.Builder.<NTwoTrackingStunGrenadeEntity>of(NTwoTrackingStunGrenadeEntity::new, MobCategory.MISC)
+                            .sized(0.25f, 0.25f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("n_two_tracking_grenade"));
+
+    public static final RegistryObject<EntityType<NTwoDewarCanisterEntity>> N_TWO_DEWAR_CANISTER =
+            ENTITIES.register("n_two_dewar_canister",
+                    () -> EntityType.Builder.<NTwoDewarCanisterEntity>of(NTwoDewarCanisterEntity::new, MobCategory.MISC)
+                            .sized(0.32f, 0.32f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("n_two_dewar_canister"));
+
+    public static final RegistryObject<EntityType<NTwoCondensedGrenadeEntity>> N_TWO_CONDENSED_GRENADE =
+            ENTITIES.register("n_two_condensed_grenade",
+                    () -> EntityType.Builder.<NTwoCondensedGrenadeEntity>of(NTwoCondensedGrenadeEntity::new, MobCategory.MISC)
+                            .sized(0.32f, 0.32f)
+                            .clientTrackingRange(128)
+                            .updateInterval(1)
+                            .build("n_two_condensed_grenade"));
+
+    public static final RegistryObject<EntityType<NTwoIceFieldEntity>> N_TWO_ICE_FIELD =
+            ENTITIES.register("n_two_ice_field",
+                    () -> EntityType.Builder.<NTwoIceFieldEntity>of(NTwoIceFieldEntity::new, MobCategory.MISC)
+                            .sized(0.1f, 0.1f)
+                            .clientTrackingRange(128)
+                            .updateInterval(5)
+                            .build("n_two_ice_field"));
 }

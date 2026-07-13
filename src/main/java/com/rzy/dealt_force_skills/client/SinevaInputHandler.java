@@ -3,11 +3,14 @@ package com.rzy.dealt_force_skills.client;
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.SkillSlot;
+import com.rzy.dealt_force_skills.character.sineva.SinevaGrappleTargeting;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import com.rzy.dealt_force_skills.client.character.ClientSinevaHudState;
-import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
+import com.rzy.dealt_force_skills.network.C2S_SinevaGrappleChargeSound;
+import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
@@ -17,14 +20,18 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaInputHandler {
-    private static final int BLADE_WIRE_HOLD_TICKS = DealtForceConfig.intValue("client.sineva_input_handler.blade_wire_hold_ticks", 10);
-    private static final int GRAPPLE_RELEASE_TICKS = DealtForceConfig.intValue("client.sineva_input_handler.grapple_release_ticks", 3);
+    private static volatile int BLADE_WIRE_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLADE_WIRE_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.sineva_input_handler.blade_wire_hold_ticks", 10));
+    private static final int GRAPPLE_CHARGE_TICKS = 30;
 
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean bladeWireHeld;
     /** Set when blade wire is cancelled by mouse click; prevents re-entering hold until key is fully released. */
     private static boolean bladeWireCancelled;
+    private static boolean active2WasDown;
+    private static int grappleHeldTicks;
+    private static boolean grappleCharging;
+    private static boolean grappleCancelled;
 
     private SinevaInputHandler() {
     }
@@ -32,12 +39,18 @@ public final class SinevaInputHandler {
     public static void tick(Minecraft minecraft) {
         if (minecraft.player == null || !ClientSinevaHudState.shouldRender()) {
             resetBladeWireInput();
+            resetGrappleInput();
             return;
         }
-        if (KeybindRegister.ACTIVE_SKILL_1 == null) {
-            return;
-        }
+        tickBladeWire();
+        tickGrapple(minecraft);
+    }
 
+    private static void tickBladeWire() {
+        if (KeybindRegister.ACTIVE_SKILL_1 == null) {
+            resetBladeWireInput();
+            return;
+        }
         // Always consume clicks to prevent ClientEvents from double-firing
         while (KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
             // Consumed by SinevaInputHandler exclusively.
@@ -79,9 +92,49 @@ public final class SinevaInputHandler {
         active1HeldTicks = 0;
     }
 
+    private static void tickGrapple(Minecraft minecraft) {
+        if (KeybindRegister.ACTIVE_SKILL_2 == null) {
+            resetGrappleInput();
+            return;
+        }
+        while (KeybindRegister.ACTIVE_SKILL_2.consumeClick()) {
+            // Sineva owns press/hold/release semantics for the grapple key.
+        }
+
+        boolean active2Down = KeybindRegister.ACTIVE_SKILL_2.isDown();
+        if (active2Down) {
+            if (grappleCancelled) {
+                return;
+            }
+            if (!grappleCharging) {
+                NetworkHandler.sendToServer(new C2S_SinevaGrappleChargeSound(
+                        C2S_SinevaGrappleChargeSound.Action.START));
+            }
+            active2WasDown = true;
+            grappleCharging = true;
+            int previousHeldTicks = grappleHeldTicks;
+            grappleHeldTicks = Math.min(GRAPPLE_CHARGE_TICKS, grappleHeldTicks + 1);
+            if (previousHeldTicks < GRAPPLE_CHARGE_TICKS && grappleHeldTicks >= GRAPPLE_CHARGE_TICKS) {
+                NetworkHandler.sendToServer(new C2S_SinevaGrappleChargeSound(
+                        C2S_SinevaGrappleChargeSound.Action.READY));
+            }
+            return;
+        }
+
+        if (grappleCancelled) {
+            resetGrappleInput();
+            return;
+        }
+
+        if (active2WasDown) {
+            releaseGrapple(minecraft);
+        }
+        resetGrappleInput();
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMouseButtonPre(InputEvent.MouseButton.Pre event) {
-        if (!bladeWireHeld || !ClientSinevaHudState.shouldRender()) {
+        if ((!bladeWireHeld && !grappleCharging) || !ClientSinevaHudState.shouldRender()) {
             return;
         }
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT && event.getButton() != GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
@@ -94,12 +147,17 @@ public final class SinevaInputHandler {
         }
 
         // Both left and right click cancel the blade wire hold
-        cancelBladeWire();
+        if (bladeWireHeld) {
+            cancelBladeWire();
+        }
+        if (grappleCharging) {
+            cancelGrapple();
+        }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onInteractionKey(InputEvent.InteractionKeyMappingTriggered event) {
-        if (!bladeWireHeld || !ClientSinevaHudState.shouldRender()) {
+        if ((!bladeWireHeld && !grappleCharging) || !ClientSinevaHudState.shouldRender()) {
             return;
         }
 
@@ -107,7 +165,12 @@ public final class SinevaInputHandler {
         event.setCanceled(true);
         // Both attack and use cancel the blade wire hold
         if (event.getHand() == InteractionHand.MAIN_HAND) {
-            cancelBladeWire();
+            if (bladeWireHeld) {
+                cancelBladeWire();
+            }
+            if (grappleCharging) {
+                cancelGrapple();
+            }
         }
     }
 
@@ -125,6 +188,23 @@ public final class SinevaInputHandler {
         active1HeldTicks = 0;
     }
 
+    private static void releaseGrapple(Minecraft minecraft) {
+        boolean locked = isGrappleChargeFull() && grappleLockTarget(minecraft) != null;
+        NetworkHandler.sendToServer(new C2S_SinevaGrappleChargeSound(
+                C2S_SinevaGrappleChargeSound.Action.RELEASE));
+        ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2, locked);
+        com.rzy.dealt_force_skills.client.visual.SinevaPlaceholderVisuals.startGrappleFire();
+    }
+
+    private static void cancelGrapple() {
+        NetworkHandler.sendToServer(new C2S_SinevaGrappleChargeSound(
+                C2S_SinevaGrappleChargeSound.Action.CANCEL));
+        grappleCharging = false;
+        grappleCancelled = true;
+        active2WasDown = false;
+        grappleHeldTicks = 0;
+    }
+
     private static void resetBladeWireInput() {
         active1WasDown = false;
         active1HeldTicks = 0;
@@ -132,20 +212,45 @@ public final class SinevaInputHandler {
         bladeWireCancelled = false;
     }
 
+    private static void resetGrappleInput() {
+        active2WasDown = false;
+        grappleHeldTicks = 0;
+        grappleCharging = false;
+        grappleCancelled = false;
+    }
+
     public static void startGrappleUse() {
         if (!ClientSinevaHudState.shouldRender()) {
             return;
         }
-        if (ClientToolReleaseAction.schedule(
-                "sineva.grapple.fire",
-                GRAPPLE_RELEASE_TICKS,
-                () -> ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2))) {
-            com.rzy.dealt_force_skills.client.visual.SinevaPlaceholderVisuals.startGrappleFire();
-        }
+        ClientCharacterSelectionState.useSkill(SkillSlot.ACTIVE_2);
+        com.rzy.dealt_force_skills.client.visual.SinevaPlaceholderVisuals.startGrappleFire();
     }
 
     /** Whether the player is currently holding the blade wire ready to throw. */
     public static boolean isBladeWireHeld() {
         return bladeWireHeld && ClientSinevaHudState.shouldRender();
+    }
+
+    public static boolean isGrappleCharging() {
+        return grappleCharging && ClientSinevaHudState.shouldRender();
+    }
+
+    public static boolean isGrappleChargeFull() {
+        return isGrappleCharging() && grappleHeldTicks >= GRAPPLE_CHARGE_TICKS;
+    }
+
+    public static float grappleChargeProgress() {
+        if (!isGrappleCharging()) {
+            return 0.0F;
+        }
+        return Math.min(1.0F, grappleHeldTicks / (float) GRAPPLE_CHARGE_TICKS);
+    }
+
+    public static LivingEntity grappleLockTarget(Minecraft minecraft) {
+        if (!isGrappleChargeFull() || minecraft == null || minecraft.player == null || minecraft.level == null) {
+            return null;
+        }
+        return SinevaGrappleTargeting.findTarget(minecraft.level, minecraft.player);
     }
 }

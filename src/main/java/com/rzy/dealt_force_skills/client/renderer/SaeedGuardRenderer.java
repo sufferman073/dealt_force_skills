@@ -56,6 +56,6 @@ public class SaeedGuardRenderer extends LivingEntityRenderer<SaeedGuardEntity, P
     }
 
     private static ResourceLocation texture(String name) {
-        return new ResourceLocation(DealtForceSkillsMod.MODID, "textures/entity/saeed/" + name + ".png");
+        return ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "textures/entity/saeed/" + name + ".png");
     }
 }

@@ -16,7 +16,9 @@ public final class ModCharacters {
     public static final String ULURU_ID = DealtForceSkillsMod.MODID + ":engineer/uluru";
     public static final String GIZMO_ID = DealtForceSkillsMod.MODID + ":engineer/gizmo";
     public static final String SHEPHERD_ID = DealtForceSkillsMod.MODID + ":engineer/shepherd";
+    public static final String N_TWO_ID = DealtForceSkillsMod.MODID + ":engineer/n_two";
     public static final String D_WOLF_ID = DealtForceSkillsMod.MODID + ":assault/d_wolf";
+    public static final String CORPS_ID = DealtForceSkillsMod.MODID + ":assault/corps";
     public static final String VYRON_ID = DealtForceSkillsMod.MODID + ":assault/vyron";
     public static final String NOX_ID = DealtForceSkillsMod.MODID + ":assault/nox";
     public static final String TEMPEST_ID = DealtForceSkillsMod.MODID + ":assault/tempest";
@@ -31,17 +33,26 @@ public final class ModCharacters {
     public static final String VLINDER_ID = DealtForceSkillsMod.MODID + ":support/vlinder";
     public static final String MANBA_ID = DealtForceSkillsMod.MODID + ":special/manba";
     public static final String NIKAIDOU_HIRO_ID = DealtForceSkillsMod.MODID + ":special/nikaidou_hiro";
+    public static final String NIKAIDOU_HIRO_WITCHIFICATION_ID = DealtForceSkillsMod.MODID + ":special/nikaidou_hiro_witchification";
     public static final String CATDAD_ID = DealtForceSkillsMod.MODID + ":special/catdad";
     public static final String DEPARTMENT_OF_TRANSPORTATION_ID = DealtForceSkillsMod.MODID + ":special/department_of_transportation";
     public static final String UNDEAD_ID = DealtForceSkillsMod.MODID + ":special/undead";
     public static final String LEX_NINJIA_ID = DealtForceSkillsMod.MODID + ":special/lex_ninjia";
+    public static final String GAMBLER_ID = DealtForceSkillsMod.MODID + ":special/gambler";
+    public static final String CHAMBER_ID = DealtForceSkillsMod.MODID + ":valorant/chamber";
 
     private static final Map<String, String> COMMAND_NAME_ALIASES = Map.ofEntries(
             Map.entry(normalizeCommandName("深蓝"), SINEVA_ID),
             Map.entry(normalizeCommandName("乌鲁鲁"), ULURU_ID),
             Map.entry(normalizeCommandName("比特"), GIZMO_ID),
             Map.entry(normalizeCommandName("牧羊人"), SHEPHERD_ID),
+            Map.entry(normalizeCommandName("液氮"), N_TWO_ID),
+            Map.entry(normalizeCommandName("N-two"), N_TWO_ID),
             Map.entry(normalizeCommandName("红狼"), D_WOLF_ID),
+            Map.entry(normalizeCommandName("军团"), CORPS_ID),
+            Map.entry(normalizeCommandName("Corps"), CORPS_ID),
+            Map.entry(normalizeCommandName("拳抖幻"), CORPS_ID),
+            Map.entry(normalizeCommandName("QuanDouhuan"), CORPS_ID),
             Map.entry(normalizeCommandName("威龙"), VYRON_ID),
             Map.entry(normalizeCommandName("疾风"), TEMPEST_ID),
             Map.entry(normalizeCommandName("露娜"), LUNA_ID),
@@ -55,18 +66,27 @@ public final class ModCharacters {
             Map.entry(normalizeCommandName("蝶"), VLINDER_ID),
             Map.entry(normalizeCommandName("曼巴"), MANBA_ID),
             Map.entry(normalizeCommandName("二阶堂浩"), NIKAIDOU_HIRO_ID),
+            Map.entry(normalizeCommandName("二阶堂希罗魔女化"), NIKAIDOU_HIRO_WITCHIFICATION_ID),
+            Map.entry(normalizeCommandName("NikaidouHiro-Witchification"), NIKAIDOU_HIRO_WITCHIFICATION_ID),
             Map.entry(normalizeCommandName("猫爸"), CATDAD_ID),
             Map.entry(normalizeCommandName("运输部"), DEPARTMENT_OF_TRANSPORTATION_ID),
             Map.entry(normalizeCommandName("亡灵"), UNDEAD_ID),
-            Map.entry(normalizeCommandName("蕾克拉忍者"), LEX_NINJIA_ID)
+            Map.entry(normalizeCommandName("蕾克拉忍者"), LEX_NINJIA_ID),
+            Map.entry(normalizeCommandName("赌徒"), GAMBLER_ID),
+            Map.entry(normalizeCommandName("Gambler"), GAMBLER_ID),
+            Map.entry(normalizeCommandName("尚博勒"), CHAMBER_ID),
+            Map.entry(normalizeCommandName("Chamber"), CHAMBER_ID)
     );
     private static final List<String> COMMAND_NAME_ALIAS_SUGGESTIONS = List.of(
-            "深蓝", "乌鲁鲁", "比特", "牧羊人",
-            "红狼", "威龙", "疾风",
+            "深蓝", "乌鲁鲁", "比特", "牧羊人", "液氮", "N-two",
+            "红狼", "军团", "Corps", "拳抖幻", "QuanDouhuan", "威龙", "疾风",
             "露娜", "骇爪", "回响", "银翼",
             "赛伊德", "典狱长",
             "毒刺", "毒克", "蝶",
-            "曼巴", "二阶堂浩", "猫爸", "运输部", "亡灵", "蕾克拉忍者"
+            "曼巴", "二阶堂浩", "猫爸", "运输部", "亡灵", "蕾克拉忍者",
+            "赌徒", "Gambler",
+            "二阶堂希罗魔女化", "二阶堂希罗·魔女化", "NikaidouHiro-Witchification",
+            "尚博勒", "Chamber"
     );
     private static final Map<String, CharacterDefinition> CHARACTERS = new LinkedHashMap<>();
 
@@ -182,6 +202,35 @@ public final class ModCharacters {
                             "character.dealt_force_skills.d_wolf.skill.overload",
                             "character.dealt_force_skills.d_wolf.skill.overload.desc",
                             75 * 20,
+                            true)
+            )
+    ));
+
+    public static final CharacterDefinition CORPS = register(new CharacterDefinition(
+            CORPS_ID,
+            "character.dealt_force_skills.corps.name",
+            CharacterRole.SPECIAL,
+            "characters_records/Assault/Corps.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.corps.skill.loyalty",
+                            "character.dealt_force_skills.corps.skill.loyalty.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.corps.skill.warm_enforcement",
+                            "character.dealt_force_skills.corps.skill.warm_enforcement.desc",
+                            10 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.corps.skill.forceful_baton",
+                            "character.dealt_force_skills.corps.skill.forceful_baton.desc",
+                            10 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.corps.skill.unrestricted_fighting_tournament",
+                            "character.dealt_force_skills.corps.skill.unrestricted_fighting_tournament.desc",
+                            90 * 20,
                             true)
             )
     ));
@@ -385,6 +434,35 @@ public final class ModCharacters {
                             "character.dealt_force_skills.shepherd.skill.drone_stun",
                             "character.dealt_force_skills.shepherd.skill.drone_stun.desc",
                             90 * 20,
+                            true)
+            )
+    ));
+
+    public static final CharacterDefinition N_TWO = register(new CharacterDefinition(
+            N_TWO_ID,
+            "character.dealt_force_skills.ntwo.name",
+            CharacterRole.ENGINEER,
+            "characters_records/Engineer/N-two.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.ntwo.skill.frost_reaction",
+                            "character.dealt_force_skills.ntwo.skill.frost_reaction.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.ntwo.skill.tracking_stun",
+                            "character.dealt_force_skills.ntwo.skill.tracking_stun.desc",
+                            35 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.ntwo.skill.dewar_canister",
+                            "character.dealt_force_skills.ntwo.skill.dewar_canister.desc",
+                            60 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.ntwo.skill.condensed_launcher",
+                            "character.dealt_force_skills.ntwo.skill.condensed_launcher.desc",
+                            100 * 20,
                             true)
             )
     ));
@@ -621,6 +699,35 @@ public final class ModCharacters {
             )
     ));
 
+    public static final CharacterDefinition NIKAIDOU_HIRO_WITCHIFICATION = register(new CharacterDefinition(
+            NIKAIDOU_HIRO_WITCHIFICATION_ID,
+            "character.dealt_force_skills.nikaidou_hiro_witchification.name",
+            CharacterRole.SPECIAL,
+            "characters_records/Special/NikaidouHiro-Witchification.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.witchification",
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.witchification.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.time_rewind",
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.time_rewind.desc",
+                            5 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.erase_error",
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.erase_error.desc",
+                            22 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.save_everyone",
+                            "character.dealt_force_skills.nikaidou_hiro_witchification.skill.save_everyone.desc",
+                            10 * 20,
+                            true)
+            )
+    ));
+
     public static final CharacterDefinition CATDAD = register(new CharacterDefinition(
             CATDAD_ID,
             "character.dealt_force_skills.catdad.name",
@@ -737,6 +844,66 @@ public final class ModCharacters {
             )
     ));
 
+    public static final CharacterDefinition GAMBLER = register(new CharacterDefinition(
+            GAMBLER_ID,
+            "character.dealt_force_skills.gambler.name",
+            CharacterRole.SPECIAL,
+            "characters_records/Special/Gambler.txt",
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.gambler.skill.super_shield",
+                            "character.dealt_force_skills.gambler.skill.super_shield.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.gambler.skill.final_bet",
+                            "character.dealt_force_skills.gambler.skill.final_bet.desc",
+                            80 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.gambler.skill.hakko_ichiu",
+                            "character.dealt_force_skills.gambler.skill.hakko_ichiu.desc",
+                            120 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.gambler.skill.killing_gambler",
+                            "character.dealt_force_skills.gambler.skill.killing_gambler.desc",
+                            0,
+                            true)
+            )
+    ));
+
+    public static final CharacterDefinition CHAMBER = register(new CharacterDefinition(
+            CHAMBER_ID,
+            "character.dealt_force_skills.chamber.name",
+            true,
+            CharacterRole.RECON,
+            "characters_records/Valorant/Chamber.txt",
+            false,
+            List.of(
+                    new SkillDefinition(SkillSlot.PASSIVE,
+                            "character.dealt_force_skills.chamber.skill.spare_cash",
+                            "character.dealt_force_skills.chamber.skill.spare_cash.desc",
+                            0,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_1,
+                            "character.dealt_force_skills.chamber.skill.rendezvous",
+                            "character.dealt_force_skills.chamber.skill.rendezvous.desc",
+                            30 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.ACTIVE_2,
+                            "character.dealt_force_skills.chamber.skill.trademark",
+                            "character.dealt_force_skills.chamber.skill.trademark.desc",
+                            30 * 20,
+                            true),
+                    new SkillDefinition(SkillSlot.CORE,
+                            "character.dealt_force_skills.chamber.skill.headhunter",
+                            "character.dealt_force_skills.chamber.skill.headhunter.desc",
+                            60 * 20,
+                            true)
+            )
+    ));
+
     private ModCharacters() {
     }
 
@@ -789,6 +956,7 @@ public final class ModCharacters {
     public static List<CharacterDefinition> byRole(CharacterRole role) {
         return CHARACTERS.values().stream()
                 .filter(character -> character.role() == role)
+                .filter(CharacterDefinition::selectable)
                 .toList();
     }
 

@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:cobweb"
+    },
+    "title": {
+      "text": "请君入瓮"
+    },
+    "description": {
+      "text": "使用比特时，烟雾陷阱，蜘蛛母巢，T仔都成功控制或伤害过同一名玩家，中途不能切换目标"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

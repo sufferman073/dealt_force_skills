@@ -40,6 +40,9 @@ public final class RaptorSkills {
                 if (equipped == RaptorTool.FALCON_DRONE) {
                     player.level().playSound(null, player.blockPosition(), ModSounds.RAPTOR_FALCON_STOW.get(),
                             SoundSource.PLAYERS, 0.7f, 1.0f);
+                } else if (equipped == RaptorTool.PULSE_GRENADE) {
+                    player.level().playSound(null, player.blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_STOW.get(),
+                            SoundSource.PLAYERS, 0.7f, 1.0f);
                 }
                 yield true;
             }
@@ -63,7 +66,8 @@ public final class RaptorSkills {
 
     private static boolean equipFalcon(ServerPlayer player) {
         if (RaptorStateManager.falconCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.falcon_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.raptor.falcon_cooldown"));
             return true;
         }
         RaptorStateManager.setEquippedTool(player, RaptorTool.FALCON_DRONE);
@@ -78,7 +82,8 @@ public final class RaptorSkills {
             return false;
         }
         if (!RaptorStateManager.consumeFalcon(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.falcon_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.raptor.falcon_cooldown"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -109,7 +114,7 @@ public final class RaptorSkills {
             return throwPulse(player, false);
         }
         if (!drone.consumeFalconPulse()) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.pulse_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.raptor.pulse_empty"));
             return true;
         }
         drone.throwPulseFor(player);
@@ -128,7 +133,7 @@ public final class RaptorSkills {
 
     private static boolean equipPulse(ServerPlayer player) {
         if (RaptorStateManager.pulseCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.pulse_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.raptor.pulse_empty"));
             return true;
         }
         RaptorStateManager.setEquippedTool(player, RaptorTool.PULSE_GRENADE);
@@ -140,7 +145,7 @@ public final class RaptorSkills {
 
     private static boolean throwPulse(ServerPlayer player, boolean highThrow) {
         if (!RaptorStateManager.consumePulseCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.pulse_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.raptor.pulse_empty"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -154,6 +159,8 @@ public final class RaptorSkills {
         grenade.setYRot(player.getYRot());
         grenade.setXRot(player.getXRot());
         level.addFreshEntity(grenade);
+        level.playSound(null, player.blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_PIN.get(),
+                SoundSource.PLAYERS, 0.72f, 1.0f);
         level.playSound(null, player.blockPosition(), ModSounds.RAPTOR_PULSE_GRENADE_THROW.get(),
                 SoundSource.PLAYERS, 0.95f, highThrow ? 0.95f : 1.08f);
         RaptorStateManager.setEquippedTool(player, RaptorTool.NONE);

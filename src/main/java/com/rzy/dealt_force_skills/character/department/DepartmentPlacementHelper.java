@@ -12,11 +12,10 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 public final class DepartmentPlacementHelper {
-    public static final double TRAP_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_range", 20.0D);
-    private static final double TRAP_WIDTH = DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_width", 0.42D);
-    private static final double TRAP_HEIGHT = DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_height", 0.36D);
-    private static final double SURFACE_GAP = DealtForceConfig.doubleValue("characters.department.department_placement_helper.surface_gap", 0.025D);
-
+    public static volatile double TRAP_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_range", 20.0));
+    private static volatile double TRAP_WIDTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_WIDTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_width", 0.42));
+    private static volatile double TRAP_HEIGHT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_HEIGHT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.trap_height", 0.36));
+    private static volatile double SURFACE_GAP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURFACE_GAP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_placement_helper.surface_gap", 0.025));
     private DepartmentPlacementHelper() {
     }
 

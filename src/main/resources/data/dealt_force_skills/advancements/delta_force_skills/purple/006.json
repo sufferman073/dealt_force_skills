@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:black_dye"
+    },
+    "title": {
+      "text": "黑灯瞎火"
+    },
+    "description": {
+      "text": "使用无名时，用一颗闪光弹同时致盲4名玩家/敌对目标，并在其致盲期间完成击杀"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
@@ -28,10 +29,11 @@ import java.util.UUID;
 public class HackclawInterferenceFieldEntity extends Entity implements ItemSupplier, BlockbenchModelPoseProvider {
     private static final EntityDataAccessor<Integer> ATTACHED_FACE =
             SynchedEntityData.defineId(HackclawInterferenceFieldEntity.class, EntityDataSerializers.INT);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawinterferencefieldentity.radius", 10.0D);
-    private static final int DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawinterferencefieldentity.duration_ticks", 10 * 20);
-    private static final int DEVICE_DISRUPT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawinterferencefieldentity.device_disrupt_interval_ticks", 10);
-
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawinterferencefieldentity.radius", 10.0));
+    private static volatile int DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawinterferencefieldentity.duration_ticks", 200));
+    private static volatile int DEVICE_DISRUPT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEVICE_DISRUPT_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "summons.hackclawinterferencefieldentity.device_disrupt_interval_ticks", 10
+   ));
     private UUID ownerId;
     private int age;
     private boolean feedbackTriggered;
@@ -123,6 +125,10 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
     }
 
     public void markSuccessfulInterference() {
+        markSuccessfulInterference(1);
+    }
+
+    public void markSuccessfulInterference(int affectedDevices) {
         if (feedbackTriggered || !(level() instanceof ServerLevel level)) {
             return;
         }
@@ -132,9 +138,14 @@ public class HackclawInterferenceFieldEntity extends Entity implements ItemSuppl
         if (owner != null) {
             owner.displayClientMessage(Component.translatable(
                     "message.dealt_force_skills.hackclaw.interference_success"), true);
+            DfsAchievements.onElectronicInterference(owner, Math.max(1, affectedDevices));
             owner.level().playSound(null, owner.blockPosition(), ModSounds.HACKCLAW_HACK_SUCCESS.get(),
                     SoundSource.PLAYERS, 0.85f, 1.0f);
         }
+    }
+
+    public ServerPlayer ownerPlayer(ServerLevel level) {
+        return owner(level);
     }
 
     private ServerPlayer owner(ServerLevel level) {

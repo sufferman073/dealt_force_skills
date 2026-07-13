@@ -28,16 +28,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class GizmoStateManager {
-    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_max_charges", 2);
-    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_recharge_ticks", 50 * 20);
-    public static final int SMOKE_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_active_limit", 2);
-    public static final int SPIDER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_max_charges", 1);
-    public static final int SPIDER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_recharge_ticks", 50 * 20);
-    public static final int SPIDER_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_active_limit", 1);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.core_cooldown_ticks", 75 * 20);
-    public static final int WEBBED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.webbed_duration_ticks", 40 * 20);
-    public static final int WEB_ESCAPE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.web_escape_ticks", 5 * 20);
-    public static final double PASSIVE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_state_manager.passive_radius", 8.0D);
+    public static volatile int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_max_charges", 2));
+    public static volatile int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_recharge_ticks", 1000));
+    public static volatile int SMOKE_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_ACTIVE_LIMIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.smoke_active_limit", 2));
+    public static volatile int SPIDER_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPIDER_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_max_charges", 1));
+    public static volatile int SPIDER_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPIDER_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_recharge_ticks", 1000));
+    public static volatile int SPIDER_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPIDER_ACTIVE_LIMIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.spider_active_limit", 1));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.core_cooldown_ticks", 1500));
+    public static volatile int WEBBED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WEBBED_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.webbed_duration_ticks", 800));
+    public static volatile int WEB_ESCAPE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WEB_ESCAPE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.gizmo.gizmo_state_manager.web_escape_ticks", 100));
+    public static volatile double PASSIVE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PASSIVE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.gizmo.gizmo_state_manager.passive_radius", 8.0));
     public static final UUID PASSIVE_MOVE_UUID = UUID.fromString("872ad489-74b0-4c30-a739-5cedda9b7c48");
     public static final UUID PASSIVE_ATTACK_UUID = UUID.fromString("33338d13-a4fe-4db5-a62c-c0491e53ed6d");
 
@@ -94,7 +94,7 @@ public final class GizmoStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         int smokeActive = countSmokeTraps(player);
         int spiderActive = countSpiderNests(player);
         recharge(player, now, SMOKE_CHARGES, SMOKE_MAX_CHARGES, smokeActive, SMOKE_NEXT_RECHARGE, SMOKE_RECHARGE_TICKS);
@@ -145,7 +145,7 @@ public final class GizmoStateManager {
     }
 
     public static boolean isCoreReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(CORE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(CORE_COOLDOWN_UNTIL);
     }
 
     public static int coreCooldownRemainingTicks(Player player) {
@@ -154,7 +154,7 @@ public final class GizmoStateManager {
 
     public static void setCoreCooldown(ServerPlayer player) {
         data(player).putLong(CORE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), CORE_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), CORE_COOLDOWN_TICKS));
     }
 
     public static void restoreSmokeCooldown(ServerPlayer player, int percent) {
@@ -324,7 +324,7 @@ public final class GizmoStateManager {
 
         tag.putInt(chargesKey, charges - 1);
         if (charges == allowed) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -370,7 +370,7 @@ public final class GizmoStateManager {
             return;
         }
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long currentRemaining = Math.max(1L, tag.getLong(rechargeKey) - now);
         if (tag.getLong(rechargeKey) <= now) {
             currentRemaining = SkillCooldownHelper.ticks(player, rechargeTicks);
@@ -382,8 +382,7 @@ public final class GizmoStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static AABB trapSearchBox(ServerPlayer player) {

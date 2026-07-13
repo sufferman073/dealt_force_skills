@@ -11,25 +11,32 @@ import java.util.function.Supplier;
 public class S2C_SyncPlayerCharacterSkin {
     private final int entityId;
     private final String characterId;
+    private final boolean skinsEnabled;
 
     public S2C_SyncPlayerCharacterSkin(int entityId, String characterId) {
+        this(entityId, characterId, true);
+    }
+
+    public S2C_SyncPlayerCharacterSkin(int entityId, String characterId, boolean skinsEnabled) {
         this.entityId = entityId;
         this.characterId = characterId == null ? "" : characterId;
+        this.skinsEnabled = skinsEnabled;
     }
 
     public static void encode(S2C_SyncPlayerCharacterSkin msg, FriendlyByteBuf buf) {
         buf.writeVarInt(msg.entityId);
         buf.writeUtf(msg.characterId);
+        buf.writeBoolean(msg.skinsEnabled);
     }
 
     public static S2C_SyncPlayerCharacterSkin decode(FriendlyByteBuf buf) {
-        return new S2C_SyncPlayerCharacterSkin(buf.readVarInt(), buf.readUtf(256));
+        return new S2C_SyncPlayerCharacterSkin(buf.readVarInt(), buf.readUtf(256), buf.readBoolean());
     }
 
     public static void handle(S2C_SyncPlayerCharacterSkin msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
                 Dist.CLIENT,
-                () -> () -> ClientCharacterSkinState.sync(msg.entityId, msg.characterId)
+                () -> () -> ClientCharacterSkinState.sync(msg.entityId, msg.characterId, msg.skinsEnabled)
         ));
         ctx.get().setPacketHandled(true);
     }

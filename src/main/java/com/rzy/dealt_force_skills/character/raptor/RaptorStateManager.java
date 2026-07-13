@@ -11,7 +11,9 @@ import com.rzy.dealt_force_skills.network.S2C_RaptorRevealEntities;
 import com.rzy.dealt_force_skills.network.S2C_SyncRaptorState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.team.TeamCombatRules;
 import com.rzy.dealt_force_skills.util.ReconRevealThrottle;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.nbt.CompoundTag;
@@ -42,21 +44,28 @@ import java.util.Map;
 import java.util.Optional;
 
 public final class RaptorStateManager {
-    public static final int FALCON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.falcon_cooldown_ticks", 45 * 20);
-    public static final int PULSE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_max_charges", 2);
-    public static final int PULSE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_recharge_ticks", 40 * 20);
-    public static final int HUMMINGBIRD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_cooldown_ticks", 45 * 20);
-    public static final int HUMMINGBIRD_ATTACH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_attach_ticks", 20);
-    public static final int HUMMINGBIRD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_duration_ticks", 30 * 20);
-    public static final int HUMMINGBIRD_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_reveal_ticks", 45);
-    public static final double HUMMINGBIRD_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.hummingbird_range", 90.0D);
-    private static final int FOOTPRINT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_interval_ticks", 20);
-    private static final int FOOTPRINT_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_life_ticks", 5 * 60 * 20);
-    private static final int FOOTPRINT_SYNC_LIMIT = 1200;
-    private static final double FOOTPRINT_SYNC_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_sync_range", 128.0D);
-    private static final double FOOTPRINT_READ_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_range", 32.0D);
-    private static final double FOOTPRINT_READ_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_distance", 0.95D);
-
+    public static volatile int FALCON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FALCON_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.falcon_cooldown_ticks", 900));
+    public static volatile int PULSE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_max_charges", 2));
+    public static volatile int PULSE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.pulse_recharge_ticks", 800));
+    public static volatile int HUMMINGBIRD_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUMMINGBIRD_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_cooldown_ticks", 900));
+    public static volatile int HUMMINGBIRD_ATTACH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUMMINGBIRD_ATTACH_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_attach_ticks", 20));
+    public static volatile int HUMMINGBIRD_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUMMINGBIRD_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_duration_ticks", 600));
+    public static volatile int HUMMINGBIRD_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUMMINGBIRD_REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.hummingbird_reveal_ticks", 45));
+    public static volatile double HUMMINGBIRD_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUMMINGBIRD_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.hummingbird_range", 90.0));
+    private static final int HUMMINGBIRD_LOOP_REPLAY_TICKS = 180;
+    private static volatile int FOOTPRINT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_interval_ticks", 20));
+    /** Footprint lifetime: 60 seconds (was 5 minutes; reduced for performance). */
+    private static volatile int FOOTPRINT_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_life_ticks", 1200));
+    private static final int FOOTPRINT_SYNC_LIMIT = 400;
+    private static final int FOOTPRINT_STORAGE_LIMIT = 2048;
+    private static volatile double FOOTPRINT_SYNC_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_SYNC_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_sync_range", 128.0));
+    private static volatile double FOOTPRINT_READ_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_READ_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_range", 32.0));
+    private static volatile double FOOTPRINT_READ_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_READ_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.raptor.raptor_state_manager.footprint_read_distance", 0.95));
+    /** When a footprint is fully read and the owner is within this radius, expose position briefly. */
+    private static volatile double FOOTPRINT_READ_REVEAL_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_READ_REVEAL_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.raptor.raptor_state_manager.footprint_read_reveal_range", 35.0
+   ));
+    private static volatile int FOOTPRINT_READ_REVEAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOOTPRINT_READ_REVEAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.raptor.raptor_state_manager.footprint_read_reveal_ticks", 60));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".raptor";
     private static final String INITIALIZED = "Initialized";
     private static final String FALCON_COOLDOWN_UNTIL = "FalconCooldownUntil";
@@ -112,6 +121,9 @@ public final class RaptorStateManager {
     }
 
     public static void clearState(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            stopHummingbirdLoop(serverPlayer);
+        }
         player.getPersistentData().remove(ROOT_TAG);
     }
 
@@ -120,7 +132,7 @@ public final class RaptorStateManager {
             return;
         }
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now - tag.getLong(LAST_FOOTPRINT_TICK) < FOOTPRINT_INTERVAL_TICKS) {
             return;
         }
@@ -144,7 +156,7 @@ public final class RaptorStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         rechargePulse(player, now);
         tickHummingbirdAttach(player);
         tickActiveHummingbird(player);
@@ -171,7 +183,8 @@ public final class RaptorStateManager {
         Vec3 look = marked.getLookAngle().normalize();
         AABB box = marked.getBoundingBox().inflate(32.0D);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (target == marked || target == owner || !TargetingUtil.isTargetableLiving(target)) {
+            if (target == marked || target == owner || !TargetingUtil.isTargetableLiving(target)
+                    || !com.rzy.dealt_force_skills.util.PositionRevealHelper.isValidReconTarget(owner, target)) {
                 continue;
             }
             Vec3 center = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
@@ -186,9 +199,10 @@ public final class RaptorStateManager {
                 markers.add(new RaptorRevealMarker(target.getId(), target.position(), HUMMINGBIRD_REVEAL_TICKS));
             }
         }
-        NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(markers), owner);
-        level.playSound(null, marked.blockPosition(), ModSounds.RAPTOR_HUMMINGBIRD_REVEAL.get(),
-                SoundSource.PLAYERS, 0.45f, 1.0f);
+        com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(
+                owner, new S2C_RaptorRevealEntities(markers));
+        RangedSoundHelper.playFollowingPlayer(owner, ModSounds.RAPTOR_HUMMINGBIRD_REVEAL.get(),
+                SoundSource.PLAYERS, 0.45f, 1.0f, 32.0D);
     }
 
     public static void revealEntities(ServerPlayer owner, List<? extends LivingEntity> targets, int ticks) {
@@ -197,17 +211,19 @@ public final class RaptorStateManager {
         }
         List<RaptorRevealMarker> markers = targets.stream()
                 .filter(LivingEntity::isAlive)
+                .filter(target -> com.rzy.dealt_force_skills.util.PositionRevealHelper.isValidReconTarget(owner, target))
                 .filter(target -> ReconRevealThrottle.tryStart(target, ticks))
                 .map(target -> new RaptorRevealMarker(target.getId(), target.position(), ticks))
                 .toList();
         if (markers.isEmpty()) {
             return;
         }
-        NetworkHandler.sendToPlayer(new S2C_RaptorRevealEntities(markers), owner);
+        com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(
+                owner, new S2C_RaptorRevealEntities(markers));
     }
 
     public static boolean consumeFalcon(ServerPlayer player) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < data(player).getLong(FALCON_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -225,13 +241,13 @@ public final class RaptorStateManager {
         tag.putInt(PULSE_CHARGES, charges - 1);
         if (charges - 1 < PULSE_MAX_CHARGES && tag.getLong(PULSE_NEXT_RECHARGE) <= 0L) {
             tag.putLong(PULSE_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), PULSE_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), PULSE_RECHARGE_TICKS));
         }
         return true;
     }
 
     public static boolean consumeHummingbird(ServerPlayer player) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < data(player).getLong(HUMMINGBIRD_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -265,7 +281,8 @@ public final class RaptorStateManager {
             return;
         }
         if (hummingbirdCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.hummingbird_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.raptor.hummingbird_cooldown"));
             return;
         }
         LivingEntity target = findHummingbirdTarget(player).orElse(null);
@@ -312,8 +329,27 @@ public final class RaptorStateManager {
         data(player).putInt(HUMMINGBIRD_PENDING_TARGET, -1);
         data(player).putInt(HUMMINGBIRD_PENDING_TICKS, 0);
         stopHummingbirdView(player);
+        stopHummingbirdLoop(player);
         ACTIVE_HUMMINGBIRD_TARGETS.remove(player.getUUID());
+        SCANNED_FOOTPRINTS.remove(player.getUUID());
         RaptorFalconDroneEntity.discardFor(player);
+    }
+
+    public static void clearRuntimeOnLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        java.util.UUID playerId = player.getUUID();
+        stopHummingbirdView(player);
+        stopHummingbirdLoop(player);
+        ACTIVE_HUMMINGBIRD_TARGETS.remove(playerId);
+        SCANNED_FOOTPRINTS.remove(playerId);
+        RaptorFalconDroneEntity.discardFor(player);
+        if (player.getPersistentData().contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            setEquippedTool(player, RaptorTool.NONE);
+            data(player).putInt(HUMMINGBIRD_PENDING_TARGET, -1);
+            data(player).putInt(HUMMINGBIRD_PENDING_TICKS, 0);
+        }
     }
 
     public static void syncToClient(ServerPlayer player) {
@@ -346,6 +382,8 @@ public final class RaptorStateManager {
                 || target.distanceTo(player) > HUMMINGBIRD_RANGE + 4.0D) {
             tag.putInt(HUMMINGBIRD_PENDING_TARGET, -1);
             tag.putInt(HUMMINGBIRD_PENDING_TICKS, 0);
+            player.level().playSound(null, player.blockPosition(), ModSounds.RAPTOR_HUMMINGBIRD_LOST.get(),
+                    SoundSource.PLAYERS, 0.75f, 1.0f);
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.hummingbird_lost"), true);
             return;
         }
@@ -366,6 +404,8 @@ public final class RaptorStateManager {
         }
         player.level().playSound(null, target.blockPosition(), ModSounds.RAPTOR_HUMMINGBIRD_ATTACH.get(),
                 SoundSource.PLAYERS, 0.75f, 1.0f);
+        player.playNotifySound(ModSounds.RAPTOR_HUMMINGBIRD_SUCCESS.get(), SoundSource.PLAYERS, 0.7f, 1.0f);
+        startHummingbirdLoop(player, target);
         tag.putInt(HUMMINGBIRD_PENDING_TARGET, -1);
         tag.putInt(HUMMINGBIRD_PENDING_TICKS, 0);
     }
@@ -377,14 +417,27 @@ public final class RaptorStateManager {
             return;
         }
         EntityLookup lookup = entityById(player.serverLevel(), targetId);
-        if (!(lookup.entity() instanceof LivingEntity target)
-                || !target.isAlive()
-                || !target.hasEffect(ModEffects.RAPTOR_HUMMINGBIRD_MARKED.get())
-                || RaptorHummingbirdMarkedEffect.owner(player.serverLevel(), target).filter(owner -> owner == player).isEmpty()) {
+        Entity entity = lookup.entity();
+        LivingEntity activeTarget = entity instanceof LivingEntity living ? living : null;
+        boolean destroyed = activeTarget == null || !activeTarget.isAlive();
+        boolean valid = !destroyed
+                && activeTarget.hasEffect(ModEffects.RAPTOR_HUMMINGBIRD_MARKED.get())
+                && RaptorHummingbirdMarkedEffect.owner(player.serverLevel(), activeTarget).filter(owner -> owner == player).isPresent();
+        if (!valid) {
             ACTIVE_HUMMINGBIRD_TARGETS.remove(player.getUUID());
             stopHummingbirdView(player);
+            stopHummingbirdLoop(player);
+            if (destroyed) {
+                playHummingbirdDestroyed(player, entity);
+            } else {
+                player.playNotifySound(ModSounds.RAPTOR_HUMMINGBIRD_END.get(), SoundSource.PLAYERS, 0.65f, 1.0f);
+            }
             consumeHummingbird(player);
             syncToClient(player);
+            return;
+        }
+        if (SkillCooldownHelper.now(player) % HUMMINGBIRD_LOOP_REPLAY_TICKS == 0L) {
+            startHummingbirdLoop(player, activeTarget);
         }
     }
 
@@ -401,7 +454,26 @@ public final class RaptorStateManager {
             return Optional.of(target);
         }
         ACTIVE_HUMMINGBIRD_TARGETS.remove(player.getUUID());
+        stopHummingbirdLoop(player);
         return Optional.empty();
+    }
+
+    private static void startHummingbirdLoop(ServerPlayer player, LivingEntity target) {
+        RangedSoundHelper.playFollowingEntity(player.serverLevel(), target, ModSounds.RAPTOR_HUMMINGBIRD_ACTIVE_LOOP.get(),
+                SoundSource.PLAYERS, 0.5f, 1.0f, 32.0D);
+    }
+
+    private static void stopHummingbirdLoop(ServerPlayer player) {
+        RangedSoundHelper.stop(player.serverLevel(), ModSounds.RAPTOR_HUMMINGBIRD_ACTIVE_LOOP.get(), SoundSource.PLAYERS);
+    }
+
+    private static void playHummingbirdDestroyed(ServerPlayer player, Entity entity) {
+        if (entity instanceof LivingEntity target) {
+            player.level().playSound(null, target.blockPosition(), ModSounds.RAPTOR_HUMMINGBIRD_DESTROYED.get(),
+                    SoundSource.PLAYERS, 0.7f, 1.0f);
+        } else {
+            player.playNotifySound(ModSounds.RAPTOR_HUMMINGBIRD_DESTROYED.get(), SoundSource.PLAYERS, 0.65f, 1.0f);
+        }
     }
 
     private static void startHummingbirdView(ServerPlayer player, LivingEntity target) {
@@ -443,18 +515,49 @@ public final class RaptorStateManager {
                     progressBar(ticks, 20)), true);
             return;
         }
-        int age = (int) Math.max(0, player.level().getGameTime() - footprint.gameTime);
+        int age = (int) Math.max(0, SkillCooldownHelper.now(player) - footprint.gameTime);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.raptor.footprint_info",
                 footprint.ownerName, secondsText(age), footprint.equipmentSummary), true);
         scannedFootprints(player).add(footprint.id);
         if (ticks == 20) {
             player.playNotifySound(ModSounds.RAPTOR_FOOTPRINT_INFO.get(), SoundSource.PLAYERS, 0.55f, 1.0f);
+            // Compensation for shorter footprint TTL: if owner is near, reveal for 3s to Raptor + teammates.
+            revealFootprintOwnerIfNearby(player, footprint);
         }
+    }
+
+    /**
+     * After a successful footprint read, if the owner is within {@link #FOOTPRINT_READ_REVEAL_RANGE}
+     * blocks of the Raptor, expose their position for {@link #FOOTPRINT_READ_REVEAL_TICKS} ticks
+     * to the Raptor and their teammates (same pipeline as other recon reveals).
+     */
+    private static void revealFootprintOwnerIfNearby(ServerPlayer raptor, FootprintState footprint) {
+        if (raptor == null || footprint == null || footprint.ownerUuid == null) {
+            return;
+        }
+        ServerPlayer owner = null;
+        try {
+            owner = raptor.server.getPlayerList().getPlayer(java.util.UUID.fromString(footprint.ownerUuid));
+        } catch (IllegalArgumentException ignored) {
+            return;
+        }
+        if (owner == null || !owner.isAlive() || owner.level() != raptor.level()) {
+            return;
+        }
+        if (!TargetingUtil.isTargetablePlayer(owner)
+                || !com.rzy.dealt_force_skills.util.PositionRevealHelper.isValidReconTarget(raptor, owner)) {
+            return;
+        }
+        double range = FOOTPRINT_READ_REVEAL_RANGE;
+        if (raptor.distanceToSqr(owner) > range * range) {
+            return;
+        }
+        revealEntities(raptor, List.of(owner), FOOTPRINT_READ_REVEAL_TICKS);
     }
 
     private static void syncFootprints(ServerPlayer player) {
         List<FootprintState> list = FOOTPRINTS.getOrDefault(player.level().dimension(), List.of());
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         String viewerId = player.getUUID().toString();
         java.util.Set<Integer> scanned = scannedFootprints(player);
         scanned.removeIf(id -> list.stream()
@@ -462,6 +565,7 @@ public final class RaptorStateManager {
         List<RaptorFootprintMarker> markers = list.stream()
                 .filter(footprint -> now - footprint.gameTime <= FOOTPRINT_LIFE_TICKS)
                 .filter(footprint -> !footprint.ownerUuid.equals(viewerId))
+                .filter(footprint -> !TeamCombatRules.isTeammateFootprintOwner(player, footprint.ownerUuid))
                 .filter(footprint -> footprint.position.distanceToSqr(player.position()) <= FOOTPRINT_SYNC_RANGE * FOOTPRINT_SYNC_RANGE)
                 .sorted(Comparator.comparingDouble(footprint -> footprint.position.distanceToSqr(player.position())))
                 .map(footprint -> new RaptorFootprintMarker(footprint.id, footprint.position,
@@ -481,7 +585,7 @@ public final class RaptorStateManager {
         if (list.isEmpty()) {
             return Optional.empty();
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         String viewerId = player.getUUID().toString();
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
@@ -489,6 +593,7 @@ public final class RaptorStateManager {
         return list.stream()
                 .filter(footprint -> now - footprint.gameTime <= FOOTPRINT_LIFE_TICKS)
                 .filter(footprint -> !footprint.ownerUuid.equals(viewerId))
+                .filter(footprint -> !TeamCombatRules.isTeammateFootprintOwner(player, footprint.ownerUuid))
                 .filter(footprint -> footprint.position.distanceToSqr(player.position()) <= FOOTPRINT_READ_RANGE * FOOTPRINT_READ_RANGE)
                 .min(Comparator.comparingDouble(footprint -> distanceToSegmentSqr(footprint.position.add(0.0D, 0.1D, 0.0D), eye, end)))
                 .filter(footprint -> distanceToSegmentSqr(footprint.position.add(0.0D, 0.1D, 0.0D), eye, end)
@@ -513,7 +618,7 @@ public final class RaptorStateManager {
         if (footprintId < 0 || data(player).getInt(READ_FOOTPRINT_TICKS) < 20) {
             return Optional.empty();
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         return FOOTPRINTS.getOrDefault(player.level().dimension(), List.of()).stream()
                 .filter(footprint -> footprint.id == footprintId)
                 .filter(footprint -> now - footprint.gameTime <= FOOTPRINT_LIFE_TICKS)
@@ -587,6 +692,12 @@ public final class RaptorStateManager {
                 iterator.remove();
             }
         }
+        while (list.size() > FOOTPRINT_STORAGE_LIMIT) {
+            list.remove(0);
+        }
+        if (list.isEmpty()) {
+            FOOTPRINTS.remove(level.dimension());
+        }
     }
 
     private static String equipmentSummary(ServerPlayer player) {
@@ -615,8 +726,7 @@ public final class RaptorStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static String secondsText(int ticks) {

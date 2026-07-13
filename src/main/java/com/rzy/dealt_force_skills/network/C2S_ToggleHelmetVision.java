@@ -29,7 +29,7 @@ public class C2S_ToggleHelmetVision {
     public static void handle(C2S_ToggleHelmetVision msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) {
+            if (player == null || player.isSpectator()) {
                 return;
             }
 

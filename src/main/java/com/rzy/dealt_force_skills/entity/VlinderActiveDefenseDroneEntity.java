@@ -1,7 +1,9 @@
 package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
+import com.rzy.dealt_force_skills.compat.PlayerReviveCompat;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
@@ -30,11 +32,11 @@ import java.util.Comparator;
 import java.util.UUID;
 
 public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.life_ticks", 35 * 20);
-    public static final int INJECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.injection_ticks", 6 * 20);
-    private static final int ABSORB_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.absorb_interval_ticks", 5 * 20);
-    private static final double INJECTION_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.injection_range", 20.0D);
-    private static final double FOLLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.follow_speed", 0.32D);
+    public static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.life_ticks", 700));
+    public static volatile int INJECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("INJECTION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.injection_ticks", 120));
+    private static volatile int ABSORB_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ABSORB_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinderactivedefensedroneentity.absorb_interval_ticks", 100));
+    private static volatile double INJECTION_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("INJECTION_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.injection_range", 20.0));
+    private static volatile double FOLLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FOLLOW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vlinderactivedefensedroneentity.follow_speed", 0.32));
     private static final DustParticleOptions DRONE_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.2f), 1.0f);
 
     private UUID ownerId;
@@ -193,7 +195,7 @@ public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSuppl
     private void refreshAbsorption(ServerPlayer owner, ServerLevel level) {
         owner.setAbsorptionAmount(Math.max(owner.getAbsorptionAmount(), 40.0F));
         owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, ABSORB_INTERVAL_TICKS + 20, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.vlinder_active_defense_drone_entity.effect.absorption.0.amplifier", 9), false, true, true), owner);
-        VlinderStateManager.markVlinderSuppliedBuff(owner, ABSORB_INTERVAL_TICKS + 20);
+        VlinderStateManager.markVlinderSuppliedBuff(owner, ABSORB_INTERVAL_TICKS + 20, owner);
         level.playSound(null, owner.blockPosition(), ModSounds.VLINDER_ABSORPTION_REFRESH.get(),
                 SoundSource.PLAYERS, 0.7F, 1.0F);
     }
@@ -219,7 +221,7 @@ public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSuppl
         injectionZ = target.getZ();
         injectionTicks++;
         if (injectionTicks >= INJECTION_TICKS) {
-            VlinderStateManager.markPlasmaInjected(target);
+            VlinderStateManager.markPlasmaInjected(owner, target);
             level.playSound(null, target.blockPosition(), ModSounds.VLINDER_PLASMA_INJECTION_COMPLETE.get(),
                     SoundSource.PLAYERS, 0.85F, 1.0F);
             resetInjection();
@@ -233,8 +235,9 @@ public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSuppl
         for (ServerPlayer target : owner.server.getPlayerList().getPlayers()) {
             if (target.getId() == injectionTargetId
                     && target.level() == owner.level()
+                    && DealtTeamManager.areTeammates(owner, target)
                     && TargetingUtil.isTargetablePlayer(target)
-                    && VlinderStateManager.isDowned(target)
+                    && isInjectableDowned(target)
                     && !target.hasEffect(com.rzy.dealt_force_skills.registry.ModEffects.VLINDER_PLASMA_INJECTED.get())
                     && target.distanceToSqr(owner) <= INJECTION_RANGE * INJECTION_RANGE) {
                 return target;
@@ -246,13 +249,18 @@ public class VlinderActiveDefenseDroneEntity extends Entity implements ItemSuppl
     private ServerPlayer nearestDowned(ServerPlayer owner, ServerLevel level) {
         return level.getEntitiesOfClass(ServerPlayer.class, owner.getBoundingBox().inflate(INJECTION_RANGE),
                         target -> target != owner
+                                && DealtTeamManager.areTeammates(owner, target)
                                 && TargetingUtil.isTargetablePlayer(target)
-                                && VlinderStateManager.isDowned(target)
+                                && isInjectableDowned(target)
                                 && !target.hasEffect(com.rzy.dealt_force_skills.registry.ModEffects.VLINDER_PLASMA_INJECTED.get())
                                 && target.distanceToSqr(owner) <= INJECTION_RANGE * INJECTION_RANGE)
                 .stream()
                 .min(Comparator.comparingDouble(owner::distanceToSqr))
                 .orElse(null);
+    }
+
+    private static boolean isInjectableDowned(ServerPlayer target) {
+        return VlinderStateManager.isDowned(target) || PlayerReviveCompat.isBleeding(target);
     }
 
     private void resetInjection() {

@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_front",
+    "down": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_bottom",
+    "up": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_top",
+    "north": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_front",
+    "south": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_back",
+    "west": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_left",
+    "east": "dealt_force_skills:block/hvk_advanced_disassembly_beam_emitter_right"
+  }
+}

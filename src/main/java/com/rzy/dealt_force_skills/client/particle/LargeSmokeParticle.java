@@ -8,12 +8,14 @@ import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.util.Mth;
 
 /**
- * A single smoke particle rendered at ~7-block scale so that just 3-5 per tick
- * can cover the D-Wolf smoke cloud radius (7.5 blocks) with dense coverage,
- * matching the AI-suppression radius for logical consistency.
+ * One large, nearly static smoke billboard used by D-Wolf smoke clouds.
+ * Cloud entities spawn a single particle every refresh window instead of
+ * many drifting particles, cutting client particle cost while still
+ * occluding vision inside the (slightly smaller) smoke radius.
  */
 public class LargeSmokeParticle extends TextureSheetParticle {
     private final SpriteSet sprites;
+    private final float baseSize;
 
     public LargeSmokeParticle(ClientLevel level, double x, double y, double z,
                                  double xSpeed, double ySpeed, double zSpeed, SpriteSet sprites) {
@@ -22,14 +24,19 @@ public class LargeSmokeParticle extends TextureSheetParticle {
             this.remove();
         }
         this.sprites = sprites;
-        this.lifetime = 50 + random.nextInt(30);  // 2.5 – 4 seconds
-        this.alpha = 0.92F;
-        this.quadSize = 7.0F + random.nextFloat() * 2.5F; // 7–9.5 blocks across
+        // Slightly longer than cloud refresh interval so coverage never gaps.
+        this.lifetime = 22 + random.nextInt(6);
+        this.alpha = 0.94F;
+        // Single static billboard (perf). Phase 811 was ~5.2–6.0; enlarge +200% (x3) for FOV occlusion.
+        this.baseSize = 15.6F + random.nextFloat() * 2.4F;
+        this.quadSize = this.baseSize;
         this.setSpriteFromAge(sprites);
-        this.gravity = -0.005F;  // very slow rise
-        this.xd = xSpeed * 0.2 + (random.nextDouble() - 0.5) * 0.25;
-        this.zd = zSpeed * 0.2 + (random.nextDouble() - 0.5) * 0.25;
-        this.yd = ySpeed * 0.4 + random.nextDouble() * 0.06 + 0.02;
+        this.gravity = 0.0F;
+        // Nearly static: ignore incoming speed, tiny drift only.
+        this.xd = 0.0D;
+        this.yd = 0.002D;
+        this.zd = 0.0D;
+        this.hasPhysics = false;
     }
 
     @Override
@@ -40,10 +47,14 @@ public class LargeSmokeParticle extends TextureSheetParticle {
         }
         super.tick();
         this.setSpriteFromAge(sprites);
+        this.xd = 0.0D;
+        this.yd = 0.002D;
+        this.zd = 0.0D;
         float ageFraction = (float) this.age / (float) this.lifetime;
-        this.quadSize = Mth.lerp(ageFraction, 8.0F, 3.5F);
-        if (ageFraction > 0.7F) {
-            this.alpha = Mth.lerp((ageFraction - 0.7F) / 0.3F, 0.92F, 0.0F);
+        // Stay large for FOV occlusion; only fade alpha near the end.
+        this.quadSize = Mth.lerp(ageFraction, this.baseSize, this.baseSize * 0.92F);
+        if (ageFraction > 0.75F) {
+            this.alpha = Mth.lerp((ageFraction - 0.75F) / 0.25F, 0.94F, 0.0F);
         }
     }
 

@@ -89,6 +89,10 @@ public final class ClientLexNinjiaHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.LEX_NINJIA_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.LEX_NINJIA_ID);
+    }
+
     public static float leicra() {
         return leicra;
     }

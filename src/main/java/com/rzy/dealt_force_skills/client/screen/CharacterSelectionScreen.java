@@ -1,8 +1,8 @@
 package com.rzy.dealt_force_skills.client.screen;
 
+import com.rzy.dealt_force_skills.character.CharacterBranch;
+import com.rzy.dealt_force_skills.character.CharacterBranchPackManager;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
-import com.rzy.dealt_force_skills.character.CharacterRole;
-import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillDefinition;
 import com.rzy.dealt_force_skills.client.character.ClientCharacterSelectionState;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,8 +29,9 @@ public class CharacterSelectionScreen extends Screen {
     private static final int DESCRIPTION_HEIGHT = 49;
     private static final int DESCRIPTION_SCROLL_STEP = 18;
 
-    private CharacterRole selectedRole = CharacterRole.ENGINEER;
-    private int page = 0;
+    private String selectedBranchId;
+    private int branchPage = 0;
+    private int characterPage = 0;
     private final Map<String, Integer> descriptionScroll = new HashMap<>();
     private final List<DisabledButtonVisual> disabledButtonVisuals = new ArrayList<>();
 
@@ -45,24 +46,52 @@ public class CharacterSelectionScreen extends Screen {
         int top = panelTop();
         int panelWidth = panelWidth();
         int roleY = top + 48;
-        int roleX = left + 12;
-        int roleWidth = Math.max(54, (panelWidth - 24 - ROLE_GAP * (CharacterRole.DISPLAY_ORDER.size() - 1))
-                / CharacterRole.DISPLAY_ORDER.size());
+        List<CharacterBranch> currentBranches = currentBranchPage();
+        if (!currentBranches.isEmpty()) {
+            int navWidth = totalBranchPages() > 1 ? 40 : 0;
+            int roleX = left + 12 + (navWidth == 0 ? 0 : navWidth + ROLE_GAP);
+            int roleAreaWidth = panelWidth - 24 - (navWidth == 0 ? 0 : (navWidth + ROLE_GAP) * 2);
+            int roleWidth = Math.max(54, (roleAreaWidth - ROLE_GAP * Math.max(0, currentBranches.size() - 1))
+                    / Math.max(1, currentBranches.size()));
 
-        for (CharacterRole role : CharacterRole.DISPLAY_ORDER) {
-            addRenderableWidget(Button.builder(
-                            Component.translatable(role.translationKey()),
-                            button -> {
-                                selectedRole = role;
-                                page = 0;
-                                rebuildCharacterWidgets();
-                            })
-                    .bounds(roleX, roleY, roleWidth, ROLE_BUTTON_HEIGHT)
-                    .build());
-            roleX += roleWidth + ROLE_GAP;
+            if (totalBranchPages() > 1) {
+                addRenderableWidget(Button.builder(
+                                Component.literal("<"),
+                                button -> {
+                                    branchPage = Math.max(0, branchPage - 1);
+                                    selectedBranchId = null;
+                                    characterPage = 0;
+                                    rebuildCharacterWidgets();
+                                })
+                        .bounds(left + 12, roleY, navWidth, ROLE_BUTTON_HEIGHT)
+                        .build());
+                addRenderableWidget(Button.builder(
+                                Component.literal(">"),
+                                button -> {
+                                    branchPage = Math.min(totalBranchPages() - 1, branchPage + 1);
+                                    selectedBranchId = null;
+                                    characterPage = 0;
+                                    rebuildCharacterWidgets();
+                                })
+                        .bounds(left + panelWidth - 12 - navWidth, roleY, navWidth, ROLE_BUTTON_HEIGHT)
+                        .build());
+            }
+
+            for (CharacterBranch branch : currentBranches) {
+                addRenderableWidget(Button.builder(
+                                branchTitle(branch),
+                                button -> {
+                                    selectedBranchId = branch.id();
+                                    characterPage = 0;
+                                    rebuildCharacterWidgets();
+                                })
+                        .bounds(roleX, roleY, roleWidth, ROLE_BUTTON_HEIGHT)
+                        .build());
+                roleX += roleWidth + ROLE_GAP;
+            }
         }
 
-        clampPage();
+        clampCharacterPage();
         int y = listTop();
         for (CharacterDefinition character : pagedCharacterList()) {
             int buttonX = left + panelWidth - 116;
@@ -84,12 +113,12 @@ public class CharacterSelectionScreen extends Screen {
             y += ROW_HEIGHT;
         }
 
-        if (totalPages() > 1) {
+        if (totalCharacterPages() > 1) {
             int pagerY = top + panelHeight() - 24;
             addRenderableWidget(Button.builder(
                             Component.literal("<"),
                             button -> {
-                                page = Math.max(0, page - 1);
+                                characterPage = Math.max(0, characterPage - 1);
                                 rebuildCharacterWidgets();
                             })
                     .bounds(left + 12, pagerY, 48, 20)
@@ -97,7 +126,7 @@ public class CharacterSelectionScreen extends Screen {
             addRenderableWidget(Button.builder(
                             Component.literal(">"),
                             button -> {
-                                page = Math.min(totalPages() - 1, page + 1);
+                                characterPage = Math.min(totalCharacterPages() - 1, characterPage + 1);
                                 rebuildCharacterWidgets();
                             })
                     .bounds(left + panelWidth - 60, pagerY, 48, 20)
@@ -120,7 +149,7 @@ public class CharacterSelectionScreen extends Screen {
 
     @Override
     public boolean shouldCloseOnEsc() {
-        return ClientCharacterSelectionState.hasSelectedCharacter();
+        return true;
     }
 
     private void drawPanel(GuiGraphics graphics) {
@@ -138,7 +167,15 @@ public class CharacterSelectionScreen extends Screen {
                 width / 2, top + 30, 0xAAB7C4);
 
         int y = listTop();
-        clampPage();
+        clampBranchPage();
+        ensureSelectedBranch();
+        clampCharacterPage();
+        if (branchPages().isEmpty()) {
+            graphics.drawCenteredString(font,
+                    Component.translatable("screen.dealt_force_skills.character_select.no_packs"),
+                    width / 2, y + 24, 0x8A96A3);
+            return;
+        }
         if (characterList().isEmpty()) {
             graphics.drawCenteredString(font,
                     Component.translatable("screen.dealt_force_skills.character_select.empty"),
@@ -151,19 +188,27 @@ public class CharacterSelectionScreen extends Screen {
             y += ROW_HEIGHT;
         }
 
-        if (totalPages() > 1) {
+        if (totalCharacterPages() > 1) {
             graphics.drawCenteredString(font,
-                    Component.literal((page + 1) + " / " + totalPages()),
+                    Component.literal((characterPage + 1) + " / " + totalCharacterPages()),
                     width / 2,
                     top + panelHeight - 19,
+                    0xAAB7C4);
+        }
+        if (totalBranchPages() > 1) {
+            graphics.drawString(font,
+                    Component.literal((branchPage + 1) + " / " + totalBranchPages()),
+                    left + panelWidth - 52,
+                    top + 30,
                     0xAAB7C4);
         }
     }
 
     private void drawCharacterRow(GuiGraphics graphics, CharacterDefinition character, int left, int top, int width) {
         graphics.fill(left, top, left + width, top + 112, 0xAA182431);
-        graphics.drawString(font, Component.translatable(character.nameTranslationKey()), left + 10, top + 8, 0xFFFFFF);
-        graphics.drawString(font, Component.translatable(character.roleTranslationKey()), left + 10, top + 22, 0x70D6FF);
+        graphics.drawString(font, character.displayName(), left + 10, top + 8, 0xFFFFFF);
+        graphics.drawString(font, selectedBranch().map(this::branchTitle).orElse(Component.empty()),
+                left + 10, top + 22, 0x70D6FF);
 
         int textX = left + 10;
         int textY = top + DESCRIPTION_TOP_OFFSET;
@@ -197,13 +242,15 @@ public class CharacterSelectionScreen extends Screen {
     }
 
     private List<CharacterDefinition> characterList() {
-        return new ArrayList<>(ModCharacters.byRole(selectedRole));
+        return selectedBranch()
+                .map(branch -> new ArrayList<>(branch.characters()))
+                .orElseGet(ArrayList::new);
     }
 
     private List<CharacterDefinition> pagedCharacterList() {
         List<CharacterDefinition> characters = characterList();
         int pageSize = pageSize();
-        int from = Math.min(characters.size(), page * pageSize);
+        int from = Math.min(characters.size(), characterPage * pageSize);
         int to = Math.min(characters.size(), from + pageSize);
         return characters.subList(from, to);
     }
@@ -212,13 +259,61 @@ public class CharacterSelectionScreen extends Screen {
         return Math.max(1, (height - 24 - HEADER_HEIGHT - FOOTER_HEIGHT) / ROW_HEIGHT);
     }
 
-    private int totalPages() {
+    private int totalCharacterPages() {
         int count = characterList().size();
         return Math.max(1, (count + pageSize() - 1) / pageSize());
     }
 
-    private void clampPage() {
-        page = Math.max(0, Math.min(page, totalPages() - 1));
+    private void clampCharacterPage() {
+        characterPage = Math.max(0, Math.min(characterPage, totalCharacterPages() - 1));
+    }
+
+    private void clampBranchPage() {
+        branchPage = Math.max(0, Math.min(branchPage, Math.max(0, totalBranchPages() - 1)));
+    }
+
+    private List<List<CharacterBranch>> branchPages() {
+        return CharacterBranchPackManager.pages(ClientCharacterSelectionState.selectionCatalog());
+    }
+
+    private List<CharacterBranch> currentBranchPage() {
+        List<List<CharacterBranch>> pages = branchPages();
+        if (pages.isEmpty()) {
+            return List.of();
+        }
+        clampBranchPage();
+        ensureSelectedBranch();
+        return pages.get(branchPage);
+    }
+
+    private int totalBranchPages() {
+        return branchPages().size();
+    }
+
+    private Optional<CharacterBranch> selectedBranch() {
+        ensureSelectedBranch();
+        return ClientCharacterSelectionState.selectionCatalog().stream()
+                .filter(branch -> branch.id().equals(selectedBranchId))
+                .findFirst();
+    }
+
+    private void ensureSelectedBranch() {
+        List<List<CharacterBranch>> pages = branchPages();
+        if (pages.isEmpty()) {
+            selectedBranchId = null;
+            return;
+        }
+        clampBranchPage();
+        List<CharacterBranch> current = pages.get(branchPage);
+        boolean selectedOnPage = selectedBranchId != null
+                && current.stream().anyMatch(branch -> branch.id().equals(selectedBranchId));
+        if (!selectedOnPage) {
+            selectedBranchId = current.isEmpty() ? null : current.get(0).id();
+        }
+    }
+
+    private Component branchTitle(CharacterBranch branch) {
+        return branch.nameTranslationKey() ? Component.translatable(branch.name()) : Component.literal(branch.name());
     }
 
     private int panelWidth() {
@@ -322,8 +417,8 @@ public class CharacterSelectionScreen extends Screen {
     }
 
     private List<FormattedCharSequence> wrappedSkillLines(SkillDefinition skill, int textWidth) {
-        String name = Component.translatable(skill.translationKey()).getString();
-        String description = Component.translatable(skill.descriptionTranslationKey()).getString();
+            String name = skill.displayName().getString();
+            String description = skill.displayDescription().getString();
         return font.split(Component.literal(name + ": " + description), textWidth);
     }
 

@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.character.undead;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.skill.SkillAnimationScheduler;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
@@ -29,19 +31,28 @@ import java.util.List;
 import java.util.Optional;
 
 public final class UndeadSkills {
-    public static final int LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.long_hold_ticks", 5);
-    private static final double KNIGHT_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.knight_lock_range", 12.0D);
-    private static final double WARRIOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.warrior_lock_range", 3.0D);
-    private static final double ROGUE_SUBDUE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_subdue_lock_range", 4.0D);
-    private static final double ROGUE_CORE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_core_lock_range", 2.5D);
-    private static final double SCHOLAR_STITCH_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_stitch_lock_range", 2.0D);
-    private static final double SCHOLAR_RECORD_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_record_lock_range", 6.0D);
-    private static final double KNIGHT_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.knight_non_player_lock_multiplier", 1.5D);
-    private static final double WARRIOR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.warrior_non_player_lock_multiplier", 2.0D);
-    private static final double ROGUE_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_non_player_lock_multiplier", 3.0D);
-    private static final double SCHOLAR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_non_player_lock_multiplier", 3.0D);
-    private static final float HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.hunter_reload_self_health_cost_fraction", 0.05F);
-
+    public static volatile int LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.long_hold_ticks", 5));
+    private static volatile double KNIGHT_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNIGHT_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.knight_lock_range", 12.0));
+    private static volatile double WARRIOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARRIOR_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.warrior_lock_range", 3.0));
+    private static volatile double ROGUE_SUBDUE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROGUE_SUBDUE_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_subdue_lock_range", 4.0));
+    private static volatile double ROGUE_CORE_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROGUE_CORE_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.rogue_core_lock_range", 2.5));
+    private static volatile double SCHOLAR_STITCH_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCHOLAR_STITCH_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_stitch_lock_range", 2.0));
+    private static volatile double SCHOLAR_RECORD_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCHOLAR_RECORD_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_skills.scholar_record_lock_range", 6.0));
+    private static volatile double KNIGHT_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("KNIGHT_NON_PLAYER_LOCK_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_skills.knight_non_player_lock_multiplier", 1.5
+   ));
+    private static volatile double WARRIOR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARRIOR_NON_PLAYER_LOCK_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_skills.warrior_non_player_lock_multiplier", 2.0
+   ));
+    private static volatile double ROGUE_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROGUE_NON_PLAYER_LOCK_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_skills.rogue_non_player_lock_multiplier", 3.0
+   ));
+    private static volatile double SCHOLAR_NON_PLAYER_LOCK_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCHOLAR_NON_PLAYER_LOCK_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_skills.scholar_non_player_lock_multiplier", 3.0
+   ));
+    private static volatile float HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.undead.undead_skills.hunter_reload_self_health_cost_fraction", 0.05F
+   ));
     private UndeadSkills() {
     }
 
@@ -183,6 +194,7 @@ public final class UndeadSkills {
                 return true;
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.KNIGHT, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.0.cooldown_ticks", 90 * 20));
+            DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.KNIGHT);
             SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_KNIGHT_WALL,
                     SkillModelVisual.UNDEAD_KNIGHT_WALL.impactTick() + 20 * 20);
             SkillAnimationScheduler.schedule(
@@ -248,6 +260,7 @@ public final class UndeadSkills {
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.WARRIOR, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.1.cooldown_ticks", 60 * 20));
             UndeadStateManager.startWarriorBloodlust(player);
+            DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.WARRIOR);
             particles(player, ParticleTypes.FLAME, 36, 0.8D, 1.0D);
             play(player, SoundEvents.RAVAGER_ROAR, 0.8F, 1.25F);
             return true;
@@ -311,6 +324,7 @@ public final class UndeadSkills {
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.EXPLORER, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.2.cooldown_ticks", 1));
             UndeadStateManager.startExplorerSpace(player);
+            DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.EXPLORER);
             particles(player, ParticleTypes.PORTAL, 45, 0.8D, 1.0D);
             play(player, SoundEvents.PORTAL_TRAVEL, 0.45F, 1.5F);
             return true;
@@ -381,6 +395,7 @@ public final class UndeadSkills {
                 return true;
             }
             UndeadStateManager.startCoreCooldown(player, UndeadProfession.ROGUE, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_skills.cooldown.3.cooldown_ticks", 40 * 20));
+            DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.ROGUE);
             SkillModelVisualSync.play(player, SkillModelVisual.UNDEAD_ROGUE_BATON);
             SkillAnimationScheduler.schedule(
                     player,
@@ -394,6 +409,9 @@ public final class UndeadSkills {
                                     delayedPlayer.damageSources().playerAttack(delayedPlayer),
                                     delayedPlayer, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_skills.skill_hurt.4.damage", 10.0F));
                             stealEquipment(delayedPlayer, victimPlayer);
+                        } else if (!com.rzy.dealt_force_skills.boss.BossCombatRules.canInstantKill(victim)) {
+                            delayedPlayer.displayClientMessage(net.minecraft.network.chat.Component.translatable(
+                                    "message.dealt_force_skills.beacon_boss.immune_execute"), true);
                         } else {
                             UndeadStateManager.executeRogueNonPlayer(delayedPlayer, victim);
                         }
@@ -485,6 +503,9 @@ public final class UndeadSkills {
             int targetRecords = UndeadStateManager.scholarRecordCount(player, target.get());
             int recordedTypes = UndeadStateManager.scholarRecordedTypes(player);
             int typeLimit = UndeadStateManager.scholarRecordTypeLimit(player);
+            if (recorded) {
+                DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.SCHOLAR);
+            }
             player.displayClientMessage(Component.translatable(recorded
                             ? "message.dealt_force_skills.undead.recorded"
                             : "message.dealt_force_skills.undead.record_limit",
@@ -506,8 +527,8 @@ public final class UndeadSkills {
         }
         if (slot == SkillSlot.ACTIVE_2) {
             if (!UndeadStateManager.hunterReloadReady(player)) {
-                player.displayClientMessage(Component.translatable(
-                        "message.dealt_force_skills.undead.reload_cooldown"), true);
+                SkillCooldownHelper.notifyCooldown(player, Component.translatable(
+                        "message.dealt_force_skills.undead.reload_cooldown"));
                 return true;
             }
             player.hurt(player.damageSources().magic(), player.getMaxHealth() * HUNTER_RELOAD_SELF_HEALTH_COST_FRACTION);
@@ -517,6 +538,9 @@ public final class UndeadSkills {
         }
         if (slot == SkillSlot.CORE) {
             UndeadStateManager.toggleHunterScatter(player);
+            if (UndeadStateManager.hunterScatterActive(player)) {
+                DfsAchievements.recordUndeadProfessionMechanism(player, UndeadProfession.HUNTER);
+            }
             particles(player, ParticleTypes.CRIT, 24, 0.8D, 1.0D);
             player.displayClientMessage(Component.translatable(
                     UndeadStateManager.hunterScatterActive(player)
@@ -529,8 +553,8 @@ public final class UndeadSkills {
 
     private static boolean coreReady(ServerPlayer player) {
         if (UndeadStateManager.coreCooldownRemaining(player, UndeadStateManager.profession(player)) > 0) {
-            player.displayClientMessage(Component.translatable(
-                    "message.dealt_force_skills.undead.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player, Component.translatable(
+                    "message.dealt_force_skills.undead.core_cooldown"));
             return false;
         }
         return true;
@@ -753,6 +777,7 @@ public final class UndeadSkills {
             }
             ItemStack stolen = stack.copy();
             victim.setItemSlot(slot, ItemStack.EMPTY);
+            DfsAchievements.recordUndeadRogueTheft(thief, victim instanceof ServerPlayer player ? player : null);
             if (directToThief) {
                 if (!thief.getInventory().add(stolen)) {
                     thief.drop(stolen, false);

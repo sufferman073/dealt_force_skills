@@ -1,0 +1,44 @@
+{
+  "id": "dealt_force_skills:valorant",
+  "name": "瓦罗兰特",
+  "enabled": true,
+  "characters": [
+    {
+      "id": "dealt_force_skills:valorant/chamber",
+      "name_key": "character.dealt_force_skills.chamber.name",
+      "role": "RECON",
+      "source": "characters_records/Valorant/Chamber.txt",
+      "selectable": true,
+      "skills": [
+        {
+          "slot": "PASSIVE",
+          "name_key": "character.dealt_force_skills.chamber.skill.spare_cash",
+          "description_key": "character.dealt_force_skills.chamber.skill.spare_cash.desc",
+          "cooldown_ticks": 0,
+          "implemented": true
+        },
+        {
+          "slot": "ACTIVE_1",
+          "name_key": "character.dealt_force_skills.chamber.skill.rendezvous",
+          "description_key": "character.dealt_force_skills.chamber.skill.rendezvous.desc",
+          "cooldown_ticks": 600,
+          "implemented": true
+        },
+        {
+          "slot": "ACTIVE_2",
+          "name_key": "character.dealt_force_skills.chamber.skill.trademark",
+          "description_key": "character.dealt_force_skills.chamber.skill.trademark.desc",
+          "cooldown_ticks": 600,
+          "implemented": true
+        },
+        {
+          "slot": "CORE",
+          "name_key": "character.dealt_force_skills.chamber.skill.headhunter",
+          "description_key": "character.dealt_force_skills.chamber.skill.headhunter.desc",
+          "cooldown_ticks": 1200,
+          "implemented": true
+        }
+      ]
+    }
+  ]
+}

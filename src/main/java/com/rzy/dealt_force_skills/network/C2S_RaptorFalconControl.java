@@ -5,6 +5,7 @@ import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -93,9 +94,14 @@ public class C2S_RaptorFalconControl {
                 RaptorFalconDroneEntity.stopPlayerControl(player);
                 return;
             }
+            if (player.isSpectator()) {
+                RaptorFalconDroneEntity.stopPlayerControl(player);
+                return;
+            }
             if (player.hasEffect(ModEffects.STUN.get())
                     || player.hasEffect(ModEffects.WEBBED.get())
-                    || StingerStateManager.isDowned(player)) {
+                    || StingerStateManager.isDowned(player)
+                    || RoundStartFreezeManager.isFrozen(player)) {
                 RaptorFalconDroneEntity.stopPlayerControl(player);
                 return;
             }

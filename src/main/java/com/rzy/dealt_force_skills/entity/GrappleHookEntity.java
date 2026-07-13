@@ -1,10 +1,13 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.sineva.SinevaStateManager;
 import com.rzy.dealt_force_skills.effect.StunEffect;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -40,16 +43,17 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             SynchedEntityData.defineId(GrappleHookEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Boolean> RETURNING =
             SynchedEntityData.defineId(GrappleHookEntity.class, EntityDataSerializers.BOOLEAN);
-    private static final double MAX_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.max_distance_sqr", 35.0 * 35.0);
-    private static final int PULL_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.pull_delay_ticks", 8);
-    private static final int MAX_PULL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_pull_ticks", 48);
-    private static final int MAX_RETURN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_return_ticks", 60);
-    private static final double RETURN_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_speed_per_tick", 1.8D);
-    private static final double RETURN_FINISH_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_finish_distance", 0.55D);
-
+    private static volatile double MAX_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_DISTANCE_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.max_distance_sqr", 961.0));
+    private static volatile int PULL_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULL_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.pull_delay_ticks", 8));
+    private static volatile int MAX_PULL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_PULL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_pull_ticks", 48));
+    private static volatile int MAX_RETURN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_RETURN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapplehookentity.max_return_ticks", 60));
+    private static volatile double RETURN_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RETURN_SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_speed_per_tick", 1.8));
+    private static volatile double RETURN_FINISH_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RETURN_FINISH_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.grapplehookentity.return_finish_distance", 0.55));
     private int targetId = -1;
     private int hookedAtTick = -1;
     private int returnStartedTick = -1;
+    private double initialPullDistance = -1.0D;
+    private boolean dragSoundPlayed;
 
     public GrappleHookEntity(EntityType<? extends GrappleHookEntity> type, Level level) {
         super(type, level);
@@ -160,15 +164,21 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             return;
         }
 
-        level().playSound(null, blockPosition(), ModSounds.GRAPPLE_HIT.get(),
+        level().playSound(null, blockPosition(), ModSounds.SINEVA_GRAPPLE_HIT.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f);
 
         if (target instanceof LivingEntity le) {
-            level().playSound(null, sp.blockPosition(), ModSounds.SINEVA_GRAPPLE_HIT_CASTER.get(),
-                    SoundSource.PLAYERS, 1.0f, 1.0f);
+            if (TargetingUtil.shouldSkipFriendlyControl(sp, le)) {
+                beginReturn();
+                return;
+            }
+            RangedSoundHelper.playFollowingPlayer(sp, ModSounds.SINEVA_GRAPPLE_HIT_VOICE.get(),
+                    SoundSource.VOICE, 1.0f, 1.0f, 32.0D);
             SkillDamageHelper.hurt(le, SkillDamageHelper.sinevaGrapple(sp.serverLevel(), this, sp), sp, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.grapple_hook_entity.skill_hurt.0.damage", 10.0f));
             targetId = target.getId();
             hookedAtTick = tickCount;
+            initialPullDistance = sp.distanceTo(target);
+            dragSoundPlayed = false;
             setDeltaMovement(Vec3.ZERO);
         } else {
             beginReturn();
@@ -183,7 +193,7 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (!level().isClientSide) {
-            beginReturn();
+            beginReturn(true);
         }
         return true;
     }
@@ -198,6 +208,8 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
         targetId = tag.getInt("TargetId");
         hookedAtTick = tag.getInt("HookedAtTick");
         returnStartedTick = tag.getInt("ReturnStartedTick");
+        initialPullDistance = tag.contains("InitialPullDistance") ? tag.getDouble("InitialPullDistance") : -1.0D;
+        dragSoundPlayed = tag.getBoolean("DragSoundPlayed");
         this.entityData.set(RETURNING, tag.getBoolean("Returning"));
     }
 
@@ -206,6 +218,8 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
         tag.putInt("TargetId", targetId);
         tag.putInt("HookedAtTick", hookedAtTick);
         tag.putInt("ReturnStartedTick", returnStartedTick);
+        tag.putDouble("InitialPullDistance", initialPullDistance);
+        tag.putBoolean("DragSoundPlayed", dragSoundPlayed);
         tag.putBoolean("Returning", isReturning());
     }
 
@@ -221,6 +235,10 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             beginReturn();
             return;
         }
+        if (TargetingUtil.shouldSkipFriendlyControl(sp, le)) {
+            beginReturn();
+            return;
+        }
 
         le.addEffect(new MobEffectInstance(ModEffects.STUN.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapple_hook_entity.effect.stun.0.duration_ticks", 5), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.grapple_hook_entity.effect.stun.0.amplifier", 0), false, true));
         StunEffect.allowHorizontalMovement(le, 3);
@@ -230,11 +248,18 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
             return;
         }
 
+        if (!dragSoundPlayed) {
+            level().playSound(null, le.blockPosition(), ModSounds.SINEVA_GRAPPLE_DRAG.get(),
+                    SoundSource.PLAYERS, 0.85F, 1.0F);
+            dragSoundPlayed = true;
+        }
+
         Vec3 anchor = pullAnchor(sp);
         Vec3 toAnchor = anchor.subtract(target.position());
         Vec3 horizontalToAnchor = new Vec3(toAnchor.x, 0.0D, toAnchor.z);
         double horizontalDistance = horizontalToAnchor.length();
         if (horizontalDistance < 1.35D || tickCount - hookedAtTick > MAX_PULL_TICKS) {
+            DfsAchievements.recordSinevaGrapplePull(sp, le, initialPullDistance, sp.distanceTo(le));
             beginReturn();
             return;
         }
@@ -249,11 +274,24 @@ public class GrappleHookEntity extends Projectile implements ItemSupplier {
     }
 
     private void beginReturn() {
+        beginReturn(false);
+    }
+
+    private void beginReturn(boolean broken) {
         if (isReturning()) {
             return;
         }
+        Entity owner = getRopeOwner();
+        level().playSound(null, blockPosition(), ModSounds.SINEVA_GRAPPLE_RETRACT.get(),
+                SoundSource.PLAYERS, 0.75F, 1.0F);
+        if (broken && owner instanceof net.minecraft.server.level.ServerPlayer sp) {
+            RangedSoundHelper.playFollowingPlayer(sp, ModSounds.SINEVA_GRAPPLE_BREAK_VOICE.get(),
+                    SoundSource.VOICE, 1.0F, 1.0F, 32.0D);
+        }
         targetId = -1;
         hookedAtTick = -1;
+        initialPullDistance = -1.0D;
+        dragSoundPlayed = false;
         returnStartedTick = tickCount;
         this.entityData.set(RETURNING, true);
         setDeltaMovement(Vec3.ZERO);

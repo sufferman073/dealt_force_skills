@@ -8,6 +8,8 @@ import com.rzy.dealt_force_skills.client.character.ClientSkillModelVisualState;
 import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRenderer;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
@@ -129,12 +131,23 @@ public final class CharacterSkillModelVisuals {
     }
 
     private static ModelSpec specFor(SkillModelVisual visual, Player player, float partialTick) {
+        return specFor(visual,
+                ClientSkillModelVisualState.animationSeconds(player, partialTick),
+                ClientSkillModelVisualState.ageSeconds(player, partialTick),
+                ClientSkillModelVisualState.remainingTicks(player));
+    }
+
+    private static ModelSpec specFor(SkillModelVisual visual, int entityId, float partialTick) {
+        return specFor(visual,
+                ClientSkillModelVisualState.animationSeconds(entityId, partialTick),
+                ClientSkillModelVisualState.ageSeconds(entityId, partialTick),
+                ClientSkillModelVisualState.remainingTicks(entityId));
+    }
+
+    private static ModelSpec specFor(SkillModelVisual visual, float seconds, float ageSeconds, int remainingTicks) {
         if (visual == null) {
             return null;
         }
-        float seconds = ClientSkillModelVisualState.animationSeconds(player, partialTick);
-        float ageSeconds = ClientSkillModelVisualState.ageSeconds(player, partialTick);
-        int remainingTicks = ClientSkillModelVisualState.remainingTicks(player);
         return switch (visual) {
             case MANBA_FLASHLIGHT_TOGGLE ->
                     spec("manba_flashlight", "toggle_light", seconds, Placement.FLASHLIGHT, 0.96F, 0xFFFFFFFF);
@@ -204,6 +217,27 @@ public final class CharacterSkillModelVisuals {
             case LEX_HAM_PRESENCE ->
                     spec("lex_ninjia_ham", "spectral_idle", ageSeconds, Placement.BACK_GHOST, 4.0F, 0x66FFFFFF);
         };
+    }
+
+    public static boolean renderSpectatorFirstPerson(GuiGraphics graphics, int targetEntityId, float partialTick) {
+        SkillModelVisual visual = ClientSkillModelVisualState.visual(targetEntityId);
+        ModelSpec spec = specFor(visual, targetEntityId, partialTick);
+        if (spec == null || !rendersInFirstPerson(spec.placement())) {
+            return false;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+        MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        poseStack.translate(graphics.guiWidth() / 2.0D + 70.0D, graphics.guiHeight() - 8.0D, 220.0D);
+        poseStack.scale(48.0F, -48.0F, 48.0F);
+        applyFirstPersonTransform(poseStack, spec.placement(), spec.scale(), spec.seconds());
+        BlockbenchAnimatedModelRenderer.render(spec.model(), spec.animation(), spec.seconds(),
+                poseStack, buffers, 0x00F000F0, spec.hiddenGroups(), spec.argb());
+        buffers.endBatch();
+        poseStack.popPose();
+        return true;
     }
 
     private static void applyFirstPersonTransform(
@@ -396,7 +430,7 @@ public final class CharacterSkillModelVisuals {
     }
 
     private static ResourceLocation model(String path) {
-        return new ResourceLocation(DealtForceSkillsMod.MODID, path);
+        return ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, path);
     }
 
     private static float adaptiveFiberScale(LivingEntity entity) {

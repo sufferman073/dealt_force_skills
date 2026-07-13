@@ -12,40 +12,67 @@ import com.rzy.dealt_force_skills.network.S2C_SyncSinevaState;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.common.ForgeMod;
 
 import java.util.Optional;
 
 public final class SinevaStateManager {
-    public static final int BLADE_WIRE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_max_charges", 2);
-    public static final int BLADE_WIRE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_recharge_ticks", 35 * 20);
-    public static final int GRAPPLE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.grapple_cooldown_ticks", 8 * 20);
-    public static final int BOMB_SUIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_cooldown_ticks", 60 * 20);
-    public static final int BOMB_SUIT_EQUIP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_equip_ticks", 30);
-    public static final int VIEWPORT_MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.viewport_max_health", 250);
-    private static final double VIEWPORT_PRESSURE_DECAY_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_decay_per_tick", 0.82D);
-    private static final double VIEWPORT_PRESSURE_GAIN_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_gain_per_hit", 8.0D);
-    private static final double VIEWPORT_PRESSURE_GAIN_PER_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_gain_per_damage", 0.005D);
-    private static final double VIEWPORT_PRESSURE_SCALE = DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_scale", 40.0D);
-    private static final double VIEWPORT_PRESSURE_POWER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_power", 2.0D);
-    private static final double SHIELD_DAMAGE_SLOW_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.shield_damage_slow_per_hit", 0.04D);
-    private static final double SHIELD_DAMAGE_SLOW_MAX = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.shield_damage_slow_max", 0.95D);
-    private static final int SHIELD_BLOCK_STAMINA_COST_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_block_stamina_cost_percent", 2);
-    private static final int SHIELD_BLOCK_STAMINA_FLOOR_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_block_stamina_floor_percent", 40);
-    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_damage_slow_recovery_delay_ticks", 20);
-    private static final int SHIELD_DAMAGE_SLOW_RECOVERY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_damage_slow_recovery_ticks", 4 * 20);
-    /** Keep the heavy suit cadence audible while walking without stacking every tick.
-     *  Increased interval + random skip to avoid being too noisy. */
-    public static final int BOMB_SUIT_WALK_SOUND_INTERVAL_TICKS = 26;
+    public static volatile int BLADE_WIRE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLADE_WIRE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_max_charges", 2));
+    public static volatile int BLADE_WIRE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BLADE_WIRE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.blade_wire_recharge_ticks", 700));
+    public static volatile int GRAPPLE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GRAPPLE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.grapple_cooldown_ticks", 160));
+    public static volatile int BOMB_SUIT_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_SUIT_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_cooldown_ticks", 1200));
+    public static volatile int BOMB_SUIT_EQUIP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_SUIT_EQUIP_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.bomb_suit_equip_ticks", 30));
+    public static volatile int VIEWPORT_MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_MAX_HEALTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.viewport_max_health", 250));
+    public static volatile int SHIELD_MAX_DURABILITY = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_MAX_DURABILITY", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.sineva.sineva_state_manager.shield_max_durability", 500));
+    public static volatile float BOMB_SUIT_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_SUIT_DAMAGE_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.sineva.sineva_state_manager.bomb_suit_damage_multiplier", 0.7F
+   ));
+    public static volatile float SHIELD_MAX_DAMAGE_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_MAX_DAMAGE_PER_HIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.sineva.sineva_state_manager.shield_max_damage_per_hit", 100.0F));
+    private static volatile double BOMB_SUIT_JUMP_HEIGHT_REDUCTION_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_SUIT_JUMP_HEIGHT_REDUCTION_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.bomb_suit_jump_height_reduction_fraction", 0.5
+   ));
+    private static volatile double BOMB_SUIT_STEP_HEIGHT_BONUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_SUIT_STEP_HEIGHT_BONUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.bomb_suit_step_height_bonus", 0.5
+   ));
+    private static volatile double VIEWPORT_PRESSURE_DECAY_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_PRESSURE_DECAY_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.viewport_pressure_decay_per_tick", 0.82
+   ));
+    private static volatile double VIEWPORT_PRESSURE_GAIN_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_PRESSURE_GAIN_PER_HIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.viewport_pressure_gain_per_hit", 8.0
+   ));
+    private static volatile double VIEWPORT_PRESSURE_GAIN_PER_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_PRESSURE_GAIN_PER_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.viewport_pressure_gain_per_damage", 0.005
+   ));
+    private static volatile double VIEWPORT_PRESSURE_SCALE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_PRESSURE_SCALE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_scale", 40.0));
+    private static volatile double VIEWPORT_PRESSURE_POWER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEWPORT_PRESSURE_POWER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.viewport_pressure_power", 2.0));
+    private static volatile double SHIELD_DAMAGE_SLOW_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DAMAGE_SLOW_PER_HIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.sineva.sineva_state_manager.shield_damage_slow_per_hit", 0.04
+   ));
+    private static volatile double SHIELD_DAMAGE_SLOW_MAX = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DAMAGE_SLOW_MAX", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.sineva.sineva_state_manager.shield_damage_slow_max", 0.95));
+    private static volatile int SHIELD_BLOCK_STAMINA_COST_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_BLOCK_STAMINA_COST_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.sineva.sineva_state_manager.shield_block_stamina_cost_percent", 2
+   ));
+    private static volatile int SHIELD_BLOCK_STAMINA_FLOOR_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_BLOCK_STAMINA_FLOOR_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.sineva.sineva_state_manager.shield_block_stamina_floor_percent", 40
+   ));
+    private static volatile int SHIELD_DAMAGE_SLOW_RECOVERY_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DAMAGE_SLOW_RECOVERY_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.sineva.sineva_state_manager.shield_damage_slow_recovery_delay_ticks", 20
+   ));
+    private static volatile int SHIELD_DAMAGE_SLOW_RECOVERY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SHIELD_DAMAGE_SLOW_RECOVERY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.sineva.sineva_state_manager.shield_damage_slow_recovery_ticks", 80
+   ));
+    public static final int BOMB_SUIT_WALK_SOUND_INTERVAL_TICKS = 6;
     public static final java.util.UUID BOMB_SUIT_SLOW_UUID = java.util.UUID.fromString("e52f0e57-bdbf-4d4a-9c8b-7701e62e1b07");
+    private static final java.util.UUID BOMB_SUIT_STEP_HEIGHT_UUID = java.util.UUID.fromString("b4d6a9d3-f022-4f84-a7d2-0c73b4dc1835");
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".sineva";
     private static final String INITIALIZED = "Initialized";
@@ -56,6 +83,9 @@ public final class SinevaStateManager {
     private static final String BOMB_SUIT_EQUIP_UNTIL = "BombSuitEquipUntil";
     private static final String BOMB_SUIT_ACTIVE = "BombSuitActive";
     private static final String SHIELD_DEPLOYED = "ShieldDeployed";
+    private static final String SHIELD_DURABILITY = "ShieldDurability";
+    private static final String SHIELD_DURABILITY_FP = "ShieldDurabilityFp";
+    private static final String SHIELD_MAX_DURABILITY_LAST = "ShieldMaxDurabilityLast";
     private static final String VIEWPORT_HEALTH = "ViewportHealth";
     private static final String VIEWPORT_HEALTH_FP = "ViewportHealthFp";
     private static final String VIEWPORT_PRESSURE = "ViewportPressure";
@@ -81,6 +111,7 @@ public final class SinevaStateManager {
 
         CompoundTag tag = data(player);
         if (tag.getBoolean(INITIALIZED)) {
+            ensureShieldDurability(player, tag);
             return;
         }
 
@@ -92,6 +123,7 @@ public final class SinevaStateManager {
         tag.putLong(BOMB_SUIT_EQUIP_UNTIL, 0L);
         tag.putBoolean(BOMB_SUIT_ACTIVE, false);
         tag.putBoolean(SHIELD_DEPLOYED, false);
+        resetShieldDurability(player);
         resetViewport(player);
         tag.putDouble(SHIELD_DAMAGE_SLOW, 0.0D);
         tag.putLong(SHIELD_DAMAGE_SLOW_TICK, 0L);
@@ -124,7 +156,7 @@ public final class SinevaStateManager {
         if (!isSineva(player)) return;
         initializeIfNeeded(player);
 
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         rechargeBladeWire(player, now);
         finishBombSuitEquip(player, now);
         playBombSuitWalkSound(player, now);
@@ -151,13 +183,13 @@ public final class SinevaStateManager {
         tag.putInt(BLADE_WIRE_CHARGES, charges - 1);
         if (charges == BLADE_WIRE_MAX_CHARGES) {
             tag.putLong(BLADE_WIRE_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), BLADE_WIRE_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), BLADE_WIRE_RECHARGE_TICKS));
         }
         return true;
     }
 
     public static boolean isGrappleReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(GRAPPLE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(GRAPPLE_COOLDOWN_UNTIL);
     }
 
     public static int grappleCooldownRemainingTicks(Player player) {
@@ -166,11 +198,11 @@ public final class SinevaStateManager {
 
     public static void setGrappleCooldown(ServerPlayer player) {
         data(player).putLong(GRAPPLE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), GRAPPLE_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), GRAPPLE_COOLDOWN_TICKS));
     }
 
     public static boolean isBombSuitCooldownReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(BOMB_SUIT_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(BOMB_SUIT_COOLDOWN_UNTIL);
     }
 
     public static int bombSuitCooldownRemainingTicks(Player player) {
@@ -182,7 +214,7 @@ public final class SinevaStateManager {
     }
 
     public static boolean isBombSuitEquipping(Player player) {
-        return data(player).getLong(BOMB_SUIT_EQUIP_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(BOMB_SUIT_EQUIP_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static int bombSuitEquipRemainingTicks(Player player) {
@@ -190,7 +222,7 @@ public final class SinevaStateManager {
     }
 
     public static void startBombSuitEquip(ServerPlayer player) {
-        data(player).putLong(BOMB_SUIT_EQUIP_UNTIL, player.level().getGameTime() + BOMB_SUIT_EQUIP_TICKS);
+        data(player).putLong(BOMB_SUIT_EQUIP_UNTIL, SkillCooldownHelper.now(player) + BOMB_SUIT_EQUIP_TICKS);
     }
 
     public static void deactivateBombSuit(ServerPlayer player) {
@@ -199,15 +231,81 @@ public final class SinevaStateManager {
         tag.putBoolean(SHIELD_DEPLOYED, false);
         tag.putLong(BOMB_SUIT_EQUIP_UNTIL, 0L);
         tag.putLong(BOMB_SUIT_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), BOMB_SUIT_COOLDOWN_TICKS));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), BOMB_SUIT_COOLDOWN_TICKS));
     }
 
     public static boolean isShieldDeployed(Player player) {
-        return isBombSuitActive(player) && data(player).getBoolean(SHIELD_DEPLOYED);
+        return isBombSuitActive(player) && data(player).getBoolean(SHIELD_DEPLOYED) && !isShieldBroken(player);
     }
 
     public static void setShieldDeployed(Player player, boolean deployed) {
-        data(player).putBoolean(SHIELD_DEPLOYED, deployed);
+        data(player).putBoolean(SHIELD_DEPLOYED, deployed && !isShieldBroken(player));
+    }
+
+    public static boolean isShieldBroken(Player player) {
+        return shieldDurability(player) <= 0;
+    }
+
+    public static int shieldDurability(Player player) {
+        CompoundTag tag = data(player);
+        ensureShieldDurability(player, tag);
+        double durability = tag.contains(SHIELD_DURABILITY_FP)
+                ? tag.getDouble(SHIELD_DURABILITY_FP)
+                : tag.getInt(SHIELD_DURABILITY);
+        return (int) Math.ceil(Math.max(0.0D, durability));
+    }
+
+    public static int calculateShieldMaxDurability(Player player) {
+        return calculateScaledDurability(player, SHIELD_MAX_DURABILITY);
+    }
+
+    public static boolean damageShield(Player player, float amount) {
+        CompoundTag tag = data(player);
+        double previous = tag.contains(SHIELD_DURABILITY_FP)
+                ? tag.getDouble(SHIELD_DURABILITY_FP)
+                : tag.getInt(SHIELD_DURABILITY);
+        if (previous <= 0.0D || amount <= 0.0F) {
+            return false;
+        }
+
+        double effectiveDamage = Math.min(Math.max(0.0D, amount), Math.max(0.0D, SHIELD_MAX_DAMAGE_PER_HIT));
+        double next = Math.max(0.0D, previous - effectiveDamage);
+        tag.putDouble(SHIELD_DURABILITY_FP, next);
+        tag.putInt(SHIELD_DURABILITY, (int) Math.ceil(next));
+        if (next <= 0.0D) {
+            tag.putBoolean(SHIELD_DEPLOYED, false);
+        }
+        return previous > 0.0D && next <= 0.0D;
+    }
+
+    public static double bombSuitJumpVelocityMultiplier() {
+        double reduction = Math.max(0.0D, Math.min(1.0D, BOMB_SUIT_JUMP_HEIGHT_REDUCTION_FRACTION));
+        return 1.0D - reduction;
+    }
+
+    public static double bombSuitStepHeightBonus() {
+        return Math.max(0.0D, BOMB_SUIT_STEP_HEIGHT_BONUS);
+    }
+
+    public static void updateBombSuitStepHeight(Player player, boolean active) {
+        var attr = player.getAttribute(ForgeMod.STEP_HEIGHT_ADDITION.get());
+        if (attr == null) {
+            return;
+        }
+        AttributeModifier existing = attr.getModifier(BOMB_SUIT_STEP_HEIGHT_UUID);
+        double bonus = bombSuitStepHeightBonus();
+        if (active && bonus > 0.0D) {
+            if (existing == null || Math.abs(existing.getAmount() - bonus) > 0.0001D) {
+                if (existing != null) {
+                    attr.removeModifier(BOMB_SUIT_STEP_HEIGHT_UUID);
+                }
+                attr.addTransientModifier(new AttributeModifier(
+                        BOMB_SUIT_STEP_HEIGHT_UUID, "sineva_bomb_suit_step_height", bonus, AttributeModifier.Operation.ADDITION
+                ));
+            }
+        } else if (existing != null) {
+            attr.removeModifier(BOMB_SUIT_STEP_HEIGHT_UUID);
+        }
     }
 
     public static int viewportHealth(Player player) {
@@ -219,16 +317,20 @@ public final class SinevaStateManager {
     }
 
     public static int calculateViewportMaxHealth(Player player) {
+        return calculateScaledDurability(player, VIEWPORT_MAX_HEALTH);
+    }
+
+    private static int calculateScaledDurability(Player player, int baseValue) {
         float armor = (float) player.getAttributeValue(Attributes.ARMOR);
         float reduction = Math.min(0.8f, armor * 0.04f);
         int level = ModGameRules.effectiveExperienceLevel(player);
         float hp = player.getMaxHealth();
-        int fullHealth = VIEWPORT_MAX_HEALTH + (int) (hp
+        int fullHealth = baseValue + (int) (hp
                 * (1.0f + armor * 0.2f)
                 * (1.0f + level * com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
                 "experience_growth.sineva.viewport_health_per_level", 1.0F))
                 * (1.0f + reduction * 5.0f));
-        return Math.max(1, fullHealth / 2);
+        return Math.max(baseValue, fullHealth / 2);
     }
 
     public static boolean damageViewport(Player player, float amount) {
@@ -251,7 +353,7 @@ public final class SinevaStateManager {
          * effectiveDamage = Math.max(0.0D, amount * multiplier);
          *
          * tag.putDouble(VIEWPORT_PRESSURE, pressure);
-         * tag.putLong(VIEWPORT_PRESSURE_TICK, player.level().getGameTime());
+         * tag.putLong(VIEWPORT_PRESSURE_TICK, SkillCooldownHelper.now(player));
          */
         double next = Math.max(0.0D, previous - effectiveDamage);
 
@@ -266,7 +368,7 @@ public final class SinevaStateManager {
         }
 
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         double currentSlow = shieldDamageSlow(player, tag, now);
         tag.putDouble(SHIELD_DAMAGE_SLOW, Math.min(SHIELD_DAMAGE_SLOW_MAX, currentSlow + SHIELD_DAMAGE_SLOW_PER_HIT));
         tag.putLong(SHIELD_DAMAGE_SLOW_TICK, now);
@@ -291,7 +393,7 @@ public final class SinevaStateManager {
 
     public static double shieldDamageSlow(Player player) {
         CompoundTag tag = data(player);
-        return shieldDamageSlow(player, tag, player.level().getGameTime());
+        return shieldDamageSlow(player, tag, SkillCooldownHelper.now(player));
     }
 
     public static void clearShieldDamageSlow(Player player) {
@@ -301,7 +403,7 @@ public final class SinevaStateManager {
     }
 
     public static boolean isBashReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(BASH_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(BASH_COOLDOWN_UNTIL);
     }
 
     public static int bashCooldownRemainingTicks(Player player) {
@@ -310,11 +412,11 @@ public final class SinevaStateManager {
 
     public static void setBashCooldown(ServerPlayer player, int ticks) {
         data(player).putLong(BASH_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), ticks));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), ticks));
     }
 
     public static boolean isChargeReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(CHARGE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(CHARGE_COOLDOWN_UNTIL);
     }
 
     public static int chargeCooldownRemainingTicks(Player player) {
@@ -323,7 +425,7 @@ public final class SinevaStateManager {
 
     public static void setChargeCooldown(ServerPlayer player, int ticks) {
         data(player).putLong(CHARGE_COOLDOWN_UNTIL,
-                SkillCooldownHelper.until(player, player.level().getGameTime(), ticks));
+                SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), ticks));
     }
 
     public static void syncToClient(ServerPlayer player) {
@@ -342,7 +444,9 @@ public final class SinevaStateManager {
                 isBombSuitActive(player),
                 isShieldDeployed(player),
                 viewportHealth(player),
-                calculateViewportMaxHealth(player)
+                calculateViewportMaxHealth(player),
+                shieldDurability(player),
+                calculateShieldMaxDurability(player)
         ), player);
     }
 
@@ -384,9 +488,10 @@ public final class SinevaStateManager {
         tag.putLong(BOMB_SUIT_EQUIP_UNTIL, 0L);
         tag.putBoolean(BOMB_SUIT_ACTIVE, true);
         tag.putBoolean(SHIELD_DEPLOYED, true);
+        resetShieldDurability(player);
         resetViewport(player);
-        player.level().playSound(null, player.blockPosition(), SoundEvents.ARMOR_EQUIP_NETHERITE,
-                SoundSource.PLAYERS, 0.9f, 1.0f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_SHIELD_TOGGLE.get(),
+                SoundSource.PLAYERS, 0.9f, 1.0f, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.sineva.bomb_suit_ready"), true);
     }
 
@@ -396,14 +501,41 @@ public final class SinevaStateManager {
         tag.putInt(VIEWPORT_HEALTH, maxHealth);
         tag.putDouble(VIEWPORT_HEALTH_FP, maxHealth);
         tag.putDouble(VIEWPORT_PRESSURE, 0.0D);
-        tag.putLong(VIEWPORT_PRESSURE_TICK, player.level().getGameTime());
+        tag.putLong(VIEWPORT_PRESSURE_TICK, SkillCooldownHelper.now(player));
+    }
+
+    private static void resetShieldDurability(Player player) {
+        CompoundTag tag = data(player);
+        int maxDurability = calculateShieldMaxDurability(player);
+        tag.putInt(SHIELD_DURABILITY, maxDurability);
+        tag.putDouble(SHIELD_DURABILITY_FP, maxDurability);
+        tag.putInt(SHIELD_MAX_DURABILITY_LAST, maxDurability);
+    }
+
+    private static void ensureShieldDurability(Player player, CompoundTag tag) {
+        if (!tag.contains(SHIELD_DURABILITY_FP) && !tag.contains(SHIELD_DURABILITY)) {
+            resetShieldDurability(player);
+            return;
+        }
+
+        int maxDurability = calculateShieldMaxDurability(player);
+        if (!tag.contains(SHIELD_MAX_DURABILITY_LAST)) {
+            double current = tag.contains(SHIELD_DURABILITY_FP)
+                    ? tag.getDouble(SHIELD_DURABILITY_FP)
+                    : tag.getInt(SHIELD_DURABILITY);
+            if (current > 0.0D && current < maxDurability) {
+                tag.putDouble(SHIELD_DURABILITY_FP, maxDurability);
+                tag.putInt(SHIELD_DURABILITY, maxDurability);
+            }
+            tag.putInt(SHIELD_MAX_DURABILITY_LAST, maxDurability);
+        }
     }
 
     private static double decayedViewportPressure(Player player) {
         CompoundTag tag = data(player);
         double pressure = Math.max(0.0D, tag.getDouble(VIEWPORT_PRESSURE));
         long lastTick = tag.getLong(VIEWPORT_PRESSURE_TICK);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long elapsed = Math.max(0L, now - lastTick);
         if (elapsed > 0L && pressure > 0.0D) {
             pressure *= Math.pow(VIEWPORT_PRESSURE_DECAY_PER_TICK, Math.min(200L, elapsed));
@@ -452,17 +584,12 @@ public final class SinevaStateManager {
         }
 
         tag.putLong(WALK_SOUND_NEXT_TICK, now + BOMB_SUIT_WALK_SOUND_INTERVAL_TICKS);
-        // 35% chance to skip the sound entirely for a less repetitive feel
-        if (player.getRandom().nextFloat() < 0.35f) {
-            return;
-        }
-        player.level().playSound(null, player.blockPosition(), ModSounds.SINEVA_WALK.get(),
-                SoundSource.PLAYERS, 0.45f, 0.95f + player.getRandom().nextFloat() * 0.1f);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.SINEVA_RIOT_SUIT_WALK.get(),
+                SoundSource.PLAYERS, 0.7769f, 0.95f + player.getRandom().nextFloat() * 0.1f, 24.0D);
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

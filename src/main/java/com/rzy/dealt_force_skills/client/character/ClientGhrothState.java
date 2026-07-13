@@ -2,9 +2,8 @@ package com.rzy.dealt_force_skills.client.character;
 
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
 public final class ClientGhrothState {
-    private static final int NOON_GAZE_TOTAL_TICKS = DealtForceConfig.intValue("client.character.client_ghroth_state.noon_gaze_total_ticks", 6 * 20);
-    private static final int NOON_OUTPUT_WINDOW_TICKS = DealtForceConfig.intValue("client.character.client_ghroth_state.noon_output_window_ticks", 3 * 20);
-
+    private static volatile int NOON_GAZE_TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_GAZE_TOTAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.character.client_ghroth_state.noon_gaze_total_ticks", 120));
+    private static volatile int NOON_OUTPUT_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_OUTPUT_WINDOW_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.character.client_ghroth_state.noon_output_window_ticks", 60));
     private static int starsCooldownTicks;
     private static int justiceCooldownTicks;
     private static int noonCooldownTicks;

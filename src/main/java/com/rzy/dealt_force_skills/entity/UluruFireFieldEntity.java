@@ -1,11 +1,13 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,9 +20,9 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class UluruFireFieldEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.life_ticks", 20 * 20);
-    private static final int DAMAGE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.damage_interval_ticks", 8);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurufirefieldentity.radius", 6.0);
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.life_ticks", 400));
+    private static volatile int DAMAGE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DAMAGE_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurufirefieldentity.damage_interval_ticks", 8));
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurufirefieldentity.radius", 6.0));
     private UUID ownerId;
 
     public UluruFireFieldEntity(EntityType<? extends UluruFireFieldEntity> type, Level level) {
@@ -58,6 +60,13 @@ public class UluruFireFieldEntity extends Entity implements ItemSupplier {
 
         if (tickCount % DAMAGE_INTERVAL_TICKS == 0 && level() instanceof ServerLevel serverLevel) {
             LivingEntity owner = ownerId == null ? null : findOwner(serverLevel);
+            if (owner instanceof ServerPlayer player) {
+                int targets = serverLevel.getEntitiesOfClass(LivingEntity.class,
+                        getBoundingBox().inflate(RADIUS),
+                        target -> target.isAlive()
+                                && target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(position()) <= RADIUS).size();
+                DfsAchievements.recordUluruFireFieldTargets(player, targets);
+            }
             UluruExplosionHelper.damageRadiusIgnoringInvulnerability(serverLevel, position(), this, owner, RADIUS,
                     3.0f, 3.0f, false, true, 20, true);
             serverLevel.sendParticles(ParticleTypes.FLAME, getX(), getY() + 0.1, getZ(),

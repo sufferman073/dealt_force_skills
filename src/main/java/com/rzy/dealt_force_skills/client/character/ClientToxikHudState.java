@@ -77,6 +77,10 @@ public final class ClientToxikHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.TOXIK_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.TOXIK_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != ToxikTool.NONE;
     }

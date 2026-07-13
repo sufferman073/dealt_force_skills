@@ -1,10 +1,12 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.util.ClientVisionHooks;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_GizmoRevealEntities;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModParticles;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -29,9 +31,9 @@ import java.util.List;
 import java.util.UUID;
 
 public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmosmokecloudentity.life_ticks", 15 * 20);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmokecloudentity.radius", 5.625D);
-    private static final int LARGE_SMOKE_PARTICLES_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmosmokecloudentity.large_smoke_particles_per_tick", 7);
+    public static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmosmokecloudentity.life_ticks", 300));
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmokecloudentity.radius", 4.5));
+    private static final int PARTICLE_REFRESH_TICKS = 15;
 
     private UUID ownerId;
 
@@ -91,8 +93,10 @@ public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
     private void applySmokeEffects(ServerLevel level) {
         AABB box = new AABB(position(), position()).inflate(RADIUS);
         List<Integer> revealIds = new ArrayList<>();
+        Entity smokeOwner = ownerId == null ? null : level.getEntity(ownerId);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (ownerId != null && target.getUUID().equals(ownerId)) {
+            if (!TargetingUtil.isHostileLivingFor(smokeOwner, target)
+                    || (ownerId != null && target.getUUID().equals(ownerId))) {
                 continue;
             }
             if (target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(position()) > RADIUS) {
@@ -100,13 +104,18 @@ public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
             }
 
             target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_smoke_cloud_entity.effect.movement_slowdown.0.duration_ticks", 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmo_smoke_cloud_entity.effect.movement_slowdown.0.amplifier", 0), false, true, true));
+            if (ownerId != null && level.getEntity(ownerId) instanceof ServerPlayer owner) {
+                DfsAchievements.recordGizmoComboTarget(owner, target, "smoke");
+            }
             if (target.hasEffect(ModEffects.CORROSION.get())) {
                 revealIds.add(target.getId());
             }
         }
 
         if (!revealIds.isEmpty() && tickCount % 5 == 0 && ownerId != null && level.getEntity(ownerId) instanceof ServerPlayer owner) {
-            NetworkHandler.sendToPlayer(new S2C_GizmoRevealEntities(revealIds), owner);
+            // Corrosion smoke reveal is shared with the caster's teammates.
+            com.rzy.dealt_force_skills.util.PositionRevealHelper.sendToCasterAndTeammates(
+                    owner, new S2C_GizmoRevealEntities(revealIds));
         }
     }
 
@@ -141,15 +150,10 @@ public class GizmoSmokeCloudEntity extends Entity implements ItemSupplier {
         if (ClientVisionHooks.isThermalVisionActive()) {
             return;
         }
-        for (int i = 0; i < LARGE_SMOKE_PARTICLES_PER_TICK; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = Math.sqrt(random.nextDouble()) * RADIUS * 0.82D;
-            double x = getX() + Math.cos(angle) * dist;
-            double z = getZ() + Math.sin(angle) * dist;
-            double y = getY() + 0.2D + random.nextDouble() * 3.6D;
-            double xSpeed = (random.nextDouble() - 0.5D) * 0.014D;
-            double zSpeed = (random.nextDouble() - 0.5D) * 0.014D;
-            level().addParticle(ModParticles.GIZMO_LARGE_SMOKE.get(), x, y, z, xSpeed, 0.008D, zSpeed);
+        if (tickCount > 1 && tickCount % PARTICLE_REFRESH_TICKS != 0) {
+            return;
         }
+        level().addParticle(ModParticles.GIZMO_LARGE_SMOKE.get(),
+                getX(), getY() + 1.3D, getZ(), 0.0D, 0.0D, 0.0D);
     }
 }

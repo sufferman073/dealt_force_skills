@@ -123,6 +123,10 @@ public final class ClientManbaHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.MANBA_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.MANBA_ID);
+    }
+
     public static boolean flashlightActive() {
         return shouldRender() && flashlightActive;
     }

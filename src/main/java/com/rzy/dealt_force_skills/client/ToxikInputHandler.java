@@ -24,11 +24,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ToxikInputHandler {
-    private static final int TEAR_GAS_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.toxik_input_handler.tear_gas_equip_hold_ticks", 8);
-    private static final int TEAR_GAS_RELEASE_TICKS = DealtForceConfig.intValue("client.toxik_input_handler.tear_gas_release_ticks", 4);
-    private static final int FIREFLY_RELEASE_TICKS = DealtForceConfig.intValue("client.toxik_input_handler.firefly_release_ticks", 4);
-    private static final int CORE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.toxik_input_handler.core_long_hold_ticks", 15);
-
+    private static volatile int TEAR_GAS_EQUIP_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TEAR_GAS_EQUIP_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.toxik_input_handler.tear_gas_equip_hold_ticks", 8));
+    private static volatile int TEAR_GAS_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TEAR_GAS_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.toxik_input_handler.tear_gas_release_ticks", 4));
+    private static volatile int FIREFLY_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIREFLY_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.toxik_input_handler.firefly_release_ticks", 4));
+    private static volatile int CORE_LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.toxik_input_handler.core_long_hold_ticks", 15));
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean active2WasDown;

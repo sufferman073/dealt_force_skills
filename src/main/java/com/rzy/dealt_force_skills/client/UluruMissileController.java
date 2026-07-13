@@ -43,6 +43,11 @@ public final class UluruMissileController {
     }
 
     public static void start(int entityId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.player.isSpectator()) {
+            clearControlState();
+            return;
+        }
         controlledEntityId = entityId;
         missingEntityTicks = 0;
         remainingCostX2 = GUIDED_MAX_COST_X2;
@@ -54,22 +59,21 @@ public final class UluruMissileController {
     }
 
     public static void stop(boolean blackScreen) {
+        int entityId = controlledEntityId;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null) {
-            beginRestoreFreeze(minecraft);
-            minecraft.setCameraEntity(minecraft.player);
-            terrainRecenterTicks = TERRAIN_RECENTER_TICKS;
-            recenterTerrainOnPlayer(minecraft, true);
+        if (minecraft.player != null && minecraft.player.isSpectator()) {
+            restoreFreezeTicks = 0;
+            terrainRecenterTicks = 0;
+        }
+        if (entityId >= 0 && minecraft.player != null) {
+            restoreCameraAfterControl(minecraft, entityId);
         }
         // Notify server to release control so interactions are unblocked
-        if (controlledEntityId >= 0) {
-            NetworkHandler.sendToServer(new C2S_UluruMissileControl(controlledEntityId, 0, 0, false, true));
+        if (entityId >= 0) {
+            NetworkHandler.sendToServer(new C2S_UluruMissileControl(entityId, 0, 0, false, true));
         }
         UluruGhostEntityManager.clear();
-        controlledEntityId = -1;
-        missingEntityTicks = 0;
-        remainingCostX2 = 0;
-        localFlightSoundTicks = 0;
+        clearControlState();
         if (blackScreen) {
             blackScreenTicks = 8;
         }
@@ -92,6 +96,10 @@ public final class UluruMissileController {
             return;
         }
         if (minecraft.level == null || minecraft.player == null) {
+            stop(false);
+            return;
+        }
+        if (minecraft.player.isSpectator()) {
             stop(false);
             return;
         }
@@ -156,7 +164,7 @@ public final class UluruMissileController {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onMouseButtonPre(InputEvent.MouseButton.Pre event) {
-        if (isControlling()) {
+        if (isControlling() && localPlayerAlive()) {
             event.setCanceled(true);
         }
     }
@@ -179,9 +187,17 @@ public final class UluruMissileController {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (isControlling() && event.getNewScreen() != null) {
+        if (isControlling() && localPlayerAlive() && event.getNewScreen() != null
+                && !(event.getNewScreen() instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             event.setCanceled(true);
         }
+    }
+
+    private static boolean localPlayerAlive() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null
+                && minecraft.player.isAlive()
+                && !com.rzy.dealt_force_skills.compat.PlayerReviveCompat.isBleeding(minecraft.player);
     }
 
     @SubscribeEvent
@@ -246,13 +262,37 @@ public final class UluruMissileController {
 
     private static void setCameraToControlledEntity() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
+        if (minecraft.level == null || minecraft.player == null || minecraft.player.isSpectator()) {
             return;
         }
         Entity missile = minecraft.level.getEntity(controlledEntityId);
         if (missile != null) {
             minecraft.setCameraEntity(missile);
         }
+    }
+
+    private static void restoreCameraAfterControl(Minecraft minecraft, int entityId) {
+        if (minecraft.player == null) {
+            return;
+        }
+        if (!minecraft.player.isSpectator()) {
+            beginRestoreFreeze(minecraft);
+        }
+        Entity camera = minecraft.getCameraEntity();
+        if (camera != null && camera.getId() == entityId) {
+            minecraft.setCameraEntity(minecraft.player);
+        }
+        if (!minecraft.player.isSpectator()) {
+            terrainRecenterTicks = TERRAIN_RECENTER_TICKS;
+            recenterTerrainOnPlayer(minecraft, true);
+        }
+    }
+
+    private static void clearControlState() {
+        controlledEntityId = -1;
+        missingEntityTicks = 0;
+        remainingCostX2 = 0;
+        localFlightSoundTicks = 0;
     }
 
     private static void syncLocalMissileRotation(Entity missile, float yaw, float pitch) {

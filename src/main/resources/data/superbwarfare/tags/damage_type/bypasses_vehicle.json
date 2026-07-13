@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "dealt_force_skills:d_wolf_hand_cannon",
+    "dealt_force_skills:shepherd_frag_grenade",
+    "dealt_force_skills:uluru_missile",
+    "dealt_force_skills:gizmo_spiderling",
+    "dealt_force_skills:vyron_magnetic_bomb",
+    "dealt_force_skills:raptor_falcon",
+    "dealt_force_skills:department_trap",
+    "dealt_force_skills:department_trap_manual",
+    "dealt_force_skills:department_core",
+    "dealt_force_skills:department_passive_blast"
+  ]
+}

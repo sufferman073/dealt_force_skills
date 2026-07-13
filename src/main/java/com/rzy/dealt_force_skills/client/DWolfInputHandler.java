@@ -28,11 +28,10 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class DWolfInputHandler {
-    private static final int SMOKE_HIGH_THROW_HOLD_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_high_throw_hold_ticks", 8);
-    private static final int SMOKE_TRIGGER_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_trigger_ticks", 5);
-    private static final int CANNON_SHOT_INTERVAL_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.cannon_shot_interval_ticks", 5);
-    private static final int SLIDE_LOCAL_COOLDOWN_TICKS = DealtForceConfig.intValue("client.d_wolf_input_handler.slide_local_cooldown_ticks", 8);
-
+    private static volatile int SMOKE_HIGH_THROW_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_HIGH_THROW_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_high_throw_hold_ticks", 8));
+    private static volatile int SMOKE_TRIGGER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_TRIGGER_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.d_wolf_input_handler.smoke_trigger_ticks", 5));
+    private static volatile int CANNON_SHOT_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CANNON_SHOT_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.d_wolf_input_handler.cannon_shot_interval_ticks", 5));
+    private static volatile int SLIDE_LOCAL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLIDE_LOCAL_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.d_wolf_input_handler.slide_local_cooldown_ticks", 8));
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean slideKeyWasDown;

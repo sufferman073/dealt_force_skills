@@ -1,7 +1,10 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -26,9 +29,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfhandcannongrenadeentity.fuse_ticks", 70);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.radius", 6.0D);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.bounce_factor", 0.62D);
+    private static volatile int FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.dwolfhandcannongrenadeentity.fuse_ticks", 70));
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.radius", 6.0));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.dwolfhandcannongrenadeentity.bounce_factor", 0.62));
     private static final double GROUND_REST_OFFSET = 0.24D;
 
     private int fuseRemaining = FUSE_TICKS;
@@ -112,19 +115,18 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
     private void handleBlockHit(BlockHitResult hit) {
         lastImpactTick = tickCount;
         Direction direction = hit.getDirection();
+        Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
+        Vec3 bounced = bounce(direction, getDeltaMovement());
+        setPos(hit.getLocation().x + normal.x * 0.04D,
+                hit.getLocation().y + normal.y * 0.04D,
+                hit.getLocation().z + normal.z * 0.04D);
+        setDeltaMovement(bounced);
 
-        if (direction == Direction.UP) {
-            // Snap to ground surface like incendiary grenade - sit on top of the block
+        if (direction == Direction.UP && bounced.lengthSqr() < 0.006D) {
             double groundY = hit.getBlockPos().getY() + 1.0D + GROUND_REST_OFFSET;
             setPos(hit.getLocation().x, groundY, hit.getLocation().z);
             stopped = true;
             setDeltaMovement(Vec3.ZERO);
-        } else {
-            Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
-            setPos(hit.getLocation().x + normal.x * 0.04D,
-                    hit.getLocation().y + normal.y * 0.04D,
-                    hit.getLocation().z + normal.z * 0.04D);
-            setDeltaMovement(bounce(direction, getDeltaMovement()));
         }
 
         if (level() instanceof ServerLevel serverLevel) {
@@ -134,11 +136,8 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * BOUNCE_FACTOR, motion.y * 0.82D, motion.z * BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * BOUNCE_FACTOR, -motion.y * 0.45D, motion.z * BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * BOUNCE_FACTOR, motion.y * 0.82D, -motion.z * BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, BOUNCE_FACTOR, 0.45D, 0.82D);
     }
 
     private void explode(Vec3 center) {
@@ -148,6 +147,8 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
         }
 
         LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        RangedSoundHelper.stop(serverLevel, center, ModSounds.D_WOLF_HAND_CANNON_FUSE.get(),
+                SoundSource.PLAYERS, 48.0D);
         serverLevel.playSound(null, center.x, center.y, center.z, ModSounds.D_WOLF_HAND_CANNON_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.3f, 1.0f);
         serverLevel.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.2D, center.z,
@@ -156,7 +157,8 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
                 48, RADIUS * 0.65D, 0.35D, RADIUS * 0.65D, 0.04D);
 
         AABB box = new AABB(center, center).inflate(RADIUS);
-        for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
+        for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
+                entity -> TargetingUtil.isSelfOrHostileLivingFor(owner, entity))) {
             double distance = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(center);
             if (distance > RADIUS) {
                 continue;
@@ -174,6 +176,8 @@ public class DWolfHandCannonGrenadeEntity extends Projectile implements ItemSupp
             target.setDeltaMovement(before);
             target.hurtMarked = true;
         }
+        SuperbWarfareCompat.damageVehicles(serverLevel, center, RADIUS,
+                SkillDamageHelper.dWolfHandCannon(serverLevel, this, owner), this, 0.24F, false);
         discard();
     }
 

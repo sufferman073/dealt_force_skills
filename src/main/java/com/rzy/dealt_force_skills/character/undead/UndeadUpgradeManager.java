@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.undead;
 
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+
 import com.rzy.dealt_force_skills.shop.UndeadShopEntry;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -21,8 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class UndeadUpgradeManager {
-    public static final int BASE_MAX_TALENT_POINTS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_upgrade_manager.base_max_talent_points", 27);
-
+    public static volatile int BASE_MAX_TALENT_POINTS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_MAX_TALENT_POINTS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_upgrade_manager.base_max_talent_points", 27));
     private static final String UPGRADES = "Upgrades";
     private static final String LEVELS = "Levels";
     private static final String EQUIPPED = "EquippedBracelets";
@@ -100,8 +101,22 @@ public final class UndeadUpgradeManager {
         return upgradeData(player).copy();
     }
 
+    /**
+     * Clears all undead shop talent / equipment purchase progress (levels + equipped bracelets)
+     * and reapplies attributes so max-health bonuses do not linger.
+     */
+    public static void clearPurchaseProgress(Player player) {
+        CompoundTag root = UndeadStateManager.rootData(player);
+        root.remove(UPGRADES);
+        clearAttributes(player);
+        if (player instanceof ServerPlayer serverPlayer && UndeadStateManager.isUndead(serverPlayer)) {
+            applyAttributes(serverPlayer);
+            UndeadStateManager.syncToClient(serverPlayer);
+        }
+    }
+
     public static float maxEnergy(Player player) {
-        float value = UndeadStateManager.BASE_MAX_ENERGY;
+        float value = UndeadStateManager.baseMaxEnergy();
         if (isEquipped(player, UndeadShopEntry.PURPLE_LITHIUM_BRACELET)) {
             value += 80.0F;
         }
@@ -205,7 +220,7 @@ public final class UndeadUpgradeManager {
             return false;
         }
         CompoundTag tag = upgradeData(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(PINK_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -216,7 +231,7 @@ public final class UndeadUpgradeManager {
     }
 
     public static boolean isPinkBraceletInvulnerable(ServerPlayer player) {
-        return player.level().getGameTime() < upgradeData(player).getLong(PINK_INVULNERABLE_UNTIL);
+        return SkillCooldownHelper.now(player) < upgradeData(player).getLong(PINK_INVULNERABLE_UNTIL);
     }
 
     public static boolean tryRescaleAddedEffect(

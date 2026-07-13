@@ -13,7 +13,7 @@ import net.minecraft.world.phys.Vec3;
 
 public final class VyronTigerCannonProjectileRenderer extends EntityRenderer<VyronTigerCannonEntity> {
     public static final ResourceLocation MODEL =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "vyron_tiger_cannon_projectile");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "vyron_tiger_cannon_projectile");
 
     private final ThrownItemRenderer<VyronTigerCannonEntity> fallback;
 
@@ -33,6 +33,8 @@ public final class VyronTigerCannonProjectileRenderer extends EntityRenderer<Vyr
     ) {
         poseStack.pushPose();
         alignToMotion(poseStack, entity.getDeltaMovement());
+        // Projectile visual scale +50% vs previous baseline.
+        poseStack.scale(1.5F, 1.5F, 1.5F);
         boolean rendered = BlockbenchAnimatedModelRenderer.render(
                 MODEL,
                 "idle",

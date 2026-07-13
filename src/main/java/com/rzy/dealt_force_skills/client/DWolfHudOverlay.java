@@ -29,14 +29,14 @@ public final class DWolfHudOverlay {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientDWolfHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientDWolfHudState.shouldDisplay()) {
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
         if (ClientDWolfHudState.overloadActiveTicks() > 0) {
             drawOverloadBar(graphics, font, graphics.guiWidth() / 2 - 72, 34, 144);
         }
@@ -95,7 +95,8 @@ public final class DWolfHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA120F10);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA120F10);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -112,7 +113,8 @@ public final class DWolfHudOverlay {
         }
 
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawOverloadBar(GuiGraphics graphics, Font font, int x, int y, int width) {

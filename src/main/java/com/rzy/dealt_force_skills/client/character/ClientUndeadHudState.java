@@ -104,6 +104,10 @@ public final class ClientUndeadHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.UNDEAD_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.UNDEAD_ID);
+    }
+
     public static UndeadProfession profession() {
         return profession;
     }

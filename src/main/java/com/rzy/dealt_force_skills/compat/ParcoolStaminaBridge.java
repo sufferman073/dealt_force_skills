@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.compat;
 
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+
 import net.minecraft.world.entity.player.Player;
 
 import java.lang.reflect.Method;
@@ -145,6 +147,11 @@ public final class ParcoolStaminaBridge {
         return consumeLocal(stamina, player, amount);
     }
 
+    public static int currentValue(Player player) {
+        Object stamina = player == null ? null : getStamina(player);
+        return stamina == null ? -1 : invokeInt(stamina, "getValue", -1);
+    }
+
     private static ConsumeResult consumeLocal(Object stamina, Player player, int amount) {
         int value = invokeInt(stamina, "getValue", -1);
         boolean exhausted = invokeBoolean(stamina, "isExhausted", false);
@@ -163,9 +170,15 @@ public final class ParcoolStaminaBridge {
         if (player == null || ticks <= 0) {
             return;
         }
-        long until = player.level().getGameTime() + ticks;
+        long until = SkillCooldownHelper.now(player) + ticks;
         ACTIVE_STAMINA_RECOVERY_SUPPRESSION_UNTIL.merge(player.getUUID(), until,
                 (oldUntil, newUntil) -> Math.max(oldUntil, newUntil));
+    }
+
+    public static void clear(Player player) {
+        if (player != null) {
+            ACTIVE_STAMINA_RECOVERY_SUPPRESSION_UNTIL.remove(player.getUUID());
+        }
     }
 
     private static Object getStamina(Player player) {
@@ -183,7 +196,7 @@ public final class ParcoolStaminaBridge {
         if (until == null) {
             return false;
         }
-        if (player.level().getGameTime() >= until) {
+        if (SkillCooldownHelper.now(player) >= until) {
             ACTIVE_STAMINA_RECOVERY_SUPPRESSION_UNTIL.remove(player.getUUID());
             return false;
         }

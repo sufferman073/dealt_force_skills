@@ -17,6 +17,12 @@ public class ModParticles {
     public static final RegistryObject<SimpleParticleType> GIZMO_LARGE_SMOKE =
             PARTICLES.register("gizmo_large_smoke", () -> new SimpleParticleType(false));
 
+    public static final RegistryObject<SimpleParticleType> STINGER_LARGE_SMOKE =
+            PARTICLES.register("stinger_large_smoke", () -> new SimpleParticleType(false));
+
+    public static final RegistryObject<SimpleParticleType> STINGER_HEALING_SMOKE =
+            PARTICLES.register("stinger_healing_smoke", () -> new SimpleParticleType(false));
+
     public static final RegistryObject<SimpleParticleType> TOXIK_LARGE_SMOKE =
             PARTICLES.register("toxik_large_smoke", () -> new SimpleParticleType(false));
 }

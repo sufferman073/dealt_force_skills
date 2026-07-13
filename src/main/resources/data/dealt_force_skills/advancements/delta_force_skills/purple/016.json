@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:note_block"
+    },
+    "title": {
+      "text": "跑路啦，兄弟"
+    },
+    "description": {
+      "text": "使用牧羊人时，用破片手雷命中1名正在声波震慑影响下的玩家并摧毁其护甲，但并未完成击杀且接下来30秒内自身未被击杀"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

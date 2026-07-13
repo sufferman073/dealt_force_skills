@@ -24,10 +24,12 @@ import java.util.List;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HackclawPathLineRenderer {
-    private static final double MAX_LOCK_RANGE = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_range", 62.0D);
-    private static final double MIN_LOCK_ALIGNMENT = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.min_lock_alignment", 0.93D);
-    private static final double MAX_LOCK_OFF_AXIS = DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_off_axis", 0.9D);
+    private static volatile double MAX_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_range", 62.0));
+    private static volatile double MIN_LOCK_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MIN_LOCK_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.min_lock_alignment", 0.93));
+    private static volatile double MAX_LOCK_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LOCK_OFF_AXIS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.visual.hackclaw_path_line_renderer.max_lock_off_axis", 0.9));
     private static final int LOCK_SAMPLES = 18;
+    private static final double MAX_LINE_LENGTH = 128.0D;
+    private static final double MAX_LINE_LENGTH_SQR = MAX_LINE_LENGTH * MAX_LINE_LENGTH;
     private static final List<ClientLine> LINES = new ArrayList<>();
     private static int highlightedTargetId = -1;
 
@@ -38,8 +40,14 @@ public final class HackclawPathLineRenderer {
         LINES.clear();
         highlightedTargetId = -1;
         for (S2C_HackclawPathLines.Line line : lines) {
+            if (LINES.size() >= S2C_HackclawPathLines.MAX_LINES) {
+                break;
+            }
+            if (line == null || !isFinite(line.from()) || !isFinite(line.to())) {
+                continue;
+            }
             LINES.add(new ClientLine(line.sourceEntityId(), line.targetEntityId(), line.from(), line.to(), line.primary(),
-                    Math.max(1, line.ticks())));
+                    Math.min(S2C_HackclawPathLines.MAX_LINE_TICKS, Math.max(1, line.ticks()))));
         }
     }
 
@@ -108,7 +116,9 @@ public final class HackclawPathLineRenderer {
             }
             Vec3 from = line.from(minecraft);
             Vec3 to = line.to(minecraft);
-            renderLine(consumer, pose, camera, from, to, red, green, blue, 225);
+            if (isRenderableLine(camera, from, to)) {
+                renderLine(consumer, pose, camera, from, to, red, green, blue, 225);
+            }
         }
         buffer.endBatch(RenderType.lines());
     }
@@ -134,6 +144,9 @@ public final class HackclawPathLineRenderer {
     }
 
     private static double sampledRayDistance(Vec3 eye, Vec3 look, Vec3 from, Vec3 to) {
+        if (!isFinite(eye) || !isFinite(look) || !isRenderableLine(Vec3.ZERO, from, to)) {
+            return Double.MAX_VALUE;
+        }
         double best = Double.MAX_VALUE;
         for (int i = 0; i <= LOCK_SAMPLES; i++) {
             double t = i / (double) LOCK_SAMPLES;
@@ -171,6 +184,20 @@ public final class HackclawPathLineRenderer {
                 .color(red, green, blue, alpha)
                 .normal(pose.normal(), (float) normal.x, (float) normal.y, (float) normal.z)
                 .endVertex();
+    }
+
+    private static boolean isRenderableLine(Vec3 camera, Vec3 from, Vec3 to) {
+        return isFinite(camera)
+                && isFinite(from)
+                && isFinite(to)
+                && from.distanceToSqr(to) <= MAX_LINE_LENGTH_SQR;
+    }
+
+    private static boolean isFinite(Vec3 vec) {
+        return vec != null
+                && Double.isFinite(vec.x)
+                && Double.isFinite(vec.y)
+                && Double.isFinite(vec.z);
     }
 
     private static final class ClientLine {

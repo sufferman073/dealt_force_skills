@@ -3,11 +3,13 @@ package com.rzy.dealt_force_skills.character;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
+import com.rzy.dealt_force_skills.character.gambler.GamblerStateManager;
 import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.manba.ManbaStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
@@ -55,6 +57,9 @@ public final class CharacterEffectHooks {
         if (ModCharacters.NIKAIDOU_HIRO_ID.equals(character.id())) {
             NikaidouHiroStateManager.clearState(player);
         }
+        if (ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID.equals(character.id())) {
+            NikaidouHiroWitchificationStateManager.clearState(player);
+        }
         if (ModCharacters.CATDAD_ID.equals(character.id())) {
             CatDadStateManager.clearState(player);
         }
@@ -71,6 +76,9 @@ public final class CharacterEffectHooks {
         }
         if (ModCharacters.LEX_NINJIA_ID.equals(character.id())) {
             LexNinjiaStateManager.onDeselected(player);
+        }
+        if (ModCharacters.GAMBLER_ID.equals(character.id())) {
+            GamblerStateManager.clearState(player);
         }
         if (ModCharacters.SAEED_ID.equals(character.id())) {
             SaeedStateManager.clearState(player);

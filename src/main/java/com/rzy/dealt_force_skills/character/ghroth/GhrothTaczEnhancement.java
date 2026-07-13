@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.ghroth;
 
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+
 import com.rzy.dealt_force_skills.registry.ModGameRules;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -24,13 +26,20 @@ public final class GhrothTaczEnhancement {
     private static final String LAST_ENHANCED_AMMO_TAG = "dealt_force_skills.ghroth_last_enhanced_ammo";
     private static final String LAST_CACHE_REFRESH_TAG = "dealt_force_skills.ghroth_last_cache_refresh";
     private static final int CACHE_REFRESH_INTERVAL_TICKS = 10;
-    public static final double ENHANCED_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_damage_multiplier", 2.75D);
-    public static final double ENHANCED_SNIPER_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_sniper_damage_multiplier", 11.0D);
-    public static final double ENHANCED_HEADSHOT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_headshot_multiplier", 3.0D);
-    public static final double ENHANCED_ATTACHMENT_PROPERTY_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_attachment_property_multiplier", 2.5D);
-    public static final double ENHANCED_DAMAGE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_damage_limit", 1_000_000_000.0D);
-    public static final int ENHANCED_MAGAZINE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_magazine_multiplier", 6);
-
+    public static volatile double ENHANCED_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_DAMAGE_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.ghroth.ghroth_tacz_enhancement.enhanced_damage_multiplier", 2.75
+   ));
+    public static volatile double ENHANCED_SNIPER_DAMAGE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_SNIPER_DAMAGE_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.ghroth.ghroth_tacz_enhancement.enhanced_sniper_damage_multiplier", 11.0
+   ));
+    public static volatile double ENHANCED_HEADSHOT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_HEADSHOT_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.ghroth.ghroth_tacz_enhancement.enhanced_headshot_multiplier", 3.0
+   ));
+    public static volatile double ENHANCED_ATTACHMENT_PROPERTY_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_ATTACHMENT_PROPERTY_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.ghroth.ghroth_tacz_enhancement.enhanced_attachment_property_multiplier", 2.5
+   ));
+    public static volatile double ENHANCED_DAMAGE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_DAMAGE_LIMIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_damage_limit", 1.0E9));
+    public static volatile int ENHANCED_MAGAZINE_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ENHANCED_MAGAZINE_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_tacz_enhancement.enhanced_magazine_multiplier", 6));
     private GhrothTaczEnhancement() {
     }
 
@@ -358,7 +367,7 @@ public final class GhrothTaczEnhancement {
     }
 
     private static void refreshEnhancedCache(ServerPlayer player, ItemStack gun, CompoundTag tag) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long last = tag.getLong(LAST_CACHE_REFRESH_TAG);
         if (last > 0L && now - last < CACHE_REFRESH_INTERVAL_TICKS) {
             return;

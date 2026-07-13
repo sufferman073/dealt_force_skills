@@ -8,7 +8,7 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public final class SaeedTaczEquipment {
-    private static final ResourceLocation TACZ_GUN_ITEM = new ResourceLocation("tacz", "modern_kinetic_gun");
+    private static final ResourceLocation TACZ_GUN_ITEM = ResourceLocation.fromNamespaceAndPath("tacz", "modern_kinetic_gun");
     private static final String GUN_ID_TAG = "GunId";
     private static final String GUN_FIRE_MODE_TAG = "GunFireMode";
     private static final String GUN_CURRENT_AMMO_COUNT_TAG = "GunCurrentAmmoCount";

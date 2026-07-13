@@ -84,6 +84,10 @@ public final class ClientTempestHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.TEMPEST_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.TEMPEST_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != TempestTool.NONE;
     }

@@ -7,9 +7,20 @@ import com.rzy.dealt_force_skills.item.DfsEquipmentItem.Faction;
 import com.rzy.dealt_force_skills.item.DfsEquipmentItem.SpecialAbility;
 import com.rzy.dealt_force_skills.item.DfsItemQuality;
 import com.rzy.dealt_force_skills.item.DriftwoodItem;
+import com.rzy.dealt_force_skills.item.EternalLoveBlessingItem;
 import com.rzy.dealt_force_skills.item.EffectConsumableItem;
 import com.rzy.dealt_force_skills.item.HarmfulCleanerItem;
+import com.rzy.dealt_force_skills.item.HvkBrainUnitItem;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 import com.rzy.dealt_force_skills.item.HealingMedicineItem;
+import com.rzy.dealt_force_skills.item.HvkAdvancedDisassemblyBeamEmitterItem;
+import com.rzy.dealt_force_skills.item.HvkAdvancedStandardTemplateConstructorItem;
+import com.rzy.dealt_force_skills.item.HvkAdvancedTreasureCompassItem;
+import com.rzy.dealt_force_skills.item.HvkClonePrototypeItem;
+import com.rzy.dealt_force_skills.item.HvkTreasureChestBoxItem;
+import com.rzy.dealt_force_skills.item.HvkUniversalGlueItem;
+import com.rzy.dealt_force_skills.item.InterdimensionalBlockItem;
+import com.rzy.dealt_force_skills.item.LuckyCoinItem;
 import com.rzy.dealt_force_skills.item.QualityTooltipItem;
 import com.rzy.dealt_force_skills.item.RainbowInjectionItem;
 import com.rzy.dealt_force_skills.item.RandomEffectConsumableItem;
@@ -165,38 +176,38 @@ public class ModItems {
             () -> helmetRepairKit(DfsItemQuality.RED, 1000, "advanced_helmet_repair_kit"));
 
     public static final RegistryObject<Item> ELASTIC_BANDAGE = ITEMS.register("elastic_bandage",
-            () -> new HarmfulCleanerItem(durable(2), DfsItemQuality.WHITE, tooltip("elastic_bandage"),
+            () -> new HarmfulCleanerItem(durableConsumable("elastic_bandage", 2), DfsItemQuality.WHITE, tooltip("elastic_bandage"),
                     3 * 20, 0, false,
                     ModSounds.ITEM_HEMOSTATIC_START, ModSounds.ITEM_HEMOSTATIC_FINISH,
-                    message("elastic_bandage_start"), message("elastic_bandage_finish")));
+                    message("elastic_bandage_start"), message("elastic_bandage_finish"), false, true));
     public static final RegistryObject<Item> CAT_TOURNIQUET = ITEMS.register("cat_tourniquet",
-            () -> new HarmfulCleanerItem(durable(4), DfsItemQuality.WHITE, tooltip("cat_tourniquet"),
+            () -> new HarmfulCleanerItem(durableConsumable("cat_tourniquet", 4), DfsItemQuality.WHITE, tooltip("cat_tourniquet"),
                     20, 1, false,
                     ModSounds.ITEM_HEMOSTATIC_START, ModSounds.ITEM_HEMOSTATIC_FINISH,
-                    message("cat_tourniquet_start"), message("cat_tourniquet_finish")));
+                    message("cat_tourniquet_start"), message("cat_tourniquet_finish"), false, true));
 
     public static final RegistryObject<Item> SUSTAINED_RELEASE_PAINKILLER = ITEMS.register("sustained_release_painkiller",
-            () -> painReliefItem(durable(1), "sustained_release_painkiller", 200 * 20,
+            () -> painReliefItem(durableConsumable("sustained_release_painkiller", 1), "sustained_release_painkiller", 200 * 20,
                     ModSounds.ITEM_SUSTAINED_RELEASE_PAINKILLER_START,
                     ModSounds.ITEM_SUSTAINED_RELEASE_PAINKILLER_FINISH));
     public static final RegistryObject<Item> BOTTLED_ANTIBIOTICS = ITEMS.register("bottled_antibiotics",
-            () -> painReliefItem(durable(3), "bottled_antibiotics", 240 * 20));
+            () -> painReliefItem(durableConsumable("bottled_antibiotics", 3), "bottled_antibiotics", 240 * 20));
     public static final RegistryObject<Item> DVE_PAINKILLER = ITEMS.register("dve_painkiller",
-            () -> painReliefItem(durable(5), "dve_painkiller", 360 * 20));
+            () -> painReliefItem(durableConsumable("dve_painkiller", 5), "dve_painkiller", 360 * 20));
 
     public static final RegistryObject<Item> SIMPLE_SURGICAL_PACK = ITEMS.register("simple_surgical_pack",
-            () -> new HarmfulCleanerItem(durable(2), DfsItemQuality.WHITE, tooltip("simple_surgical_pack"),
+            () -> new HarmfulCleanerItem(durableConsumable("simple_surgical_pack", 2), DfsItemQuality.WHITE, tooltip("simple_surgical_pack"),
                     8 * 20, Integer.MAX_VALUE, false,
                     ModSounds.ITEM_SURGICAL_START, ModSounds.ITEM_SURGICAL_FINISH,
                     message("simple_surgical_pack_start"), message("simple_surgical_pack_finish")));
     public static final RegistryObject<Item> TACTICAL_QUICK_SURGICAL_PACK = ITEMS.register("tactical_quick_surgical_pack",
-            () -> new HarmfulCleanerItem(durable(4), DfsItemQuality.WHITE, tooltip("tactical_quick_surgical_pack"),
+            () -> new HarmfulCleanerItem(durableConsumable("tactical_quick_surgical_pack", 4), DfsItemQuality.WHITE, tooltip("tactical_quick_surgical_pack"),
                     5 * 20, Integer.MAX_VALUE, true,
                     ModSounds.ITEM_SURGICAL_START, ModSounds.ITEM_SURGICAL_FINISH,
                     message("tactical_quick_surgical_pack_start"), message("tactical_quick_surgical_pack_finish"),
                     true));
     public static final RegistryObject<Item> DEK_FIELD_SURGICAL_PACK = ITEMS.register("dek_field_surgical_pack",
-            () -> new HarmfulCleanerItem(durable(7), DfsItemQuality.WHITE, tooltip("dek_field_surgical_pack"),
+            () -> new HarmfulCleanerItem(durableConsumable("dek_field_surgical_pack", 7), DfsItemQuality.WHITE, tooltip("dek_field_surgical_pack"),
                     70, Integer.MAX_VALUE, true,
                     ModSounds.ITEM_SURGICAL_START, ModSounds.ITEM_SURGICAL_FINISH,
                     message("dek_field_surgical_pack_start"), message("dek_field_surgical_pack_finish"),
@@ -388,10 +399,43 @@ public class ModItems {
             () -> material("digital_caliper"));
     public static final RegistryObject<Item> PREMIUM_COFFEE_BEANS = ITEMS.register("premium_coffee_beans",
             () -> material("premium_coffee_beans", DfsItemQuality.RED));
+    public static final RegistryObject<Item> HVK_BRAIN_UNIT = ITEMS.register("hvk_brain_unit",
+            () -> new HvkBrainUnitItem(new Item.Properties().stacksTo(16), DfsItemQuality.RED, tooltip("hvk_brain_unit")));
+    public static final RegistryObject<Item> BEACON_BRAIN_UNIT = ITEMS.register("beacon_brain_unit",
+            () -> material("beacon_brain_unit", DfsItemQuality.RED));
+    public static final RegistryObject<Item> BEACON_BOSS_SPAWN_EGG = ITEMS.register("beacon_boss_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.BEACON_BOSS, 0x1A0A24, 0x8B3DFF, new Item.Properties()));
     public static final RegistryObject<Item> PROGRAMMABLE_PROCESSOR = ITEMS.register("programmable_processor",
             () -> material("programmable_processor"));
+    public static final RegistryObject<Item> HVK_ADVANCED_STANDARD_TEMPLATE_CONSTRUCTOR =
+            ITEMS.register("hvk_advanced_standard_template_constructor",
+                    () -> new HvkAdvancedStandardTemplateConstructorItem(ModBlocks.HVK_ADVANCED_STANDARD_TEMPLATE_CONSTRUCTOR.get(),
+                            new Item.Properties()));
+    public static final RegistryObject<Item> HVK_ADVANCED_DISASSEMBLY_BEAM_EMITTER =
+            ITEMS.register("hvk_advanced_disassembly_beam_emitter",
+                    () -> new HvkAdvancedDisassemblyBeamEmitterItem(ModBlocks.HVK_ADVANCED_DISASSEMBLY_BEAM_EMITTER.get(),
+                            new Item.Properties()));
+    public static final RegistryObject<Item> HVK_CLONE_PROTOTYPE =
+            ITEMS.register("hvk_clone_prototype",
+                    () -> new HvkClonePrototypeItem(ModBlocks.HVK_CLONE_PROTOTYPE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> HVK_ADVANCED_TREASURE_COMPASS =
+            ITEMS.register("hvk_advanced_treasure_compass",
+                    () -> new HvkAdvancedTreasureCompassItem(ModBlocks.HVK_ADVANCED_TREASURE_COMPASS.get(),
+                            new Item.Properties()));
+    public static final RegistryObject<Item> HVK_TREASURE_CHEST_BOX =
+            ITEMS.register("hvk_treasure_chest_box",
+                    () -> new HvkTreasureChestBoxItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> INTERDIMENSIONAL_BLOCK =
+            ITEMS.register("interdimensional_block",
+                    () -> new InterdimensionalBlockItem(ModBlocks.INTERDIMENSIONAL_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> DRIFTWOOD = ITEMS.register("driftwood",
             () -> new DriftwoodItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> LUCKY_COIN = ITEMS.register("lucky_coin",
+            () -> new LuckyCoinItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> HVK_UNIVERSAL_GLUE = ITEMS.register("hvk_universal_glue",
+            () -> new HvkUniversalGlueItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> ETERNAL_LOVE_BLESSING = ITEMS.register("eternal_love_blessing",
+            () -> new EternalLoveBlessingItem(new Item.Properties().stacksTo(1)));
 
     private static RepairKitItem armorRepairKit(DfsItemQuality quality, int durability, String id) {
         String key = "consumables." + id;
@@ -518,7 +562,7 @@ public class ModItems {
     }
 
     private static Supplier<MobEffect> externalEffect(String namespace, String path) {
-        ResourceLocation id = new ResourceLocation(namespace, path);
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(namespace, path);
         return () -> ForgeRegistries.MOB_EFFECTS.getValue(id);
     }
 
@@ -548,6 +592,10 @@ public class ModItems {
 
     private static Item.Properties durable(int durability) {
         return new Item.Properties().durability(durability).setNoRepair();
+    }
+
+    private static Item.Properties durableConsumable(String id, int durability) {
+        return durable(DealtForceConfig.intValue("consumables." + id + ".durability", durability));
     }
 
     private static String tooltip(String id) {

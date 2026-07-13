@@ -2,6 +2,7 @@ package com.rzy.dealt_force_skills.network;
 
 import com.rzy.dealt_force_skills.character.CharacterAvailability;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
+import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.shop.GhrothArmoryManager;
 import com.rzy.dealt_force_skills.shop.HaffShopManager;
 import com.rzy.dealt_force_skills.shop.LexNinjiaShopManager;
@@ -24,7 +25,7 @@ public class C2S_OpenSelectionOrShop {
     public static void handle(C2S_OpenSelectionOrShop msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) {
+            if (player == null || player.isSpectator()) {
                 return;
             }
             if (CharacterSelectionManager.hasCharacterReselection(player)) {
@@ -34,12 +35,18 @@ public class C2S_OpenSelectionOrShop {
                 LexNinjiaShopManager.open(player);
             } else if (UndeadShopManager.shouldOpen(player)) {
                 UndeadShopManager.open(player);
+            } else if (SaeedStateManager.isSaeed(player)
+                    && player.isShiftKeyDown()
+                    && HaffShopManager.shouldOpenShop(player, true)) {
+                HaffShopManager.openShop(player, true);
             } else if (SaeedRecruitManager.shouldOpen(player)) {
                 SaeedRecruitManager.open(player);
             } else if (GhrothArmoryManager.shouldOpen(player)) {
                 GhrothArmoryManager.open(player);
             } else if (HaffShopManager.shouldOpenShop(player)) {
                 HaffShopManager.openShop(player);
+            } else if (CharacterSelectionManager.isNormalPlayer(player)) {
+                return;
             } else {
                 CharacterAvailability.syncToClient(player);
                 NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(), player);

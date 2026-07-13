@@ -15,15 +15,18 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 public final class HackclawSkills {
-    private static final double QUICK_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_speed", 1.85D);
-    private static final double QUICK_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_lift", 0.08D);
-    private static final double HELD_KNIFE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_speed", 1.55D);
-    private static final double HELD_KNIFE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_lift", 0.30D);
-    private static final double FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_speed", 1.35D);
-    private static final double FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_lift", 0.05D);
-    private static final double HELD_FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_flash_drone_throw_speed", 1.45D);
-    private static final double HELD_FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_flash_drone_throw_lift", 0.10D);
-
+    private static volatile double QUICK_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("QUICK_THROW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_speed", 1.85));
+    private static volatile double QUICK_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("QUICK_THROW_LIFT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.quick_throw_lift", 0.08));
+    private static volatile double HELD_KNIFE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HELD_KNIFE_THROW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_speed", 1.55));
+    private static volatile double HELD_KNIFE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HELD_KNIFE_THROW_LIFT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.held_knife_throw_lift", 0.3));
+    private static volatile double FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_DRONE_THROW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_speed", 1.35));
+    private static volatile double FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_DRONE_THROW_LIFT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.hackclaw.hackclaw_skills.flash_drone_throw_lift", 0.05));
+    private static volatile double HELD_FLASH_DRONE_THROW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HELD_FLASH_DRONE_THROW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.hackclaw.hackclaw_skills.held_flash_drone_throw_speed", 1.45
+   ));
+    private static volatile double HELD_FLASH_DRONE_THROW_LIFT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HELD_FLASH_DRONE_THROW_LIFT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.hackclaw.hackclaw_skills.held_flash_drone_throw_lift", 0.1
+   ));
     private HackclawSkills() {
     }
 
@@ -67,7 +70,7 @@ public final class HackclawSkills {
 
     private static boolean equipHackingKnife(ServerPlayer player) {
         if (HackclawStateManager.knifeCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.hackclaw.knife_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.hackclaw.knife_empty"));
             return true;
         }
         HackclawStateManager.setEquippedTool(player, HackclawTool.HACKING_KNIFE);
@@ -78,7 +81,7 @@ public final class HackclawSkills {
 
     private static boolean equipFlashDrone(ServerPlayer player) {
         if (HackclawStateManager.flashDroneCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.hackclaw.flash_drone_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.hackclaw.flash_drone_empty"));
             return true;
         }
         HackclawStateManager.setEquippedTool(player, HackclawTool.FLASH_DRONE);
@@ -89,7 +92,7 @@ public final class HackclawSkills {
 
     private static boolean throwHackingKnife(ServerPlayer player, boolean heldThrow) {
         if (!HackclawStateManager.consumeKnifeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.hackclaw.knife_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.hackclaw.knife_empty"));
             HackclawStateManager.stowTool(player);
             return true;
         }
@@ -112,7 +115,7 @@ public final class HackclawSkills {
 
     private static boolean throwFlashDrone(ServerPlayer player, int guidedTargetId, boolean heldThrow) {
         if (!HackclawStateManager.consumeFlashDroneCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.hackclaw.flash_drone_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.hackclaw.flash_drone_empty"));
             HackclawStateManager.stowTool(player);
             return true;
         }

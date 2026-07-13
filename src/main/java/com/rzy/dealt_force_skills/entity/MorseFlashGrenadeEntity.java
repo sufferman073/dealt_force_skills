@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
@@ -11,6 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -32,14 +34,13 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class MorseFlashGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.default_fuse_ticks", 4 * 20);
-    private static final int BOUNCE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.bounce_fuse_ticks", 12);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morseflashgrenadeentity.bounce_factor", 0.66D);
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morseflashgrenadeentity.radius", 24.0D);
-    private static final int MAX_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.max_flash_ticks", 12 * 20);
-    private static final int MIN_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.min_flash_ticks", 8);
-    private static final double MAX_FLASH_ANGLE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morse_flash_grenade_entity.max_flash_angle", 90.0D);
-
+    private static volatile int DEFAULT_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.default_fuse_ticks", 80));
+    private static volatile int BOUNCE_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.bounce_fuse_ticks", 12));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morseflashgrenadeentity.bounce_factor", 0.66));
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morseflashgrenadeentity.radius", 24.0));
+    private static volatile int MAX_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLASH_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.max_flash_ticks", 240));
+    private static volatile int MIN_FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MIN_FLASH_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.morseflashgrenadeentity.min_flash_ticks", 8));
+    private static volatile double MAX_FLASH_ANGLE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLASH_ANGLE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.morse_flash_grenade_entity.max_flash_angle", 90.0));
     private UUID ownerId;
     private int fuseRemaining = DEFAULT_FUSE_TICKS;
     private boolean bounced;
@@ -133,11 +134,8 @@ public class MorseFlashGrenadeEntity extends Projectile implements ItemSupplier 
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * BOUNCE_FACTOR, motion.y * 0.80D, motion.z * BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * BOUNCE_FACTOR, -motion.y * 0.45D, motion.z * BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * BOUNCE_FACTOR, motion.y * 0.80D, -motion.z * BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, BOUNCE_FACTOR, 0.45D, 0.80D);
     }
 
     private void explode(Vec3 center) {
@@ -154,8 +152,10 @@ public class MorseFlashGrenadeEntity extends Projectile implements ItemSupplier 
                 80, 1.8D, 0.7D, 1.8D, 0.05D);
 
         AABB box = new AABB(center, center).inflate(RADIUS);
+        int flashedTargets = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (!TargetingUtil.isTargetableLiving(target)) {
+            // Self-harm skill: flash can hit thrower; teammates skipped.
+            if (!TargetingUtil.isSelfOrHostileLivingFor(owner, target)) {
                 continue;
             }
             int flashTicks = flashDuration(center, target);
@@ -164,7 +164,8 @@ public class MorseFlashGrenadeEntity extends Projectile implements ItemSupplier 
             }
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, this, owner), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.morse_flash_grenade_entity.skill_hurt.0.damage", 1.0f));
+            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(level, this, owner), owner,
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.morse_flash_grenade_entity.skill_hurt.0.damage", 1.0f));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             target.addEffect(new MobEffectInstance(ModEffects.MORSE_FLASH_BLIND.get(),
@@ -173,6 +174,10 @@ public class MorseFlashGrenadeEntity extends Projectile implements ItemSupplier 
                     SoundSource.PLAYERS, 0.7f, 1.0f);
             target.level().playSound(null, target.blockPosition(), ModSounds.MORSE_TINNITUS.get(),
                     SoundSource.PLAYERS, 0.55f, 1.0f);
+            flashedTargets++;
+        }
+        if (owner instanceof ServerPlayer ownerPlayer) {
+            DfsAchievements.recordMorseFlashTargets(ownerPlayer, flashedTargets);
         }
         discard();
     }

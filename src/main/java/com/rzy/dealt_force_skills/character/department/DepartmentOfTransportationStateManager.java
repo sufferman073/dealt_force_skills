@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.character.department;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.entity.DepartmentExplosiveTrapEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncDepartmentState;
@@ -47,37 +49,82 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class DepartmentOfTransportationStateManager {
-    public static final int LASER_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.laser_cooldown_ticks", 6 * 20);
-    public static final int TRAP_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_cooldown_ticks", 45 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_cooldown_ticks", 5 * 20);
-    public static final int TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_max_charges", 2);
-    public static final int TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_active_limit", TRAP_MAX_CHARGES);
-    public static final int CALIBRATION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_duration_ticks", 60 * 60 * 20);
-    public static final int CORE_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_countdown_ticks", 10 * 20);
-    public static final int CORE_ASCEND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_ascend_ticks", 40);
-    private static final double CORE_CALIBRATION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.core_calibration_radius", 24.0D);
-    private static final int MAX_CALIBRATION_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.max_calibration_amplifier", 4);
-    private static final int CORE_EXECUTION_MIN_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.core_execution_min_amplifier", 2);
-    private static final float CORE_EXECUTION_MIN_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.department.department_of_transportation_state_manager.core_execution_min_damage", 1000.0F);
+    public static volatile int LASER_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LASER_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.laser_cooldown_ticks", 120
+   ));
+    public static volatile int TRAP_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.trap_cooldown_ticks", 900
+   ));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.core_cooldown_ticks", 100
+   ));
+    public static volatile int TRAP_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.trap_max_charges", 2));
+    public static volatile int TRAP_ACTIVE_LIMIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_ACTIVE_LIMIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.trap_active_limit", TRAP_MAX_CHARGES
+   ));
+    public static volatile int CALIBRATION_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CALIBRATION_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.calibration_duration_ticks", 72000
+   ));
+    public static volatile int CORE_COUNTDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COUNTDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.core_countdown_ticks", 200
+   ));
+    public static volatile int CORE_ASCEND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_ASCEND_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.core_ascend_ticks", 40
+   ));
+    private static volatile double CORE_CALIBRATION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_CALIBRATION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.department.department_of_transportation_state_manager.core_calibration_radius", 24.0
+   ));
+    private static volatile int MAX_CALIBRATION_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_CALIBRATION_AMPLIFIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.max_calibration_amplifier", 4
+   ));
+    private static volatile int CORE_EXECUTION_MIN_AMPLIFIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_EXECUTION_MIN_AMPLIFIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.core_execution_min_amplifier", 2
+   ));
+    private static volatile float CORE_EXECUTION_MIN_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_EXECUTION_MIN_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.department.department_of_transportation_state_manager.core_execution_min_damage", 1000.0F
+   ));
     public static final String CHARGED_CREEPER_TAG = DealtForceSkillsMod.MODID + ".department_charged_creeper";
     public static final String SUMMON_OWNER = "DepartmentOwner";
     public static final String BABY_ZOMBIE_SPAWNED = "DepartmentBabyZombieSpawned";
     private static final String DEATH_EXPLOSION_TRIGGERED = "DepartmentDeathExplosionTriggered";
 
-    private static final int INITIAL_REDUCTION_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.initial_reduction_percent", 75);
-    private static final int MAX_VULNERABILITY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.max_vulnerability_percent", 90);
-    private static final int SKILL_REDUCTION_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.skill_reduction_recovery_percent", 5);
-    private static final int SKILL_VULNERABILITY_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.skill_vulnerability_recovery_percent", 3);
-    private static final float PASSIVE_PERCENT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.department.department_of_transportation_state_manager.passive_percent_multiplier", 0.01F);
+    private static volatile int INITIAL_REDUCTION_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("INITIAL_REDUCTION_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.initial_reduction_percent", 75
+   ));
+    private static volatile int MAX_VULNERABILITY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_VULNERABILITY_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.max_vulnerability_percent", 90
+   ));
+    private static volatile int SKILL_REDUCTION_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SKILL_REDUCTION_RECOVERY_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.skill_reduction_recovery_percent", 5
+   ));
+    private static volatile int SKILL_VULNERABILITY_RECOVERY_PERCENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SKILL_VULNERABILITY_RECOVERY_PERCENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.skill_vulnerability_recovery_percent", 3
+   ));
+    private static volatile float PASSIVE_PERCENT_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PASSIVE_PERCENT_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.department.department_of_transportation_state_manager.passive_percent_multiplier", 0.01F
+   ));
     private static final int PASSIVE_SCALE_VERSION_CURRENT = 2;
-    private static final double CONCEALMENT_PROXIMITY = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.concealment_proximity", 1.5D);
-    private static final int CONCEALMENT_BREAK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.concealment_break_ticks", 3 * 20);
-    private static final int CALIBRATION_BASE_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_base_window_permille", 350);
-    private static final int CALIBRATION_MIN_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_min_window_permille", 150);
-    private static final int CALIBRATION_WINDOW_SHRINK_PER_SUCCESS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_window_shrink_per_success", 50);
-    private static final int CALIBRATION_SUCCESS_REQUIRED = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.calibration_success_required", 4);
-    private static final double TRAP_SEARCH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.department.department_of_transportation_state_manager.trap_search_range", 56.0D);
-
+    private static volatile double CONCEALMENT_PROXIMITY = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CONCEALMENT_PROXIMITY", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.department.department_of_transportation_state_manager.concealment_proximity", 1.5
+   ));
+    private static volatile int CONCEALMENT_BREAK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CONCEALMENT_BREAK_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.concealment_break_ticks", 60
+   ));
+    private static volatile int CALIBRATION_BASE_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CALIBRATION_BASE_WINDOW_PERMILLE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.calibration_base_window_permille", 350
+   ));
+    private static volatile int CALIBRATION_MIN_WINDOW_PERMILLE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CALIBRATION_MIN_WINDOW_PERMILLE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.calibration_min_window_permille", 150
+   ));
+    private static volatile int CALIBRATION_WINDOW_SHRINK_PER_SUCCESS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CALIBRATION_WINDOW_SHRINK_PER_SUCCESS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.calibration_window_shrink_per_success", 50
+   ));
+    private static volatile int CALIBRATION_SUCCESS_REQUIRED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CALIBRATION_SUCCESS_REQUIRED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.department.department_of_transportation_state_manager.calibration_success_required", 4
+   ));
+    private static volatile double TRAP_SEARCH_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRAP_SEARCH_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.department.department_of_transportation_state_manager.trap_search_range", 56.0
+   ));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".department_of_transportation";
     private static final String INITIALIZED = "Initialized";
     private static final String REDUCTION_STEPS = "ReductionSteps";
@@ -155,6 +202,15 @@ public final class DepartmentOfTransportationStateManager {
         clearState(player);
     }
 
+    public static void clearRuntimeOnLogout(ServerPlayer player) {
+        if (player == null) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        CORE_VICTIMS.entrySet().removeIf(entry ->
+                entry.getKey().equals(playerId) || entry.getValue().ownerId().equals(playerId));
+    }
+
     public static void tick(ServerPlayer player) {
         if (!isDepartment(player)) {
             removeConcealmentRuntime(player);
@@ -162,7 +218,7 @@ public final class DepartmentOfTransportationStateManager {
         }
 
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         tickConcealment(player, now);
         tickCore(player, now);
         tickCoreVictims(player.serverLevel(), now, player.getUUID());
@@ -206,7 +262,7 @@ public final class DepartmentOfTransportationStateManager {
             return false;
         }
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         return tag.getBoolean(CONCEALMENT_READY)
                 && now >= tag.getLong(CONCEALMENT_BREAK_UNTIL)
                 && !hasCloseLivingEntity(player, CONCEALMENT_PROXIMITY);
@@ -220,7 +276,7 @@ public final class DepartmentOfTransportationStateManager {
         if (!tag.getBoolean(CONCEALMENT_READY)) {
             return;
         }
-        tag.putLong(CONCEALMENT_BREAK_UNTIL, player.level().getGameTime() + CONCEALMENT_BREAK_TICKS);
+        tag.putLong(CONCEALMENT_BREAK_UNTIL, SkillCooldownHelper.now(player) + CONCEALMENT_BREAK_TICKS);
         removeConcealmentRuntime(player);
         syncToClient(player);
     }
@@ -249,10 +305,11 @@ public final class DepartmentOfTransportationStateManager {
 
     public static boolean consumeLaser(ServerPlayer player) {
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(LASER_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.laser_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.department.laser_cooldown"));
             return false;
         }
         tag.putLong(LASER_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, LASER_COOLDOWN_TICKS));
@@ -272,7 +329,7 @@ public final class DepartmentOfTransportationStateManager {
         if (availableTrapCharges(player) > 0) {
             return 0;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long earliestReady = Long.MAX_VALUE;
         CompoundTag tag = data(player);
         for (int slot = 0; slot < TRAP_MAX_CHARGES; slot++) {
@@ -284,7 +341,7 @@ public final class DepartmentOfTransportationStateManager {
 
     public static int availableTrapCharges(Player player) {
         ensureTrapChargeState(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         int charges = 0;
         for (int slot = 0; slot < TRAP_MAX_CHARGES; slot++) {
@@ -298,7 +355,7 @@ public final class DepartmentOfTransportationStateManager {
     public static Optional<TrapChargeUse> consumeTrap(ServerPlayer player) {
         initializeIfNeeded(player);
         ensureTrapChargeState(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         for (int slot = 0; slot < TRAP_MAX_CHARGES; slot++) {
             if (now >= tag.getLong(trapChargeKey(slot))) {
@@ -307,7 +364,8 @@ public final class DepartmentOfTransportationStateManager {
                 return Optional.of(new TrapChargeUse(slot, readyAt));
             }
         }
-        player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.trap_cooldown"), true);
+        SkillCooldownHelper.notifyCooldown(player,
+                Component.translatable("message.dealt_force_skills.department.trap_cooldown"));
         return Optional.empty();
     }
 
@@ -321,7 +379,7 @@ public final class DepartmentOfTransportationStateManager {
             }
             return;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         for (int slot = 0; slot < TRAP_MAX_CHARGES; slot++) {
             if (tag.getLong(trapChargeKey(slot)) > now) {
                 tag.putLong(trapChargeKey(slot), 0L);
@@ -359,7 +417,7 @@ public final class DepartmentOfTransportationStateManager {
     }
 
     public static boolean coreReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(CORE_COOLDOWN_UNTIL)
+        return SkillCooldownHelper.now(player) >= data(player).getLong(CORE_COOLDOWN_UNTIL)
                 && coreCountdownRemainingTicks(player) <= 0
                 && coreAscendRemainingTicks(player) <= 0;
     }
@@ -379,10 +437,11 @@ public final class DepartmentOfTransportationStateManager {
     public static boolean startCore(ServerPlayer player) {
         initializeIfNeeded(player);
         if (!coreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.department.core_cooldown"));
             return true;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         tag.putLong(CORE_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, CORE_COOLDOWN_TICKS));
         tag.putLong(CORE_COUNTDOWN_UNTIL, now + CORE_COUNTDOWN_TICKS);
@@ -399,7 +458,7 @@ public final class DepartmentOfTransportationStateManager {
     }
 
     public static void addCalibration(LivingEntity target, LivingEntity owner) {
-        if (target == null || !target.isAlive() || !TargetingUtil.isTargetableLiving(target)) {
+        if (target == null || !target.isAlive() || !TargetingUtil.isHostileLivingFor(owner, target)) {
             return;
         }
         MobEffectInstance current = target.getEffect(ModEffects.DEPARTMENT_CALIBRATION.get());
@@ -434,7 +493,7 @@ public final class DepartmentOfTransportationStateManager {
         ensureCalibrationAttempt(player);
         int window = tag.contains(CALIBRATION_WINDOW) ? tag.getInt(CALIBRATION_WINDOW) : CALIBRATION_BASE_WINDOW_PERMILLE;
         int start = tag.contains(CALIBRATION_WINDOW_START) ? tag.getInt(CALIBRATION_WINDOW_START) : 0;
-        int pointer = Math.floorMod((int) (player.level().getGameTime() * 37L), 1000);
+        int pointer = Math.floorMod((int) (SkillCooldownHelper.now(player) * 37L), 1000);
         if (!isPointerInsideCalibrationWindow(pointer, start, window)) {
             resetCalibrationAttempt(player);
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.calibration_failed"), true);
@@ -551,6 +610,7 @@ public final class DepartmentOfTransportationStateManager {
         tag.putBoolean(FIRST_FATAL_READY, false);
         tag.putBoolean(SECOND_FATAL_READY, true);
         player.setHealth(player.getMaxHealth());
+        DfsAchievements.recordFatalAvoidance(player);
         play(player, ModSounds.DEPARTMENT_PASSIVE_FIRST_FATAL.get(), 1.0F, 1.0F);
         burstDamage(player.serverLevel(), player.position(), player, player,
                 5.0D, 12.0F, 3 * 20, true, SkillDamageHelper.departmentPassiveBlast(player.serverLevel(), player, player));
@@ -565,6 +625,7 @@ public final class DepartmentOfTransportationStateManager {
         tag.putBoolean(CONCEALMENT_READY, true);
         tag.putLong(CONCEALMENT_BREAK_UNTIL, 0L);
         player.setHealth(1.0F);
+        DfsAchievements.recordFatalAvoidance(player);
         player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.movement_speed.2.duration_ticks", 10 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.movement_speed.2.amplifier", 1), false, true, true));
         play(player, ModSounds.DEPARTMENT_PASSIVE_SECOND_FATAL.get(), 0.95F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.second_fatal"), true);
@@ -629,9 +690,10 @@ public final class DepartmentOfTransportationStateManager {
         if (ascendUntil > 0L) {
             tag.putLong(CORE_ASCEND_UNTIL, 0L);
             play(player, ModSounds.DEPARTMENT_CORE_RELEASE.get(), 1.0F, 1.0F);
-            burstDamage(player.serverLevel(), player.position(), player, player,
+            int killedPlayers = burstDamage(player.serverLevel(), player.position(), player, player,
                     5.0D, 24.0F, 4 * 20, true, SkillDamageHelper.departmentCore(player.serverLevel(), player, player));
             applyCoreExecution(player.serverLevel(), player, null, false);
+            DfsAchievements.recordDepartmentCoreKill(player, killedPlayers);
         }
     }
 
@@ -650,7 +712,7 @@ public final class DepartmentOfTransportationStateManager {
         for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class,
                 player.getBoundingBox().inflate(CORE_CALIBRATION_RADIUS),
                 target -> target != player
-                        && target.isAlive()
+                        && TargetingUtil.isHostileLivingFor(player, target)
                         && hasExecutionCalibration(target))) {
             CORE_VICTIMS.put(target.getUUID(), new CoreVictim(now + CORE_ASCEND_TICKS, player.getUUID()));
             target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), CORE_ASCEND_TICKS + 10, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.3.amplifier", 0), false, true, true), player);
@@ -687,14 +749,22 @@ public final class DepartmentOfTransportationStateManager {
         }
 
         Entity owner = level.getEntity(ownerId);
+        int killedPlayers = 0;
         for (LivingEntity living : dueVictims) {
             if (!living.isAlive()) {
                 continue;
             }
-            burstDamage(level, living.position(), living, owner,
+            killedPlayers += burstDamage(level, living.position(), living, owner,
                     4.0D, 18.0F, 3 * 20, true, SkillDamageHelper.departmentCore(level, living, owner));
-            applyCoreExecution(level, living, owner, true);
+            if (applyCoreExecution(level, living, owner, true)
+                    && living instanceof ServerPlayer
+                    && (owner == null || !living.getUUID().equals(owner.getUUID()))) {
+                killedPlayers++;
+            }
             living.removeEffect(ModEffects.DEPARTMENT_CALIBRATION.get());
+        }
+        if (owner instanceof ServerPlayer ownerPlayer) {
+            DfsAchievements.recordDepartmentCoreKill(ownerPlayer, killedPlayers);
         }
     }
 
@@ -754,12 +824,13 @@ public final class DepartmentOfTransportationStateManager {
                 duration, nextAmplifier, false, true, true));
     }
 
-    private static void applyCoreExecution(
+    private static boolean applyCoreExecution(
             ServerLevel level,
             LivingEntity target,
             Entity owner,
             boolean forceDeathFallback
     ) {
+        boolean wasAlive = target.isAlive();
         target.setInvulnerable(false);
         target.setAbsorptionAmount(0.0F);
         target.invulnerableTime = 0;
@@ -776,6 +847,7 @@ public final class DepartmentOfTransportationStateManager {
                 && !target.isRemoved()) {
             target.remove(Entity.RemovalReason.KILLED);
         }
+        return wasAlive && (!target.isAlive() || target.isRemoved());
     }
 
     private static void resetCalibrationAttempt(ServerPlayer player) {
@@ -808,7 +880,7 @@ public final class DepartmentOfTransportationStateManager {
         return clampedPointer >= clampedStart && clampedPointer < clampedStart + clampedWindow;
     }
 
-    private static void burstDamage(
+    private static int burstDamage(
             ServerLevel level,
             Vec3 center,
             Entity directEntity,
@@ -822,11 +894,12 @@ public final class DepartmentOfTransportationStateManager {
         level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
         AABB box = new AABB(center, center).inflate(radius);
         LivingEntity sourceLiving = owner instanceof LivingEntity living ? living : null;
+        int killedPlayers = 0;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (skipDirect && target == directEntity) {
                 continue;
             }
-            if (!TargetingUtil.isTargetableLiving(target)) {
+            if (!TargetingUtil.isHostileLivingFor(owner, target)) {
                 continue;
             }
             double distance = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(center);
@@ -834,20 +907,28 @@ public final class DepartmentOfTransportationStateManager {
                 continue;
             }
             Vec3 before = target.getDeltaMovement();
+            boolean wasAlive = target.isAlive();
             target.invulnerableTime = 0;
             SkillDamageHelper.hurt(target, source, sourceLiving, damage);
+            if (wasAlive && target instanceof ServerPlayer && !target.isAlive()
+                    && (sourceLiving == null || !target.getUUID().equals(sourceLiving.getUUID()))) {
+                killedPlayers++;
+            }
             target.setDeltaMovement(before.add(target.position().subtract(center).normalize().scale(0.45D)));
             target.hurtMarked = true;
             if (stunTicks > 0) {
                 target.addEffect(new MobEffectInstance(ModEffects.STUN.get(), stunTicks, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.department.department_of_transportation_state_manager.effect.stun.6.amplifier", 0), false, true, true), owner);
             }
         }
+        SuperbWarfareCompat.damageVehicles(level, center, radius, source, directEntity,
+                damage / 100.0F, false);
+        return killedPlayers;
     }
 
     private static void stunNearby(ServerLevel level, ServerPlayer owner, Vec3 center, double radius, int ticks) {
         AABB box = new AABB(center, center).inflate(radius);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (target == owner || !TargetingUtil.isTargetableLiving(target)) {
+            if (target == owner || !TargetingUtil.isHostileLivingFor(owner, target)) {
                 continue;
             }
             if (target.position().distanceToSqr(center) <= radius * radius) {
@@ -946,8 +1027,7 @@ public final class DepartmentOfTransportationStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static void play(ServerPlayer player, SoundEvent sound, float volume, float pitch) {

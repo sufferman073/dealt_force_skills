@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import net.minecraft.core.particles.ParticleTypes;
@@ -7,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -26,10 +28,9 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class UluruBombletEntity extends Projectile implements ItemSupplier {
-    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurubombletentity.explosion_radius", 4.6);
-    private static final int ARMING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.arming_ticks", 2 * 20);
-    private static final int ARMED_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.armed_fuse_ticks", 12);
-
+    private static volatile double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.ulurubombletentity.explosion_radius", 4.6));
+    private static volatile int ARMING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMING_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.arming_ticks", 40));
+    private static volatile int ARMED_FUSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ARMED_FUSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.ulurubombletentity.armed_fuse_ticks", 12));
     private UUID ownerId;
     private boolean exploded;
     private boolean landed;
@@ -150,8 +151,18 @@ public class UluruBombletEntity extends Projectile implements ItemSupplier {
                 6, 0.65, 0.45, 0.65, 0.0);
         UluruExplosionHelper.damageRadiusBlockedByWalls(serverLevel, center, this, owner, EXPLOSION_RADIUS,
                 50.0f, 125.0f, true, false, 0, true);
+        if (owner instanceof ServerPlayer player && hasBombletTarget(serverLevel, center)) {
+            DfsAchievements.recordUluruMissileCombo(player, false, true);
+        }
         UluruExplosionHelper.destroyQuickCovers(serverLevel, center, EXPLOSION_RADIUS);
         discard();
+    }
+
+    private boolean hasBombletTarget(ServerLevel level, Vec3 center) {
+        return !level.getEntitiesOfClass(LivingEntity.class, new net.minecraft.world.phys.AABB(center, center).inflate(EXPLOSION_RADIUS),
+                target -> target.isAlive()
+                        && target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(center) <= EXPLOSION_RADIUS
+                        && UluruExplosionHelper.hasExplosionLineOfSight(level, center, target)).isEmpty();
     }
 
     private LivingEntity findOwner(ServerLevel level) {

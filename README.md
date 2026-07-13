@@ -31,6 +31,10 @@ The built mod jar will usually be generated under:
 build/libs/
 ```
 
+## Configuration
+
+Gameplay values, `/reload` behavior, energy examples, and local HUD positioning/scaling are documented in [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+
 ## License
 
 Code in this repository is licensed under the MIT License. See `LICENSE-CODE.txt`.

@@ -108,6 +108,10 @@ public final class ClientLunaHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.LUNA_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.LUNA_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != LunaTool.NONE;
     }

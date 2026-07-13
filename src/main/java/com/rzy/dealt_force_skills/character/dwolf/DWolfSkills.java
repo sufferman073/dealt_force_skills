@@ -6,6 +6,7 @@ import com.rzy.dealt_force_skills.entity.DWolfSmokeGrenadeEntity;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,8 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 public final class DWolfSkills {
-    private static final double SELF_REWARD_SERVER_DRIFT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.dwolf.d_wolf_skills.self_reward_server_drift_sqr", 0.04D);
-
+    private static volatile double SELF_REWARD_SERVER_DRIFT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_REWARD_SERVER_DRIFT_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.dwolf.d_wolf_skills.self_reward_server_drift_sqr", 0.04));
     private DWolfSkills() {
     }
 
@@ -50,7 +50,7 @@ public final class DWolfSkills {
             return true;
         }
         if (!DWolfStateManager.startCannonBurst(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.d_wolf.cannon_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.d_wolf.cannon_empty"));
             DWolfStateManager.setEquippedTool(player, DWolfTool.NONE);
         }
         return true;
@@ -91,6 +91,8 @@ public final class DWolfSkills {
         level.addFreshEntity(grenade);
         level.playSound(null, player.blockPosition(), ModSounds.D_WOLF_HAND_CANNON_FIRE.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f);
+        RangedSoundHelper.playFollowingEntity(level, grenade, ModSounds.D_WOLF_HAND_CANNON_FUSE.get(),
+                SoundSource.PLAYERS, 0.85f, 1.0f, 32.0D);
     }
 
     public static void handleOverloadKill(ServerPlayer player) {
@@ -104,7 +106,7 @@ public final class DWolfSkills {
             return true;
         }
         if (DWolfStateManager.handCannonCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.d_wolf.cannon_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.d_wolf.cannon_empty"));
             return true;
         }
         if (DWolfStateManager.cannonBurstShotsRemaining(player) > 0) {
@@ -121,7 +123,7 @@ public final class DWolfSkills {
 
     private static boolean throwSmoke(ServerPlayer player, boolean highThrow) {
         if (!DWolfStateManager.consumeSmokeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.d_wolf.smoke_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.d_wolf.smoke_empty"));
             return true;
         }
 
@@ -148,7 +150,8 @@ public final class DWolfSkills {
             return true;
         }
         if (!DWolfStateManager.isOverloadReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.d_wolf.overload_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.d_wolf.overload_cooldown"));
             return true;
         }
 

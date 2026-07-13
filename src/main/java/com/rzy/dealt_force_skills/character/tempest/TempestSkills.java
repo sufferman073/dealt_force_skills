@@ -48,7 +48,7 @@ public final class TempestSkills {
             return true;
         }
         if (TempestStateManager.wallCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.wall_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.tempest.wall_empty"));
             return true;
         }
         TempestStateManager.setEquippedTool(player, TempestTool.WALL_DRILL_STINGER);
@@ -63,7 +63,7 @@ public final class TempestSkills {
             return true;
         }
         if (!TempestStateManager.consumeWallCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.wall_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.tempest.wall_empty"));
             return true;
         }
 

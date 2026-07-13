@@ -14,16 +14,14 @@ public record ManbaFlashlightStats(
         boolean noBlindCost
 ) {
     private static final int SCALE = 100;
-    private static final int BASE_DURABILITY = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_durability", 200 * SCALE);
-    private static final double BASE_REGEN_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_regen_per_second", 2.0D);
-    private static final double BASE_CONSUME_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_consume_per_second", 4.0D);
-    private static final int BASE_PROGRESS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_progress_per_tick", 10);
-    private static final int BASE_DECAY_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_decay_per_tick", 5);
-    private static final int BASE_BLIND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_blind_ticks", 2 * 20);
-    private static final double BASE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_range", 20.0D);
-    private static final double BASE_HALF_ANGLE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "characters.manba.flashlight.base_half_angle_degrees", 10.0D);
-
+    private static volatile int BASE_DURABILITY = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_DURABILITY", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_durability", 20000));
+    private static volatile double BASE_REGEN_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_REGEN_PER_SECOND", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_regen_per_second", 2.0));
+    private static volatile double BASE_CONSUME_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_CONSUME_PER_SECOND", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_consume_per_second", 4.0));
+    private static volatile int BASE_PROGRESS_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_PROGRESS_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_progress_per_tick", 10));
+    private static volatile int BASE_DECAY_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_DECAY_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_decay_per_tick", 5));
+    private static volatile int BASE_BLIND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_BLIND_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.manba.manba_flashlight_stats.base_blind_ticks", 40));
+    private static volatile double BASE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.manba_flashlight_stats.base_range", 20.0));
+    private static volatile double BASE_HALF_ANGLE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_HALF_ANGLE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.manba.flashlight.base_half_angle_degrees", 10.0));
     public static ManbaFlashlightStats of(Set<ManbaBulb> bulbs, ManbaLens lens, Set<ManbaBattery> batteries) {
         double durabilityMultiplier = 1.0D;
         double regenMultiplier = 1.0D;

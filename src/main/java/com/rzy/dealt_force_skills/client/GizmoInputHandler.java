@@ -141,7 +141,8 @@ public final class GizmoInputHandler {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (isWebbed(Minecraft.getInstance()) && event.getNewScreen() != null) {
+        if (isWebbed(Minecraft.getInstance()) && event.getNewScreen() != null
+                && !(event.getNewScreen() instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             event.setCanceled(true);
         }
     }
@@ -251,7 +252,7 @@ public final class GizmoInputHandler {
         drainKey(minecraft.options.keyLeft);
         drainKey(minecraft.options.keyRight);
         drainKey(minecraft.options.keyShift);
-        if (minecraft.screen != null) {
+        if (minecraft.screen != null && !(minecraft.screen instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             minecraft.setScreen(null);
         }
     }
@@ -303,7 +304,11 @@ public final class GizmoInputHandler {
     }
 
     private static boolean isWebbed(Minecraft minecraft) {
-        return minecraft.player != null && minecraft.player.hasEffect(ModEffects.WEBBED.get());
+        return minecraft.player != null
+                && minecraft.player.isAlive()
+                && !minecraft.player.isSpectator()
+                && !com.rzy.dealt_force_skills.compat.PlayerReviveCompat.isBleeding(minecraft.player)
+                && minecraft.player.hasEffect(ModEffects.WEBBED.get());
     }
 
     private static boolean handsEmpty(Player player) {

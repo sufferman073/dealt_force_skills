@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -43,9 +45,9 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
             SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_FORWARD_Z =
             SynchedEntityData.defineId(LunaShockArrowEntity.class, EntityDataSerializers.FLOAT);
-    private static final int MAX_PULSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.max_pulse_ticks", 5 * 20);
-    private static final int PULSE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.pulse_interval_ticks", 10);
-    private static final double PULSE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunashockarrowentity.pulse_radius", 4.0D);
+    private static volatile int MAX_PULSE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_PULSE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.max_pulse_ticks", 100));
+    private static volatile int PULSE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunashockarrowentity.pulse_interval_ticks", 10));
+    private static volatile double PULSE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PULSE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunashockarrowentity.pulse_radius", 4.0));
     private static final Map<UUID, Integer> PULL_TICKS = new HashMap<>();
 
     private boolean bounceEnabled;
@@ -207,6 +209,12 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
         }
     }
 
+    public static void clearPullTicks(ServerPlayer player) {
+        if (player != null) {
+            PULL_TICKS.remove(player.getUUID());
+        }
+    }
+
     private void hitEntity(EntityHitResult hit) {
         Entity entity = hit.getEntity();
         setPos(hit.getLocation().x, hit.getLocation().y, hit.getLocation().z);
@@ -217,6 +225,9 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
             if (level() instanceof ServerLevel serverLevel) {
                 living.invulnerableTime = 0;
                 SkillDamageHelper.hurt(living, SkillDamageHelper.lunaShockArrow(serverLevel, this, getOwner()), getOwner() instanceof LivingEntity owner ? owner : null, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.luna_shock_arrow_entity.skill_hurt.0.damage", 10.0f));
+                if (getOwner() instanceof ServerPlayer owner) {
+                    DfsAchievements.recordLunaShockFixedKill(owner, living, bounced, true);
+                }
                 RangedSoundHelper.playThrottled(serverLevel, living.position(), ModSounds.LUNA_SHOCK_ARROW_PULSE.get(),
                         SoundSource.PLAYERS, 0.9f, 1.2f, 16.0D, 4, 3.0D);
             }
@@ -272,7 +283,8 @@ public class LunaShockArrowEntity extends Projectile implements ItemSupplier, Bl
                 18, 0.55D, 0.35D, 0.55D, 0.03D);
         AABB box = new AABB(center, center).inflate(PULSE_RADIUS);
         for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
-                entity -> entity.isAlive() && entity != owner && entity.distanceToSqr(center) <= PULSE_RADIUS * PULSE_RADIUS)) {
+                entity -> TargetingUtil.isSelfOrHostileLivingFor(owner, entity)
+                        && entity.distanceToSqr(center) <= PULSE_RADIUS * PULSE_RADIUS)) {
             if (!hasLineOfSight(center, target)) {
                 continue;
             }

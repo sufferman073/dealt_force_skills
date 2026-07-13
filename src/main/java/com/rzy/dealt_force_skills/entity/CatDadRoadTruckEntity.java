@@ -1,10 +1,13 @@
 package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.config.DealtForceConfig;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.registry.ModEntities;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
@@ -31,14 +34,13 @@ import java.util.Set;
 import java.util.UUID;
 
 public class CatDadRoadTruckEntity extends Entity {
-    public static final int WARNING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.catdadroadtruckentity.warning_ticks", 30);
-    public static final double SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.catdadroadtruckentity.speed_per_tick", 22.0D / 20.0D);
-    private static final double TRUCK_HALF_LENGTH = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_half_length", 3.2D);
-    private static final double TRUCK_VERTICAL_BOTTOM = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_bottom", -2.4D);
-    private static final double TRUCK_VERTICAL_TOP = DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_top", 12.0D);
-    private static final int TRUCK_BLOCK_MIN_Y = DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_min_y", -2);
-    private static final int TRUCK_BLOCK_MAX_Y = DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_max_y", 13);
-
+    public static volatile int WARNING_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARNING_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.catdadroadtruckentity.warning_ticks", 30));
+    public static volatile double SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.catdadroadtruckentity.speed_per_tick", 1.1));
+    private static volatile double TRUCK_HALF_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRUCK_HALF_LENGTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_half_length", 3.2));
+    private static volatile double TRUCK_VERTICAL_BOTTOM = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRUCK_VERTICAL_BOTTOM", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_bottom", -2.4));
+    private static volatile double TRUCK_VERTICAL_TOP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRUCK_VERTICAL_TOP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("entities.cat_dad_road_truck_entity.truck_vertical_top", 12.0));
+    private static volatile int TRUCK_BLOCK_MIN_Y = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRUCK_BLOCK_MIN_Y", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_min_y", -2));
+    private static volatile int TRUCK_BLOCK_MAX_Y = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRUCK_BLOCK_MAX_Y", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("entities.cat_dad_road_truck_entity.truck_block_max_y", 13));
     private static final EntityDataAccessor<Float> START_X =
             SynchedEntityData.defineId(CatDadRoadTruckEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> START_Y =
@@ -58,6 +60,7 @@ public class CatDadRoadTruckEntity extends Entity {
 
     private UUID ownerUuid;
     private final Set<Integer> hitEntities = new HashSet<>();
+    private final Set<UUID> achievementHits = new HashSet<>();
     private boolean breaksBlocks;
 
     public CatDadRoadTruckEntity(EntityType<? extends CatDadRoadTruckEntity> type, Level level) {
@@ -207,9 +210,13 @@ public class CatDadRoadTruckEntity extends Entity {
             if (!insideTruck(current, target) || !hitEntities.add(target.getId())) {
                 continue;
             }
-            if (owner != null && target.getUUID().equals(owner.getUUID())) {
+            // Special: hitting yourself with 大运 enters road-downed self-rescue instead of kill.
+            if (owner != null && TargetingUtil.isSelf(owner, target)) {
                 CatDadStateManager.enterRoadDowned(owner);
                 continue;
+            }
+            if (owner != null && achievementHits.add(target.getUUID())) {
+                DfsAchievements.recordCatDadTruckHits(owner, achievementHits.size());
             }
             level.playSound(null, target.blockPosition(), ModSounds.CATDAD_TRUCK_HIT.get(),
                     SoundSource.PLAYERS, 1.0F, 0.9F);
@@ -247,7 +254,8 @@ public class CatDadRoadTruckEntity extends Entity {
     }
 
     private void breakBlocks(Vec3 current) {
-        if (!breaksBlocks || !(level() instanceof ServerLevel level)) {
+        if (!breaksBlocks || !(level() instanceof ServerLevel level)
+                || !ModGameRules.areSkillBlockBreaksEnabled(level)) {
             return;
         }
         int half = (int) Math.ceil(roadWidth() * 0.5D + 1.0D);

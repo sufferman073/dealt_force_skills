@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:book"
+    },
+    "title": {
+      "text": "天下武功，唯快不破"
+    },
+    "description": {
+      "text": "使用蕾忍时，35秒内连续释放12个不同忍术，且中途没有搓招失败或蕾克拉不足"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

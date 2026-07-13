@@ -17,9 +17,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 public final class LunaSkills {
-    private static final int BOW_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_release_ticks", 3);
-    private static final int BOW_ARROW_SPAWN_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_arrow_spawn_tick", 2);
-
+    private static volatile int BOW_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOW_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_release_ticks", 3));
+    private static volatile int BOW_ARROW_SPAWN_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOW_ARROW_SPAWN_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.luna.luna_skills.bow_arrow_spawn_tick", 2));
     private LunaSkills() {
     }
 
@@ -72,7 +71,7 @@ public final class LunaSkills {
             return true;
         }
         if (LunaStateManager.shockCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.shock_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.luna.shock_empty"));
             return true;
         }
         LunaStateManager.setEquippedTool(player, LunaTool.SHOCK_BOW);
@@ -88,7 +87,7 @@ public final class LunaSkills {
             return true;
         }
         if (LunaStateManager.grenadeCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.grenade_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.luna.grenade_empty"));
             return true;
         }
         LunaStateManager.setEquippedTool(player, LunaTool.COMPOSITE_GRENADE);
@@ -105,7 +104,8 @@ public final class LunaSkills {
             return true;
         }
         if (!LunaStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.recon_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.luna.recon_cooldown"));
             return true;
         }
         LunaStateManager.setEquippedTool(player, LunaTool.RECON_BOW);
@@ -131,7 +131,7 @@ public final class LunaSkills {
             return false;
         }
         if (!LunaStateManager.consumeShockCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.shock_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.luna.shock_empty"));
             LunaStateManager.setEquippedTool(player, LunaTool.NONE);
             return true;
         }
@@ -179,7 +179,7 @@ public final class LunaSkills {
             return false;
         }
         if (!LunaStateManager.consumeGrenadeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.grenade_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.luna.grenade_empty"));
             LunaStateManager.setEquippedTool(player, LunaTool.NONE);
             return true;
         }
@@ -207,7 +207,8 @@ public final class LunaSkills {
             return false;
         }
         if (!LunaStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.recon_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.luna.recon_cooldown"));
             LunaStateManager.setEquippedTool(player, LunaTool.NONE);
             return true;
         }

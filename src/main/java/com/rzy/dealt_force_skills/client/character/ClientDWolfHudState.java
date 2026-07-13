@@ -100,6 +100,10 @@ public final class ClientDWolfHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.D_WOLF_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.D_WOLF_ID);
+    }
+
     public static boolean hasHandCannonEquipped() {
         return shouldRender() && equippedTool == DWolfTool.HAND_CANNON;
     }

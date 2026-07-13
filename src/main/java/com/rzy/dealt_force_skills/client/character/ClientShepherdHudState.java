@@ -83,6 +83,10 @@ public final class ClientShepherdHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.SHEPHERD_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.SHEPHERD_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != ShepherdTool.NONE;
     }

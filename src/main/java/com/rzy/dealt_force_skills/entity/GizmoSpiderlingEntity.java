@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
@@ -33,6 +35,8 @@ import net.minecraftforge.network.NetworkHooks;
 import org.joml.Vector3f;
 
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,13 +45,12 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
             SynchedEntityData.defineId(GizmoSpiderlingEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> DATA_DIR_Z =
             SynchedEntityData.defineId(GizmoSpiderlingEntity.class, EntityDataSerializers.FLOAT);
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmospiderlingentity.life_ticks", 15 * 20);
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.gizmospiderlingentity.life_ticks", 300));
     private static final int CRAWL_SOUND_INTERVAL_TICKS = 13;
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.speed", 0.20D);
-    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.explosion_radius", 1.5D);
-    private static final double PLAYER_TARGET_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.player_target_radius", 4.0D);
-    private static final double WALL_CLIMB_MAX_HEIGHT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "summons.gizmo_spiderling.wall_climb_max_height", 7.5D);
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.speed", 0.2));
+    private static volatile double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.explosion_radius", 1.5));
+    private static volatile double PLAYER_TARGET_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_TARGET_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmospiderlingentity.player_target_radius", 2.0));
+    private static volatile double WALL_CLIMB_MAX_HEIGHT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WALL_CLIMB_MAX_HEIGHT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmo_spiderling.wall_climb_max_height", 7.5));
     private static final DustParticleOptions RED_MARKER = new DustParticleOptions(new Vector3f(1.0f, 0.05f, 0.02f), 1.0f);
 
     private UUID ownerId;
@@ -213,10 +216,11 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
     }
 
     private Optional<ServerPlayer> findNearestPlayerTarget(ServerLevel level) {
+        Entity owner = ownerId == null ? null : level.getEntity(ownerId);
         AABB box = new AABB(position(), position()).inflate(PLAYER_TARGET_RADIUS);
         return level.getEntitiesOfClass(ServerPlayer.class, box,
-                        player -> TargetingUtil.isTargetablePlayer(player)
-                                && (ownerId == null || !player.getUUID().equals(ownerId)))
+                        player -> TargetingUtil.isHostileLivingFor(owner, player)
+                                && player.distanceToSqr(this) <= PLAYER_TARGET_RADIUS * PLAYER_TARGET_RADIUS)
                 .stream()
                 .min(Comparator.comparingDouble(player -> player.distanceToSqr(this)));
     }
@@ -237,6 +241,8 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
 
     private void explode(ServerLevel level) {
         LivingEntity owner = ownerId != null && level.getEntity(ownerId) instanceof LivingEntity living ? living : null;
+        ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
+        List<UUID> hitTargets = new ArrayList<>();
         level.playSound(null, getX(), getY(), getZ(), ModSounds.GIZMO_SPIDERLING_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f);
         level.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.1D, getZ(),
@@ -247,9 +253,6 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
             if (!TargetingUtil.isTargetableLiving(target)) {
                 continue;
             }
-            if (ownerId != null && target.getUUID().equals(ownerId)) {
-                continue;
-            }
             if (!isInsideExplosion(target)) {
                 continue;
             }
@@ -258,9 +261,18 @@ public class GizmoSpiderlingEntity extends Entity implements ItemSupplier, Block
             float baseDamage = target instanceof Player ? 10.0f : 40.0f;
             addCorrosion(target);
             SkillDamageHelper.hurt(target, SkillDamageHelper.gizmoSpiderling(level, this, owner), owner, baseDamage);
+            hitTargets.add(target.getUUID());
+            if (ownerPlayer != null) {
+                DfsAchievements.recordGizmoComboTarget(ownerPlayer, target, "spider");
+            }
             target.setDeltaMovement(before);
             target.hurtMarked = true;
         }
+        if (ownerPlayer != null && !hitTargets.isEmpty()) {
+            DfsAchievements.recordGizmoSpiderNestHits(ownerPlayer, hitTargets);
+        }
+        SuperbWarfareCompat.damageVehicles(level, position(), EXPLOSION_RADIUS,
+                SkillDamageHelper.gizmoSpiderling(level, this, owner), this, 0.4F, false);
         discard();
     }
 

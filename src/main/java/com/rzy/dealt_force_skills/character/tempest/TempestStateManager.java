@@ -1,10 +1,12 @@
 package com.rzy.dealt_force_skills.character.tempest;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
+import com.rzy.dealt_force_skills.compat.PlayerReviveCompat;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.TempestRecallAnchorEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
@@ -15,6 +17,7 @@ import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -42,23 +45,26 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class TempestStateManager {
-    public static final int ROLL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_cooldown_ticks", 20 * 20);
-    public static final int WALL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_max_charges", 2);
-    public static final int WALL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_recharge_ticks", 35 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.core_cooldown_ticks", 110 * 20);
-    public static final int EXPLOSIVE_SPINE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.explosive_spine_ticks", 2 * 20);
-    public static final int DISARMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.disarmed_ticks", 3 * 20);
-    public static final int DOWNED_SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.downed_self_rescue_ticks", 5 * 20);
-    public static final double ROPE_MAX_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.rope_max_length", 300.0D);
-    public static final double RECALL_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.recall_speed_per_tick", 0.8D);
-
-    private static final double PATH_NODE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.path_node_distance", 1.0D);
-    private static final double NEAR_MISS_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.near_miss_radius", 2.0D);
-    private static final double RECALL_POSITION_TOLERANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.recall_position_tolerance_sqr", 0.65D * 0.65D);
-    private static final int RECALL_MAX_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_ticks", 30 * 20);
-    private static final int RECALL_MAX_STALLED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_stalled_ticks", 40);
-    private static final int ROLL_BOOST_TICKS_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_boost_ticks_total", 9);
-    private static final double ROLL_BOOST_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.roll_boost_speed_per_tick", 2.75D);
+    public static volatile int ROLL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_cooldown_ticks", 400));
+    public static volatile int WALL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WALL_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_max_charges", 2));
+    public static volatile int WALL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WALL_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.wall_recharge_ticks", 700));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.core_cooldown_ticks", 2200));
+    public static volatile int EXPLOSIVE_SPINE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSIVE_SPINE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.explosive_spine_ticks", 40));
+    public static volatile int DISARMED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DISARMED_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.disarmed_ticks", 60));
+    public static volatile int DOWNED_SELF_RESCUE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOWNED_SELF_RESCUE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.downed_self_rescue_ticks", 100));
+    public static volatile double ROPE_MAX_LENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROPE_MAX_LENGTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.rope_max_length", 300.0));
+    public static volatile double RECALL_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECALL_SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.recall_speed_per_tick", 0.8));
+    private static volatile double PATH_NODE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PATH_NODE_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.path_node_distance", 1.0));
+    private static volatile double NEAR_MISS_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NEAR_MISS_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.tempest.tempest_state_manager.near_miss_radius", 2.0));
+    private static volatile double RECALL_POSITION_TOLERANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECALL_POSITION_TOLERANCE_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.tempest.tempest_state_manager.recall_position_tolerance_sqr", 0.42250000000000004
+   ));
+    private static volatile int RECALL_MAX_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECALL_MAX_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_ticks", 600));
+    private static volatile int RECALL_MAX_STALLED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RECALL_MAX_STALLED_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.recall_max_stalled_ticks", 40));
+    private static volatile int ROLL_BOOST_TICKS_TOTAL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_BOOST_TICKS_TOTAL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.roll_boost_ticks_total", 9));
+    private static volatile double ROLL_BOOST_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROLL_BOOST_SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.tempest.tempest_state_manager.roll_boost_speed_per_tick", 2.75
+   ));
     private static final DustParticleOptions SPINE_DUST = new DustParticleOptions(new Vector3f(0.48f, 1.0f, 0.36f), 1.1f);
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".tempest";
     private static final String INITIALIZED = "Initialized";
@@ -132,12 +138,12 @@ public final class TempestStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now);
         tickProjectileNearMiss(player, now);
         tickPendingLandingRoll(player);
         tickDowned(player);
-        if (isDowned(player)) {
+        if (PlayerReviveCompat.tickTempestSelfRescue(player, DOWNED_SELF_RESCUE_TICKS) || isDowned(player)) {
             return;
         }
         tickRollBoost(player);
@@ -160,9 +166,10 @@ public final class TempestStateManager {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.action_locked"), true);
             return true;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(ROLL_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.roll_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.tempest.roll_cooldown"));
             return true;
         }
         tag.putLong(ROLL_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, ROLL_COOLDOWN_TICKS));
@@ -175,8 +182,8 @@ public final class TempestStateManager {
             tag.putBoolean(PENDING_LANDING_ROLL, true);
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.roll_prepared"), true);
         }
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_TACTICAL_ROLL_START.get(),
-                SoundSource.PLAYERS, 0.85F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_TACTICAL_ROLL_START.get(),
+                SoundSource.PLAYERS, 0.85F, 1.0F, 32.0D);
         triggerExplosiveSpine(player, ModSounds.TEMPEST_EXPLOSIVE_SPINE_ACTIVATE.get());
         return true;
     }
@@ -190,8 +197,8 @@ public final class TempestStateManager {
             return;
         }
         tag.putLong(ROLL_COOLDOWN_UNTIL, 0L);
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_TACTICAL_ROLL_KILL_RESET.get(),
-                SoundSource.PLAYERS, 0.8F, 1.05F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_TACTICAL_ROLL_KILL_RESET.get(),
+                SoundSource.PLAYERS, 0.8F, 1.05F, 32.0D);
         syncToClient(player);
     }
 
@@ -209,8 +216,8 @@ public final class TempestStateManager {
         player.clearFire();
         startClientRoll(player);
         startRollBoost(player);
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_TACTICAL_ROLL_START.get(),
-                SoundSource.PLAYERS, 0.85F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_TACTICAL_ROLL_START.get(),
+                SoundSource.PLAYERS, 0.85F, 1.0F, 32.0D);
         return true;
     }
 
@@ -223,7 +230,7 @@ public final class TempestStateManager {
         tag.putInt(WALL_CHARGES, charges - 1);
         if (charges - 1 < WALL_MAX_CHARGES && tag.getLong(WALL_NEXT_RECHARGE) <= 0L) {
             tag.putLong(WALL_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), WALL_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), WALL_RECHARGE_TICKS));
         }
         return true;
     }
@@ -263,26 +270,28 @@ public final class TempestStateManager {
     }
 
     public static boolean isDowned(Player player) {
-        return data(player).getLong(DOWNED_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(DOWNED_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isActionLocked(Player player) {
-        return isRecalling(player) || isDowned(player) || player.hasEffect(ModEffects.TEMPEST_DISARMED.get());
+        return isRecalling(player) || isDowned(player) || PlayerReviveCompat.isBleeding(player)
+                || player.hasEffect(ModEffects.TEMPEST_DISARMED.get());
     }
 
     public static boolean shouldPreventFatalDamage(ServerPlayer player, float incomingDamage) {
         return incomingDamage >= player.getHealth()
                 && isRopeActive(player)
                 && !isRecalling(player)
-                && !isDowned(player);
+                && !isDowned(player)
+                && !PlayerReviveCompat.isBleeding(player);
     }
 
     public static void triggerEmergencyRecall(ServerPlayer player) {
         if (!isRopeActive(player)) {
             return;
         }
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_LETHAL_TRIGGER.get(),
-                SoundSource.PLAYERS, 1.0F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_LETHAL_TRIGGER.get(),
+                SoundSource.PLAYERS, 1.0F, 1.0F, 32.0D);
         startRecall(player, true);
     }
 
@@ -297,7 +306,8 @@ public final class TempestStateManager {
             return true;
         }
         if (coreCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.tempest.core_cooldown"));
             return true;
         }
         if (ElectronicInterferenceManager.tryBlockSkillUse(player, ModCharacters.TEMPEST, SkillSlot.CORE)) {
@@ -315,6 +325,7 @@ public final class TempestStateManager {
         data(player).putInt(ROLL_BOOST_TICKS, 0);
         data(player).putLong(DOWNED_UNTIL, 0L);
         data(player).putInt(SELF_RESCUE_TICKS, 0);
+        PlayerReviveCompat.clearTempestSelfRescue(player);
         player.removeEffect(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get());
         player.removeEffect(ModEffects.TEMPEST_DISARMED.get());
         player.removeEffect(ModEffects.TEMPEST_EMERGENCY_DOWNED.get());
@@ -327,8 +338,12 @@ public final class TempestStateManager {
         boolean refresh = player.hasEffect(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get());
         player.addEffect(new MobEffectInstance(ModEffects.TEMPEST_EXPLOSIVE_SPINE.get(),
                 EXPLOSIVE_SPINE_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_explosive_spine.0.amplifier", 0), false, true, true));
+        if (refresh) {
+            DfsAchievements.recordTempestSpineRefresh(player);
+        }
         SoundEvent toPlay = refresh ? ModSounds.TEMPEST_SPEED_REFRESH.get() : sound;
-        player.level().playSound(null, player.blockPosition(), toPlay, SoundSource.PLAYERS, 0.72F, refresh ? 1.18F : 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, toPlay, SoundSource.PLAYERS,
+                0.72F, refresh ? 1.18F : 1.0F, 32.0D);
         if (player.level() instanceof ServerLevel level) {
             level.sendParticles(SPINE_DUST, player.getX(), player.getY() + 0.95D, player.getZ(),
                     12, 0.35D, 0.35D, 0.35D, 0.02D);
@@ -360,6 +375,12 @@ public final class TempestStateManager {
             return;
         }
         initializeIfNeeded(player);
+        int playerReviveDownedTicks = PlayerReviveCompat.isTempestSelfRescueAllowed(player)
+                ? PlayerReviveCompat.downedRemainingTicks(player)
+                : 0;
+        int downedTicks = Math.max(downedRemainingTicks(player), playerReviveDownedTicks);
+        int selfRescueTicks = Math.max(data(player).getInt(SELF_RESCUE_TICKS),
+                PlayerReviveCompat.tempestSelfRescueTicks(player));
         NetworkHandler.sendToPlayer(new S2C_SyncTempestState(
                 wallCharges(player),
                 WALL_MAX_CHARGES,
@@ -371,9 +392,9 @@ public final class TempestStateManager {
                 ropeRemaining(player),
                 isRecalling(player),
                 data(player).getBoolean(PENDING_LANDING_ROLL),
-                downedRemainingTicks(player),
-                data(player).getInt(SELF_RESCUE_TICKS),
-                isDowned(player) ? DOWNED_SELF_RESCUE_TICKS : 0
+                downedTicks,
+                selfRescueTicks,
+                downedTicks > 0 ? DOWNED_SELF_RESCUE_TICKS : 0
         ), player);
     }
 
@@ -460,8 +481,8 @@ public final class TempestStateManager {
         anchorEntity.setPos(anchor.x, anchor.y + 0.04D, anchor.z);
         player.level().addFreshEntity(anchorEntity);
         tag.putUUID(ANCHOR_ENTITY, anchorEntity.getUUID());
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_ANCHOR_PLACE.get(),
-                SoundSource.PLAYERS, 0.9F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_ANCHOR_PLACE.get(),
+                SoundSource.PLAYERS, 0.9F, 1.0F, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.anchor_placed"), true);
     }
 
@@ -480,10 +501,10 @@ public final class TempestStateManager {
         putVec(tag, RECALL_LAST_POSITION, player.position());
         player.stopUsingItem();
         player.setSprinting(false);
-        player.level().playSound(null, player.blockPosition(), automatic
+        RangedSoundHelper.playFollowingPlayer(player, automatic
                         ? ModSounds.TEMPEST_RECALL_LETHAL_TRIGGER.get()
                         : ModSounds.TEMPEST_RECALL_ACTIVE.get(),
-                SoundSource.PLAYERS, 1.0F, 1.0F);
+                SoundSource.PLAYERS, 1.0F, 1.0F, 32.0D);
     }
 
     private static void tickRope(ServerPlayer player) {
@@ -511,8 +532,8 @@ public final class TempestStateManager {
         player.setDeltaMovement(Vec3.ZERO);
         player.fallDistance = 0.0F;
         tag.putBoolean(SUSPENDED, true);
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_ROPE_SUSPEND.get(),
-                SoundSource.PLAYERS, 0.9F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_ROPE_SUSPEND.get(),
+                SoundSource.PLAYERS, 0.9F, 1.0F, 32.0D);
     }
 
     private static void tickRecall(ServerPlayer player) {
@@ -546,8 +567,8 @@ public final class TempestStateManager {
             player.closeContainer();
         }
         if (player.tickCount % 20 == 0) {
-            player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_PULL_LOOP.get(),
-                    SoundSource.PLAYERS, 0.5F, 1.0F);
+            RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_PULL_LOOP.get(),
+                    SoundSource.PLAYERS, 0.5F, 1.0F, 32.0D);
         }
 
         ListTag path = tag.getList(PATH, Tag.TAG_COMPOUND);
@@ -604,24 +625,29 @@ public final class TempestStateManager {
     private static void endRecall(ServerPlayer player) {
         CompoundTag tag = data(player);
         boolean automatic = tag.getBoolean(AUTO_RECALL);
+        double ropeLength = tag.getDouble(ROPE_LENGTH);
         clearRope(player, true);
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_END.get(),
-                SoundSource.PLAYERS, 0.9F, 1.0F);
+        DfsAchievements.recordTempestRecallSuccess(player, ropeLength);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_END.get(),
+                SoundSource.PLAYERS, 0.9F, 1.0F, 32.0D);
         if (automatic) {
+            if (PlayerReviveCompat.startTempestBleeding(player, player.damageSources().generic())) {
+                return;
+            }
             enterDowned(player);
         }
     }
 
     private static void enterDowned(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long until = player.level().getGameTime() + 60 * 20L;
+        long until = SkillCooldownHelper.now(player) + 60 * 20L;
         tag.putLong(DOWNED_UNTIL, until);
         tag.putInt(SELF_RESCUE_TICKS, 0);
         player.setHealth(Math.max(1.0F, Math.min(player.getHealth(), player.getMaxHealth())));
         player.addEffect(new MobEffectInstance(ModEffects.TEMPEST_EMERGENCY_DOWNED.get(),
                 com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_emergency_downed.1.duration_ticks", 60 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.tempest.tempest_state_manager.effect.tempest_emergency_downed.1.amplifier", 0), false, true, true));
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_DOWNED.get(),
-                SoundSource.PLAYERS, 0.95F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_DOWNED.get(),
+                SoundSource.PLAYERS, 0.95F, 1.0F, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.downed"), true);
     }
 
@@ -635,7 +661,7 @@ public final class TempestStateManager {
             }
             return;
         }
-        int remaining = (int) Math.min(Integer.MAX_VALUE, until - player.level().getGameTime());
+        int remaining = (int) Math.min(Integer.MAX_VALUE, until - SkillCooldownHelper.now(player));
         if (remaining <= 0) {
             expireDowned(player);
             return;
@@ -658,8 +684,8 @@ public final class TempestStateManager {
         int ticks = tag.getInt(SELF_RESCUE_TICKS) + 1;
         tag.putInt(SELF_RESCUE_TICKS, ticks);
         if (ticks == 1) {
-            player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_SELF_RESCUE_START.get(),
-                    SoundSource.PLAYERS, 0.85F, 1.0F);
+            RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_SELF_RESCUE_START.get(),
+                    SoundSource.PLAYERS, 0.85F, 1.0F, 32.0D);
         }
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.self_rescue",
                 progressBar(ticks, DOWNED_SELF_RESCUE_TICKS)), true);
@@ -667,9 +693,10 @@ public final class TempestStateManager {
             tag.putLong(DOWNED_UNTIL, 0L);
             tag.putInt(SELF_RESCUE_TICKS, 0);
             player.removeEffect(ModEffects.TEMPEST_EMERGENCY_DOWNED.get());
+            DfsAchievements.recordTempestEmergencySelfSave(player, player.getHealth() <= 1.01F, 30 * 20);
             player.setHealth(Math.max(player.getHealth(), Math.min(player.getMaxHealth(), 6.0F)));
-            player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_SELF_RESCUE_COMPLETE.get(),
-                    SoundSource.PLAYERS, 0.9F, 1.05F);
+            RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_SELF_RESCUE_COMPLETE.get(),
+                    SoundSource.PLAYERS, 0.9F, 1.05F, 32.0D);
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.self_rescue_complete"), true);
         }
     }
@@ -683,7 +710,7 @@ public final class TempestStateManager {
     }
 
     private static int downedRemainingTicks(Player player) {
-        long remaining = data(player).getLong(DOWNED_UNTIL) - player.level().getGameTime();
+        long remaining = data(player).getLong(DOWNED_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -705,7 +732,7 @@ public final class TempestStateManager {
         tag.putBoolean(SUSPENDED, false);
         if (startCooldown) {
             tag.putLong(CORE_COOLDOWN_UNTIL,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), CORE_COOLDOWN_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), CORE_COOLDOWN_TICKS));
         }
     }
 
@@ -751,13 +778,13 @@ public final class TempestStateManager {
 
     private static void warnRope(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now - tag.getLong(LAST_WARNING_TICK) < 20L) {
             return;
         }
         tag.putLong(LAST_WARNING_TICK, now);
-        player.level().playSound(null, player.blockPosition(), ModSounds.TEMPEST_RECALL_ROPE_WARNING.get(),
-                SoundSource.PLAYERS, 0.7F, 1.0F);
+        RangedSoundHelper.playFollowingPlayer(player, ModSounds.TEMPEST_RECALL_ROPE_WARNING.get(),
+                SoundSource.PLAYERS, 0.7F, 1.0F, 32.0D);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.tempest.rope_warning",
                 Math.round(ropeRemaining(player))), true);
     }
@@ -891,8 +918,7 @@ public final class TempestStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static void putVec(CompoundTag tag, String key, Vec3 vec) {

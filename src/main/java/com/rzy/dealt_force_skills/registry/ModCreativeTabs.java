@@ -89,6 +89,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PROTOTYPE_MADNESS_COMPOUND.get());
                         output.accept(ModItems.SPECIAL_EQUIPMENT_SUPPLY.get());
                         output.accept(ModItems.DRIFTWOOD.get());
+                        output.accept(ModItems.LUCKY_COIN.get());
+                        output.accept(ModItems.ETERNAL_LOVE_BLESSING.get());
                         output.accept(ModItems.RAVEN_SHADOW_EXTRACT.get());
                         output.accept(ModItems.DARK_ZONE_RAINBOW_INJECTION.get());
                         output.accept(ModItems.EXPERIMENTAL_IRON_CURTAIN_CATALYST.get());
@@ -153,7 +155,17 @@ public class ModCreativeTabs {
                         output.accept(ModItems.POLYMER_FABRIC.get());
                         output.accept(ModItems.DIGITAL_CALIPER.get());
                         output.accept(ModItems.PREMIUM_COFFEE_BEANS.get());
+                        output.accept(ModItems.HVK_BRAIN_UNIT.get());
+                        output.accept(ModItems.BEACON_BRAIN_UNIT.get());
+                        output.accept(ModItems.BEACON_BOSS_SPAWN_EGG.get());
                         output.accept(ModItems.PROGRAMMABLE_PROCESSOR.get());
+                        output.accept(ModItems.HVK_ADVANCED_STANDARD_TEMPLATE_CONSTRUCTOR.get());
+                        output.accept(ModItems.HVK_ADVANCED_DISASSEMBLY_BEAM_EMITTER.get());
+                        output.accept(ModItems.HVK_CLONE_PROTOTYPE.get());
+                        output.accept(ModItems.HVK_ADVANCED_TREASURE_COMPASS.get());
+                        output.accept(ModItems.HVK_TREASURE_CHEST_BOX.get());
+                        output.accept(ModItems.HVK_UNIVERSAL_GLUE.get());
+                        output.accept(ModItems.INTERDIMENSIONAL_BLOCK.get());
                     })
                     .build());
 }

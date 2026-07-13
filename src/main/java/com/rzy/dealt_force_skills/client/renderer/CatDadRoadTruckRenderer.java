@@ -20,7 +20,7 @@ import org.joml.Matrix4f;
 
 public class CatDadRoadTruckRenderer extends EntityRenderer<CatDadRoadTruckEntity> {
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "textures/entity/catdad_dayun.png");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "textures/entity/catdad_dayun.png");
     private static final double ROAD_SEGMENT_LENGTH = 4.0D;
     private static final double ROAD_LIFT = 0.09D;
     private static final double ROAD_EDGE_WIDTH = 0.35D;

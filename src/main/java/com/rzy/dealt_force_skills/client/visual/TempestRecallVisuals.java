@@ -17,7 +17,7 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class TempestRecallVisuals {
     private static final ResourceLocation DEVICE =
-            new ResourceLocation(DealtForceSkillsMod.MODID, "tempest_emergency_recall_device");
+            ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "tempest_emergency_recall_device");
 
     private TempestRecallVisuals() {
     }

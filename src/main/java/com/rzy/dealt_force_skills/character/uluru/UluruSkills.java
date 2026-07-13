@@ -116,9 +116,9 @@ public final class UluruSkills {
         for (CoverPiece piece : pieces) {
             if (level.getBlockEntity(piece.pos()) instanceof QuickCoverBlockEntity cover) {
                 if (piece.pos().equals(rootPos)) {
-                    cover.configureRoot(rootPos, expireAt);
+                    cover.configureRoot(rootPos, expireAt, owner.getUUID());
                 } else {
-                    cover.configurePart(rootPos, expireAt);
+                    cover.configurePart(rootPos, expireAt, owner.getUUID());
                 }
             }
         }
@@ -133,7 +133,7 @@ public final class UluruSkills {
             return true;
         }
         if (UluruStateManager.incendiaryCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.incendiary_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.uluru.incendiary_empty"));
             return true;
         }
         UluruStateManager.setEquippedTool(player, UluruTool.INCENDIARY);
@@ -148,7 +148,7 @@ public final class UluruSkills {
             return true;
         }
         if (UluruStateManager.coverCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.cover_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.uluru.cover_empty"));
             return true;
         }
         UluruStateManager.setEquippedTool(player, UluruTool.COVER);
@@ -163,7 +163,8 @@ public final class UluruSkills {
             return true;
         }
         if (!UluruStateManager.isMissileReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.missile_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.uluru.missile_cooldown"));
             return true;
         }
         UluruStateManager.setEquippedTool(player, UluruTool.MISSILE);
@@ -173,7 +174,7 @@ public final class UluruSkills {
 
     private static boolean throwIncendiary(ServerPlayer player) {
         if (!UluruStateManager.consumeIncendiaryCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.incendiary_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.uluru.incendiary_empty"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -192,7 +193,7 @@ public final class UluruSkills {
 
     private static boolean throwCover(ServerPlayer player) {
         if (!UluruStateManager.consumeCoverCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.cover_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.uluru.cover_empty"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -216,7 +217,8 @@ public final class UluruSkills {
 
     private static boolean launchMissile(ServerPlayer player, boolean guided) {
         if (!UluruStateManager.isMissileReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.uluru.missile_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.uluru.missile_cooldown"));
             return true;
         }
 

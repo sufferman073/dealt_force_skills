@@ -15,6 +15,8 @@ public final class ClientCatDadHudState {
     private static int downedTicks;
     private static int selfRescueTicks;
     private static int selfRescueRequiredTicks;
+    private static int fatalDownedRemainingUses;
+    private static int fatalDownedMaxUses;
     private static boolean truckBreakBlocks;
 
     private ClientCatDadHudState() {
@@ -33,13 +35,17 @@ public final class ClientCatDadHudState {
         downedTicks = 0;
         selfRescueTicks = 0;
         selfRescueRequiredTicks = 0;
+        fatalDownedRemainingUses = 0;
+        fatalDownedMaxUses = 0;
         truckBreakBlocks = false;
     }
 
     public static void sync(int hissStage, int hissTimerTicks, int hissCooldownTicks,
                             int blockCharges, int blockMaxCharges, int blockRechargeTicks,
                             int blockWindowTicks, int coreCooldownTicks, int downedTicks,
-                            int selfRescueTicks, int selfRescueRequiredTicks, boolean truckBreakBlocks) {
+                            int selfRescueTicks, int selfRescueRequiredTicks,
+                            int fatalDownedRemainingUses, int fatalDownedMaxUses,
+                            boolean truckBreakBlocks) {
         synced = true;
         ClientCatDadHudState.hissStage = hissStage;
         ClientCatDadHudState.hissTimerTicks = hissTimerTicks;
@@ -52,6 +58,8 @@ public final class ClientCatDadHudState {
         ClientCatDadHudState.downedTicks = downedTicks;
         ClientCatDadHudState.selfRescueTicks = selfRescueTicks;
         ClientCatDadHudState.selfRescueRequiredTicks = selfRescueRequiredTicks;
+        ClientCatDadHudState.fatalDownedRemainingUses = fatalDownedRemainingUses;
+        ClientCatDadHudState.fatalDownedMaxUses = fatalDownedMaxUses;
         ClientCatDadHudState.truckBreakBlocks = truckBreakBlocks;
     }
 
@@ -66,6 +74,10 @@ public final class ClientCatDadHudState {
 
     public static boolean shouldRender() {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.CATDAD_ID);
+    }
+
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.CATDAD_ID);
     }
 
     public static boolean actionLocked() {
@@ -83,5 +95,7 @@ public final class ClientCatDadHudState {
     public static int downedTicks() { return downedTicks; }
     public static int selfRescueTicks() { return selfRescueTicks; }
     public static int selfRescueRequiredTicks() { return selfRescueRequiredTicks; }
+    public static int fatalDownedRemainingUses() { return fatalDownedRemainingUses; }
+    public static int fatalDownedMaxUses() { return fatalDownedMaxUses; }
     public static boolean truckBreakBlocks() { return truckBreakBlocks; }
 }

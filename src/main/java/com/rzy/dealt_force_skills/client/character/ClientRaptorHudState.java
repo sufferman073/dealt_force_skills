@@ -127,6 +127,10 @@ public final class ClientRaptorHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.RAPTOR_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.RAPTOR_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != RaptorTool.NONE;
     }

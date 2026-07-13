@@ -114,6 +114,10 @@ public final class ClientGizmoHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.GIZMO_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.GIZMO_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != GizmoTool.NONE;
     }

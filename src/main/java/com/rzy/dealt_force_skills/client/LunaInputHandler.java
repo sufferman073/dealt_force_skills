@@ -26,7 +26,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class LunaInputHandler {
-    private static final int GRENADE_RELEASE_TICKS = DealtForceConfig.intValue("client.luna_input_handler.grenade_release_ticks", 4);
+    private static volatile int GRENADE_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GRENADE_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.luna_input_handler.grenade_release_ticks", 4));
     private static boolean chargingBow;
     private static int bowChargeTicks;
     private static LunaTool chargingTool = LunaTool.NONE;

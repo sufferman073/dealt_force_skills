@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_OpenGhrothArmory;
 import com.rzy.dealt_force_skills.registry.ModSounds;
@@ -59,6 +60,7 @@ public final class GhrothArmoryManager {
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.shop.purchased",
                 purchasedForMessage.getHoverName(), entry.price()), true);
         playPurchaseSound(player);
+        DfsAchievements.onShopPurchase(player, "ghroth", entry.id());
         HaffCoinManager.sync(player);
     }
 

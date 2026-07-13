@@ -33,7 +33,7 @@ public final class ManbaFlashlightBeamRenderer {
     }
 
     public static void syncBeam(int entityId, boolean active, float range, float halfAngleDegrees, int ticks) {
-        if (!active || ticks <= 0 || range <= 0.0F) {
+        if (!active || ticks <= 0 || range <= 0.0F || !Float.isFinite(range) || !Float.isFinite(halfAngleDegrees)) {
             BEAMS.remove(entityId);
             return;
         }
@@ -49,10 +49,14 @@ public final class ManbaFlashlightBeamRenderer {
         while (iterator.hasNext()) {
             Map.Entry<Integer, Beam> entry = iterator.next();
             entry.getValue().ticks--;
-            if (entry.getValue().ticks <= 0 || minecraft.level.getEntity(entry.getKey()) == null) {
+            if (entry.getValue().ticks <= 0 || !(minecraft.level.getEntity(entry.getKey()) instanceof Player)) {
                 iterator.remove();
             }
         }
+    }
+
+    public static void reset() {
+        BEAMS.clear();
     }
 
     public static boolean isActive(Player player) {
@@ -72,28 +76,49 @@ public final class ManbaFlashlightBeamRenderer {
 
         MultiBufferSource.BufferSource buffer = minecraft.renderBuffers().bufferSource();
         VertexConsumer sheetConsumer = buffer.getBuffer(DfsRenderTypes.untexturedQuads());
-        VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lines());
         PoseStack.Pose pose = event.getPoseStack().last();
         Matrix4f matrix = pose.pose();
         Vec3 camera = event.getCamera().getPosition();
 
         for (Map.Entry<Integer, Beam> entry : BEAMS.entrySet()) {
-            Entity entity = minecraft.level.getEntity(entry.getKey());
-            if (entity instanceof Player player) {
-                renderBeam(player, entry.getValue(), event.getPartialTick(), pose, matrix, camera,
-                        sheetConsumer, lineConsumer);
+            Player player = playerForBeam(minecraft, entry.getKey());
+            if (player != null) {
+                BeamGeometry geometry = beamGeometry(player, entry.getValue(), event.getPartialTick());
+                if (geometry != null) {
+                    renderBeamSheets(geometry, matrix, camera, sheetConsumer);
+                }
             }
         }
         buffer.endBatch(DfsRenderTypes.untexturedQuads());
+
+        VertexConsumer lineConsumer = buffer.getBuffer(RenderType.lines());
+        for (Map.Entry<Integer, Beam> entry : BEAMS.entrySet()) {
+            Player player = playerForBeam(minecraft, entry.getKey());
+            if (player != null) {
+                BeamGeometry geometry = beamGeometry(player, entry.getValue(), event.getPartialTick());
+                if (geometry != null) {
+                    renderBeamLines(geometry, pose, camera, lineConsumer);
+                }
+            }
+        }
         buffer.endBatch(RenderType.lines());
     }
 
-    private static void renderBeam(Player player, Beam beam, float partialTick, PoseStack.Pose pose,
-                                   Matrix4f matrix, Vec3 camera, VertexConsumer sheetConsumer,
-                                   VertexConsumer lineConsumer) {
+    private static Player playerForBeam(Minecraft minecraft, int entityId) {
+        if (minecraft.level == null) {
+            return null;
+        }
+        Entity entity = minecraft.level.getEntity(entityId);
+        return entity instanceof Player player ? player : null;
+    }
+
+    private static BeamGeometry beamGeometry(Player player, Beam beam, float partialTick) {
+        if (beam.range <= 0.0F || !Float.isFinite(beam.range) || !Float.isFinite(beam.halfAngleDegrees)) {
+            return null;
+        }
         Vec3 look = player.getViewVector(partialTick).normalize();
         if (look.lengthSqr() < 1.0E-6D) {
-            return;
+            return null;
         }
 
         Vec3 up = new Vec3(0.0D, 1.0D, 0.0D);
@@ -102,11 +127,34 @@ public final class ManbaFlashlightBeamRenderer {
         Vec3 start = muzzle(player, partialTick);
         Vec3 end = start.add(look.scale(beam.range));
         double radius = Math.tan(Math.toRadians(beam.halfAngleDegrees)) * beam.range;
+        if (!Double.isFinite(radius)) {
+            return null;
+        }
         double nearRadius = Math.max(0.08D, radius * 0.035D);
+        if (!Double.isFinite(nearRadius)) {
+            return null;
+        }
+        return new BeamGeometry(start, end, right, vertical, radius, nearRadius);
+    }
 
-        renderSheet(sheetConsumer, matrix, camera, start, end, right, nearRadius, radius, 42);
-        renderSheet(sheetConsumer, matrix, camera, start, end, vertical, nearRadius, radius, 36);
+    private static void renderBeamSheets(BeamGeometry geometry, Matrix4f matrix, Vec3 camera,
+                                         VertexConsumer sheetConsumer) {
+        double radius = geometry.radius();
+        double nearRadius = geometry.nearRadius();
 
+        renderSheet(sheetConsumer, matrix, camera, geometry.start(), geometry.end(),
+                geometry.right(), nearRadius, radius, 42);
+        renderSheet(sheetConsumer, matrix, camera, geometry.start(), geometry.end(),
+                geometry.vertical(), nearRadius, radius, 36);
+    }
+
+    private static void renderBeamLines(BeamGeometry geometry, PoseStack.Pose pose, Vec3 camera,
+                                        VertexConsumer lineConsumer) {
+        Vec3 start = geometry.start();
+        Vec3 end = geometry.end();
+        Vec3 right = geometry.right();
+        Vec3 vertical = geometry.vertical();
+        double radius = geometry.radius();
         renderLine(lineConsumer, pose, camera, start, end, 205);
         Vec3 previous = ringPoint(end, right, vertical, radius, 0.0D);
         for (int i = 1; i <= RING_SEGMENTS; i++) {
@@ -200,5 +248,8 @@ public final class ManbaFlashlightBeamRenderer {
             this.halfAngleDegrees = halfAngleDegrees;
             this.ticks = ticks;
         }
+    }
+
+    private record BeamGeometry(Vec3 start, Vec3 end, Vec3 right, Vec3 vertical, double radius, double nearRadius) {
     }
 }

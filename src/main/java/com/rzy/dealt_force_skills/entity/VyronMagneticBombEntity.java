@@ -1,6 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
@@ -13,6 +15,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -34,7 +37,7 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class VyronMagneticBombEntity extends Projectile implements ItemSupplier {
-    private static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vyronmagneticbombentity.radius", 7.0D);
+    private static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.vyronmagneticbombentity.radius", 7.0));
     private static final EntityDataAccessor<Boolean> DATA_STUCK =
             SynchedEntityData.defineId(VyronMagneticBombEntity.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Float> DATA_NORMAL_X =
@@ -187,6 +190,8 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
 
     private void playReadySound() {
         if (level() instanceof ServerLevel serverLevel) {
+            RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.VYRON_MAGNETIC_BOMB_ATTACH.get(),
+                    SoundSource.PLAYERS, 0.85f, 1.0f, 18.0D, 4, 3.0D);
             RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.VYRON_MAGNETIC_BOMB_COUNTDOWN.get(),
                     SoundSource.PLAYERS, 1.05f, 1.0f, 20.0D, 5, 3.0D);
         }
@@ -199,6 +204,7 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
         }
 
         LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
         Vec3 center = position();
         RangedSoundHelper.playThrottled(serverLevel, center, ModSounds.VYRON_MAGNETIC_BOMB_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.25f, 1.0f, 26.0D, 3, 4.0D);
@@ -221,9 +227,15 @@ public class VyronMagneticBombEntity extends Projectile implements ItemSupplier 
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
             SkillDamageHelper.hurt(target, SkillDamageHelper.vyronMagneticBomb(serverLevel, this, owner), owner, damage);
+            if (ownerPlayer != null && stuckEntityId != null && stuckEntityId.equals(target.getUUID())
+                    && target instanceof ServerPlayer && !target.isAlive()) {
+                DfsAchievements.recordVyronStickyBombKill(ownerPlayer, target);
+            }
             target.setDeltaMovement(before);
             target.hurtMarked = true;
         }
+        SuperbWarfareCompat.damageVehicles(serverLevel, center, RADIUS,
+                SkillDamageHelper.vyronMagneticBomb(serverLevel, this, owner), this, 1.0F, true);
         discard();
     }
 

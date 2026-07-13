@@ -1,45 +1,54 @@
 package com.rzy.dealt_force_skills.block;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.registry.ModBlockEntities;
 import com.rzy.dealt_force_skills.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.UUID;
+
 public class QuickCoverBlockEntity extends BlockEntity {
-    private static final int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_health", 2500);
-    private static final int MAX_DAMAGE_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_damage_per_hit", 100);
+    private static volatile int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_HEALTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_health", 2500));
+    private static volatile int MAX_DAMAGE_PER_HIT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_DAMAGE_PER_HIT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("deployables.quickcoverblockentity.max_damage_per_hit", 100));
     private static final String ROOT = "Root";
     private static final String ROOT_POS = "RootPos";
     private static final String HEALTH = "Health";
     private static final String EXPIRE_AT = "ExpireAt";
+    private static final String OWNER = "Owner";
 
     private boolean root;
     private BlockPos rootPos = BlockPos.ZERO;
     private int health = MAX_HEALTH;
     private long expireAt;
+    private UUID ownerId;
     private boolean removingLinked;
 
     public QuickCoverBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.QUICK_COVER.get(), pos, state);
     }
 
-    public void configureRoot(BlockPos rootPos, long expireAt) {
+    public void configureRoot(BlockPos rootPos, long expireAt, UUID ownerId) {
         this.root = true;
         this.rootPos = rootPos.immutable();
         this.health = MAX_HEALTH;
         this.expireAt = expireAt;
+        this.ownerId = ownerId;
         setChanged();
     }
 
-    public void configurePart(BlockPos rootPos, long expireAt) {
+    public void configurePart(BlockPos rootPos, long expireAt, UUID ownerId) {
         this.root = false;
         this.rootPos = rootPos.immutable();
         this.health = 0;
         this.expireAt = expireAt;
+        this.ownerId = ownerId;
         setChanged();
     }
 
@@ -92,6 +101,7 @@ public class QuickCoverBlockEntity extends BlockEntity {
         int damage = Math.min(MAX_DAMAGE_PER_HIT, Math.max(1, amount));
         root.health = Math.max(0, root.health - damage);
         root.setChanged();
+        root.recordCoverDamage(damage);
         if (root.health <= 0) {
             destroyCoverAt(level, root.worldPosition);
         }
@@ -112,6 +122,9 @@ public class QuickCoverBlockEntity extends BlockEntity {
         tag.putBoolean(ROOT, root);
         tag.putInt(HEALTH, health);
         tag.putLong(EXPIRE_AT, expireAt);
+        if (ownerId != null) {
+            tag.putUUID(OWNER, ownerId);
+        }
         CompoundTag pos = new CompoundTag();
         pos.putInt("X", rootPos.getX());
         pos.putInt("Y", rootPos.getY());
@@ -125,6 +138,7 @@ public class QuickCoverBlockEntity extends BlockEntity {
         root = tag.getBoolean(ROOT);
         health = tag.contains(HEALTH, Tag.TAG_INT) ? tag.getInt(HEALTH) : MAX_HEALTH;
         expireAt = tag.getLong(EXPIRE_AT);
+        ownerId = tag.hasUUID(OWNER) ? tag.getUUID(OWNER) : null;
         if (tag.contains(ROOT_POS, Tag.TAG_COMPOUND)) {
             CompoundTag pos = tag.getCompound(ROOT_POS);
             rootPos = new BlockPos(pos.getInt("X"), pos.getInt("Y"), pos.getInt("Z"));
@@ -141,6 +155,16 @@ public class QuickCoverBlockEntity extends BlockEntity {
             return cover;
         }
         return null;
+    }
+
+    private void recordCoverDamage(int damage) {
+        if (!(level instanceof ServerLevel serverLevel) || ownerId == null) {
+            return;
+        }
+        ServerPlayer owner = serverLevel.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner != null && owner.isAlive()) {
+            DfsAchievements.recordUluruQuickCoverProtection(owner, damage, true);
+        }
     }
 
     private boolean isLinkedTo(BlockPos root) {

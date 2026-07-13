@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.network;
 
 import com.rzy.dealt_force_skills.character.CharacterAvailability;
+import com.rzy.dealt_force_skills.character.CharacterBranchPackManager;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
@@ -34,7 +36,7 @@ public class C2S_SelectCharacter {
     public static void handle(C2S_SelectCharacter msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) return;
+            if (player == null || player.isSpectator()) return;
 
             var currentCharacterId = CharacterSelectionManager.getSelectedCharacterId(player);
             if (player.hasEffect(ModEffects.STUN.get()) || player.hasEffect(ModEffects.WEBBED.get()) || StingerStateManager.isDowned(player)) {
@@ -56,7 +58,7 @@ public class C2S_SelectCharacter {
                     return;
                 }
 
-                var requestedCharacter = ModCharacters.get(msg.characterId);
+                var requestedCharacter = CharacterBranchPackManager.findCharacter(msg.characterId);
                 if (requestedCharacter.isEmpty()) {
                     NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(currentCharacterId.get()), player);
                     player.displayClientMessage(Component.translatable("message.dealt_force_skills.invalid_character"), false);
@@ -73,6 +75,7 @@ public class C2S_SelectCharacter {
                         character -> {
                             CharacterSelectionManager.consumeCharacterReselection(player);
                             SkillDispatcher.onCharacterSelected(player, character);
+                            restartNTwoDewarOnSelection(player, character.id());
                             NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(character.id()), player);
                             if (ModCharacters.SAEED_ID.equals(character.id())) {
                                 SaeedRecruitManager.openInitialChoiceIfNeeded(player);
@@ -86,7 +89,7 @@ public class C2S_SelectCharacter {
                 return;
             }
 
-            var requestedCharacter = ModCharacters.get(msg.characterId);
+            var requestedCharacter = CharacterBranchPackManager.findCharacter(msg.characterId);
             if (requestedCharacter.isEmpty()) {
                 NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(""), player);
                 player.displayClientMessage(Component.translatable("message.dealt_force_skills.invalid_character"), false);
@@ -103,6 +106,7 @@ public class C2S_SelectCharacter {
                     character -> {
                         CharacterSelectionManager.consumeCharacterReselection(player);
                         SkillDispatcher.onCharacterSelected(player, character);
+                        restartNTwoDewarOnSelection(player, character.id());
                         NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(character.id()), player);
                         if (ModCharacters.SAEED_ID.equals(character.id())) {
                             SaeedRecruitManager.openInitialChoiceIfNeeded(player);
@@ -115,5 +119,12 @@ public class C2S_SelectCharacter {
             );
         });
         ctx.get().setPacketHandled(true);
+    }
+
+    private static void restartNTwoDewarOnSelection(ServerPlayer player, String characterId) {
+        if (ModCharacters.N_TWO_ID.equals(characterId)) {
+            NTwoStateManager.restartDewarCooldownOnSelection(player);
+            NTwoStateManager.syncToClient(player);
+        }
     }
 }

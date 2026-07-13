@@ -28,8 +28,7 @@ import java.util.Optional;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SaeedGuardViewController {
     private static final int MISSING_ENTITY_TIMEOUT_TICKS = 40;
-    private static final double COMMAND_RAY_RANGE = DealtForceConfig.doubleValue("client.saeed_guard_view_controller.command_ray_range", 160.0D);
-
+    private static volatile double COMMAND_RAY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COMMAND_RAY_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.saeed_guard_view_controller.command_ray_range", 160.0));
     private static int controlledEntityId = -1;
     private static int missingEntityTicks;
 
@@ -37,18 +36,23 @@ public final class SaeedGuardViewController {
     }
 
     public static void start(int entityId) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.player.isSpectator()) {
+            clearControlState();
+            return;
+        }
         controlledEntityId = entityId;
         missingEntityTicks = 0;
         setCameraToControlledEntity();
     }
 
     public static void stop(boolean notifyServer) {
+        int entityId = controlledEntityId;
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null) {
-            minecraft.setCameraEntity(minecraft.player);
+        if (entityId >= 0 && minecraft.player != null) {
+            restoreCameraAfterControl(minecraft, entityId);
         }
-        controlledEntityId = -1;
-        missingEntityTicks = 0;
+        clearControlState();
     }
 
     public static void tick(Minecraft minecraft) {
@@ -56,6 +60,10 @@ public final class SaeedGuardViewController {
             return;
         }
         if (minecraft.level == null || minecraft.player == null) {
+            stop(false);
+            return;
+        }
+        if (minecraft.player.isSpectator()) {
             stop(false);
             return;
         }
@@ -144,13 +152,25 @@ public final class SaeedGuardViewController {
 
     private static void setCameraToControlledEntity() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level == null) {
+        if (minecraft.level == null || minecraft.player == null || minecraft.player.isSpectator()) {
             return;
         }
         Entity entity = minecraft.level.getEntity(controlledEntityId);
         if (entity != null) {
             minecraft.setCameraEntity(entity);
         }
+    }
+
+    private static void restoreCameraAfterControl(Minecraft minecraft, int entityId) {
+        Entity camera = minecraft.getCameraEntity();
+        if (camera != null && camera.getId() == entityId) {
+            minecraft.setCameraEntity(minecraft.player);
+        }
+    }
+
+    private static void clearControlState() {
+        controlledEntityId = -1;
+        missingEntityTicks = 0;
     }
 
     private static void syncLocalGuardRotation(Entity entity, float yaw, float pitch) {

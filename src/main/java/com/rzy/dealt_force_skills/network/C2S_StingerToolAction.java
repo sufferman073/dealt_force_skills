@@ -5,6 +5,7 @@ import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerToolAction;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -39,12 +40,13 @@ public class C2S_StingerToolAction {
     public static void handle(C2S_StingerToolAction msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null || UluruLoiteringMissileEntity.isPlayerControlling(player)) {
+            if (player == null || player.isSpectator() || UluruLoiteringMissileEntity.isPlayerControlling(player)) {
                 return;
             }
             if (player.hasEffect(ModEffects.STUN.get())
                     || player.hasEffect(ModEffects.WEBBED.get())
-                    || StingerStateManager.isDowned(player)) {
+                    || StingerStateManager.isDowned(player)
+                    || RoundStartFreezeManager.isFrozen(player)) {
                 return;
             }
             StingerSkills.handleToolAction(player, msg.action, msg.alternate);

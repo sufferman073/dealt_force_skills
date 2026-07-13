@@ -25,11 +25,11 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class StingerInputHandler {
-    private static final int SMOKE_EQUIP_HOLD_TICKS = DealtForceConfig.intValue("client.stinger_input_handler.smoke_equip_hold_ticks", 8);
-    private static final int SMOKE_RELEASE_TICKS = DealtForceConfig.intValue("client.stinger_input_handler.smoke_release_ticks", 3);
-    private static final int STIM_PRIME_TICKS = DealtForceConfig.intValue("client.stinger_input_handler.stim_prime_ticks", 4);
-    private static final int DRONE_GUIDED_HOLD_TICKS = DealtForceConfig.intValue("client.stinger_input_handler.drone_guided_hold_ticks", 8);
-    private static final int CORE_LONG_HOLD_TICKS = DealtForceConfig.intValue("client.stinger_input_handler.core_long_hold_ticks", 15);
+    private static volatile int SMOKE_EQUIP_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_EQUIP_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.stinger_input_handler.smoke_equip_hold_ticks", 8));
+    private static volatile int SMOKE_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.stinger_input_handler.smoke_release_ticks", 3));
+    private static volatile int STIM_PRIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_PRIME_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.stinger_input_handler.stim_prime_ticks", 4));
+    private static volatile int DRONE_GUIDED_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DRONE_GUIDED_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.stinger_input_handler.drone_guided_hold_ticks", 8));
+    private static volatile int CORE_LONG_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_LONG_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.stinger_input_handler.core_long_hold_ticks", 15));
     private static final DustParticleOptions DOWNED_MARKER = new DustParticleOptions(new Vector3f(0.28f, 0.86f, 1.0f), 1.25f);
 
     private static boolean active1WasDown;
@@ -37,6 +37,7 @@ public final class StingerInputHandler {
     private static boolean sentSmokeEquip;
     private static boolean coreWasDown;
     private static int coreHeldTicks;
+    private static boolean sentCoreLong;
     private static boolean droneLaunchHolding;
     private static boolean active2WasDown;
     private static int active2HeldTicks;
@@ -241,11 +242,15 @@ public final class StingerInputHandler {
             coreHeldTicks++;
             while (KeybindRegister.CORE_SKILL.consumeClick()) {
             }
+            if (coreHeldTicks >= CORE_LONG_HOLD_TICKS && !sentCoreLong) {
+                sentCoreLong = true;
+                ClientCharacterSelectionState.useSkill(SkillSlot.CORE, true);
+            }
             return;
         }
 
-        if (coreWasDown) {
-            ClientCharacterSelectionState.useSkill(SkillSlot.CORE, coreHeldTicks >= CORE_LONG_HOLD_TICKS);
+        if (coreWasDown && !sentCoreLong) {
+            ClientCharacterSelectionState.useSkill(SkillSlot.CORE, false);
         }
         resetCore();
     }
@@ -282,6 +287,7 @@ public final class StingerInputHandler {
     private static void resetCore() {
         coreWasDown = false;
         coreHeldTicks = 0;
+        sentCoreLong = false;
     }
 
     private static void resetDroneMouseGuide() {

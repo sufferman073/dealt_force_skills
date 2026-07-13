@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class RepairKitItem extends QualityTooltipItem {
-    private static final int USE_DURATION = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.use_duration", 72_000);
-    private static final int REPAIR_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.repair_interval_ticks", 20);
-    private static final int BASE_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.base_cost", 100);
-    private static final int BASE_REPAIR = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.base_repair", 100);
+    private static volatile int USE_DURATION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("USE_DURATION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.use_duration", 72000));
+    private static volatile int REPAIR_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REPAIR_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.repair_interval_ticks", 20));
+    private static volatile int BASE_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_COST", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.base_cost", 100));
+    private static volatile int BASE_REPAIR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_REPAIR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("items.repair_kit_item.base_repair", 100));
     private static final String TAG_USE_START_TICK = "DfsRepairUseStartTick";
 
     private final EquipmentSlot targetSlot;

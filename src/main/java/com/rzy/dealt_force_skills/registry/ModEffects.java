@@ -7,11 +7,16 @@ import com.rzy.dealt_force_skills.effect.CatDadHissSlowEffect;
 import com.rzy.dealt_force_skills.effect.CarryBoostEffect;
 import com.rzy.dealt_force_skills.effect.CharacterFrameworkEffect;
 import com.rzy.dealt_force_skills.effect.ContinuousHealingEffect;
+import com.rzy.dealt_force_skills.effect.CorpsDecayedSoldierEffect;
+import com.rzy.dealt_force_skills.effect.CorpsForcefulBatonEffect;
+import com.rzy.dealt_force_skills.effect.CorpsLoyaltyBoostEffect;
+import com.rzy.dealt_force_skills.effect.CorpsWarmEnforcementEffect;
 import com.rzy.dealt_force_skills.effect.CorrosionEffect;
 import com.rzy.dealt_force_skills.effect.FatigueRemovalEffect;
 import com.rzy.dealt_force_skills.effect.HackclawFlashBlindEffect;
 import com.rzy.dealt_force_skills.effect.HelaEffect;
 import com.rzy.dealt_force_skills.effect.ItemWeaknessEffect;
+import com.rzy.dealt_force_skills.effect.InjuryEffect;
 import com.rzy.dealt_force_skills.effect.LaughingManiaOneEffect;
 import com.rzy.dealt_force_skills.effect.LaughingManiaThreeEffect;
 import com.rzy.dealt_force_skills.effect.LaughingManiaTwoEffect;
@@ -22,6 +27,8 @@ import com.rzy.dealt_force_skills.effect.NikaidouCoreEffect;
 import com.rzy.dealt_force_skills.effect.NikaidouCorrectionEffect;
 import com.rzy.dealt_force_skills.effect.NikaidouDoomedEffect;
 import com.rzy.dealt_force_skills.effect.NikaidouRiftStacksEffect;
+import com.rzy.dealt_force_skills.effect.NTwoDisruptedEffect;
+import com.rzy.dealt_force_skills.effect.NTwoFrozenEffect;
 import com.rzy.dealt_force_skills.effect.NoxCrippledEffect;
 import com.rzy.dealt_force_skills.effect.NoxDelayedWoundEffect;
 import com.rzy.dealt_force_skills.effect.NoxFlashedEffect;
@@ -31,7 +38,9 @@ import com.rzy.dealt_force_skills.effect.PlannedStatusEffect;
 import com.rzy.dealt_force_skills.effect.RaptorActionPauseEffect;
 import com.rzy.dealt_force_skills.effect.RaptorElectromagneticInterferenceEffect;
 import com.rzy.dealt_force_skills.effect.RaptorHummingbirdMarkedEffect;
+import com.rzy.dealt_force_skills.effect.RoundStartFreezeEffect;
 import com.rzy.dealt_force_skills.effect.SonicShockEffect;
+import com.rzy.dealt_force_skills.effect.ShakehandsEffect;
 import com.rzy.dealt_force_skills.effect.StaminaBoostEffect;
 import com.rzy.dealt_force_skills.effect.StaminaCapacityEffect;
 import com.rzy.dealt_force_skills.effect.StingerDownedEffect;
@@ -54,6 +63,9 @@ import com.rzy.dealt_force_skills.effect.VyronPoweredEffect;
 import com.rzy.dealt_force_skills.effect.WebbedEffect;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+
+import java.util.UUID;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -73,6 +85,19 @@ public class ModEffects {
 
     public static final RegistryObject<MobEffect> WEBBED =
             EFFECTS.register("webbed", WebbedEffect::new);
+
+    public static final RegistryObject<MobEffect> N_TWO_FROZEN =
+            EFFECTS.register("n_two_frozen", NTwoFrozenEffect::new);
+    public static final RegistryObject<MobEffect> N_TWO_DISRUPTED =
+            EFFECTS.register("n_two_disrupted", NTwoDisruptedEffect::new);
+    public static final RegistryObject<MobEffect> CORPS_WARM_ENFORCEMENT =
+            EFFECTS.register("corps_warm_enforcement", CorpsWarmEnforcementEffect::new);
+    public static final RegistryObject<MobEffect> CORPS_FORCEFUL_BATON =
+            EFFECTS.register("corps_forceful_baton", CorpsForcefulBatonEffect::new);
+    public static final RegistryObject<MobEffect> CORPS_LOYALTY_BOOST =
+            EFFECTS.register("corps_loyalty_boost", CorpsLoyaltyBoostEffect::new);
+    public static final RegistryObject<MobEffect> CORPS_DECAYED_SOLDIER =
+            EFFECTS.register("corps_decayed_soldier", CorpsDecayedSoldierEffect::new);
 
     public static final RegistryObject<MobEffect> SONIC_SHOCK =
             EFFECTS.register("sonic_shock", SonicShockEffect::new);
@@ -153,6 +178,30 @@ public class ModEffects {
             EFFECTS.register("large_fire_rate", () -> new PlannedStatusEffect(MobEffectCategory.BENEFICIAL, 0x3DE76F));
     public static final RegistryObject<MobEffect> LARGE_AIM_PENALTY =
             EFFECTS.register("large_aim_penalty", () -> new PlannedStatusEffect(MobEffectCategory.HARMFUL, 0xB84C4C));
+    public static final RegistryObject<MobEffect> LEFT_LEG_FRACTURE = EFFECTS.register("left_leg_fracture",
+            () -> new InjuryEffect(0x9A3D35, Attributes.MOVEMENT_SPEED,
+                    UUID.fromString("24fb6543-3f5b-49c1-8c43-41dbe5ec1591"), -0.50D));
+    public static final RegistryObject<MobEffect> RIGHT_LEG_FRACTURE = EFFECTS.register("right_leg_fracture",
+            () -> new InjuryEffect(0x9A3D35, Attributes.MOVEMENT_SPEED,
+                    UUID.fromString("ad0b0d0a-62ec-4754-a4f8-a6fb780a7324"), -0.50D));
+    public static final RegistryObject<MobEffect> LEFT_ARM_FRACTURE = EFFECTS.register("left_arm_fracture", () -> new InjuryEffect(0x9A3D35));
+    public static final RegistryObject<MobEffect> RIGHT_ARM_FRACTURE = EFFECTS.register("right_arm_fracture", () -> new InjuryEffect(0x9A3D35));
+    public static final RegistryObject<MobEffect> ABDOMEN_INJURY = EFFECTS.register("abdomen_injury",
+            () -> new InjuryEffect(0x7C322E, Attributes.MAX_HEALTH,
+                    UUID.fromString("a1b1abcf-1ba2-4072-975e-c06582e4b15d"), -0.10D));
+    public static final RegistryObject<MobEffect> CHEST_INJURY = EFFECTS.register("chest_injury",
+            () -> new InjuryEffect(0x7C322E, Attributes.MAX_HEALTH,
+                    UUID.fromString("a4f7f2a2-5a82-42b5-9e84-8f74892b35db"), -0.10D));
+    public static final RegistryObject<MobEffect> HEAD_INJURY = EFFECTS.register("head_injury",
+            () -> new InjuryEffect(0x7C322E, Attributes.MAX_HEALTH,
+                    UUID.fromString("73c56d49-fba2-471d-a4bd-1e4a299fef3e"), -0.10D));
+    public static final RegistryObject<MobEffect> LEFT_LEG_WOUND = EFFECTS.register("left_leg_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> RIGHT_LEG_WOUND = EFFECTS.register("right_leg_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> LEFT_ARM_WOUND = EFFECTS.register("left_arm_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> RIGHT_ARM_WOUND = EFFECTS.register("right_arm_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> ABDOMEN_WOUND = EFFECTS.register("abdomen_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> CHEST_WOUND = EFFECTS.register("chest_wound", () -> new InjuryEffect(0xA71919));
+    public static final RegistryObject<MobEffect> HEAD_WOUND = EFFECTS.register("head_wound", () -> new InjuryEffect(0xA71919));
     // Planned status/effect icon hooks reserved from upcoming character designs.
 
     public static final RegistryObject<MobEffect> HACKCLAW_INTERFERENCE =
@@ -217,5 +266,11 @@ public class ModEffects {
             EFFECTS.register("undead_true_invisibility", () -> new PlannedStatusEffect(MobEffectCategory.BENEFICIAL, 0x65758A));
     public static final RegistryObject<MobEffect> UNDEAD_HUNTER_SCATTER =
             EFFECTS.register("undead_hunter_scatter", () -> new PlannedStatusEffect(MobEffectCategory.BENEFICIAL, 0x4A8DFF));
+
+    public static final RegistryObject<MobEffect> SHAKEHANDS =
+            EFFECTS.register("shakehands", ShakehandsEffect::new);
+
+    public static final RegistryObject<MobEffect> ROUND_START_FREEZE =
+            EFFECTS.register("round_start_freeze", RoundStartFreezeEffect::new);
 
 }

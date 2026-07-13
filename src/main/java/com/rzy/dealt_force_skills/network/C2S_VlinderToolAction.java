@@ -7,6 +7,7 @@ import com.rzy.dealt_force_skills.character.vlinder.VlinderToolAction;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -42,6 +43,7 @@ public class C2S_VlinderToolAction {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null
+                    || player.isSpectator()
                     || UluruLoiteringMissileEntity.isPlayerControlling(player)
                     || RaptorFalconDroneEntity.isPlayerControlling(player)) {
                 return;
@@ -49,7 +51,8 @@ public class C2S_VlinderToolAction {
             if (player.hasEffect(ModEffects.STUN.get())
                     || player.hasEffect(ModEffects.WEBBED.get())
                     || StingerStateManager.isDowned(player)
-                    || VlinderStateManager.isDowned(player)) {
+                    || VlinderStateManager.isDowned(player)
+                    || RoundStartFreezeManager.isFrozen(player)) {
                 return;
             }
             VlinderSkills.handleToolAction(player, msg.action, msg.alternate);

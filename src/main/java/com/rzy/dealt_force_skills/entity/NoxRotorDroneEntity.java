@@ -12,6 +12,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -33,17 +34,17 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.max_life_ticks", 8 * 20);
-    private static final int POST_BOUNCE_EXPLODE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.post_bounce_explode_ticks", 6);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.bounce_factor", 0.82D);
-    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.explosion_radius", 2.0D);
-    private static final double HOMING_STRENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_strength", 0.14D);
-    private static final double HOMING_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_speed", 1.75D);
-
+    private static volatile int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.max_life_ticks", 160));
+    private static volatile int POST_BOUNCE_EXPLODE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("POST_BOUNCE_EXPLODE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.noxrotordroneentity.post_bounce_explode_ticks", 6));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.bounce_factor", 0.82));
+    private static volatile double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.explosion_radius", 2.0));
+    private static volatile double HOMING_STRENGTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HOMING_STRENGTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_strength", 0.14));
+    private static volatile double HOMING_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HOMING_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.noxrotordroneentity.homing_speed", 1.75));
     private UUID ownerId;
     private UUID targetId;
     private int explodeDelay = -1;
     private boolean bounced;
+    private boolean flySoundStarted;
 
     public NoxRotorDroneEntity(EntityType<? extends NoxRotorDroneEntity> type, Level level) {
         super(type, level);
@@ -69,7 +70,15 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
     public void tick() {
         super.tick();
 
+        if (!level().isClientSide && level() instanceof ServerLevel serverLevel) {
+            startFlyLoop(serverLevel);
+        }
+
         if (!level().isClientSide && tickCount > MAX_LIFE_TICKS) {
+            if (level() instanceof ServerLevel serverLevel) {
+                RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.NOX_ROTOR_FLY_END.get(),
+                        SoundSource.PLAYERS, 0.75f, 1.0f, 20.0D, 6, 3.0D);
+            }
             explode(position());
             return;
         }
@@ -118,6 +127,27 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
             return false;
         }
         return tickCount > 5 || target != getOwner();
+    }
+
+    @Override
+    public boolean isPickable() {
+        return true;
+    }
+
+    @Override
+    public boolean hurt(DamageSource source, float amount) {
+        if (level().isClientSide || isRemoved()) {
+            return true;
+        }
+        if (level() instanceof ServerLevel serverLevel) {
+            stopFlyLoop(serverLevel);
+            RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.NOX_ROTOR_DESTROYED.get(),
+                    SoundSource.PLAYERS, 0.85f, 1.0f, 20.0D, 6, 3.0D);
+            serverLevel.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 0.1D, getZ(),
+                    12, 0.25D, 0.2D, 0.25D, 0.02D);
+        }
+        discard();
+        return true;
     }
 
     @Override
@@ -209,6 +239,7 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
         }
 
         LivingEntity owner = owner(level);
+        stopFlyLoop(level);
         RangedSoundHelper.playThrottled(level, center, ModSounds.NOX_ROTOR_EXPLODE.get(),
                 SoundSource.PLAYERS, 1.1f, 1.0f, 22.0D, 4, 3.0D);
         level.sendParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.15D, center.z,
@@ -227,7 +258,7 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
             }
             Vec3 before = target.getDeltaMovement();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.noxRotor(level, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.nox_rotor_drone_entity.skill_hurt.0.damage", 8.0f));
+            SkillDamageHelper.hurt(target, SkillDamageHelper.noxRotor(level, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.nox_rotor_drone_entity.skill_hurt.0.damage", 40.0f));
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             NoxStateManager.applyCrippled(target, owner);
@@ -241,6 +272,23 @@ public class NoxRotorDroneEntity extends Projectile implements ItemSupplier {
         }
         Entity owner = ownerId == null ? null : level.getEntity(ownerId);
         return owner instanceof LivingEntity living ? living : null;
+    }
+
+    private void startFlyLoop(ServerLevel level) {
+        if (flySoundStarted) {
+            return;
+        }
+        RangedSoundHelper.playFollowingEntity(level, this, ModSounds.NOX_ROTOR_FLY_LOOP.get(),
+                SoundSource.PLAYERS, 0.5f, 1.0f, 24.0D);
+        flySoundStarted = true;
+    }
+
+    private void stopFlyLoop(ServerLevel level) {
+        if (!flySoundStarted) {
+            return;
+        }
+        RangedSoundHelper.stop(level, ModSounds.NOX_ROTOR_FLY_LOOP.get(), SoundSource.PLAYERS);
+        flySoundStarted = false;
     }
 
     private void spawnClientTrail() {

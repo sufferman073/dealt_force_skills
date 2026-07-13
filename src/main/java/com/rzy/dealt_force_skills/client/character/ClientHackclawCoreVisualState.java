@@ -36,6 +36,10 @@ public final class ClientHackclawCoreVisualState {
                         || minecraft.level.getEntity(entry.getKey()) == null);
     }
 
+    public static void reset() {
+        STATES.clear();
+    }
+
     public static boolean isActive(Player player) {
         return state(player).phase() != PHASE_NONE;
     }

@@ -33,6 +33,12 @@ public class DriftwoodItem extends Item {
         }
 
         if (!CharacterSelectionManager.hasSelectedCharacter(serverPlayer)) {
+            if (CharacterSelectionManager.isNormalPlayer(serverPlayer)) {
+                if (!serverPlayer.getAbilities().instabuild) {
+                    stack.shrink(1);
+                }
+                CharacterSelectionManager.clearNormalPlayer(serverPlayer);
+            }
             CharacterAvailability.syncToClient(serverPlayer);
             NetworkHandler.sendToPlayer(new S2C_OpenCharacterSelection(), serverPlayer);
             return InteractionResultHolder.success(stack);

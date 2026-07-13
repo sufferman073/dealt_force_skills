@@ -1,0 +1,28 @@
+{
+  "parent": "dealt_force_skills:delta_force_skills/purple",
+  "display": {
+    "icon": {
+      "item": "minecraft:nether_star"
+    },
+    "title": {
+      "text": "爱？...梦？"
+    },
+    "description": {
+      "text": "使用二阶堂希罗魔女化时，通过核心技能，在残骸化阶段之后击杀一名敌人，并在其之后有一名队友死于残骸化阶段之后死亡诞生的凋零骷髅"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "unlock": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlock"
+    ]
+  ]
+}

@@ -2,10 +2,9 @@ package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -28,7 +27,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
-import org.joml.Vector3f;
 
 import java.util.Comparator;
 import java.util.Optional;
@@ -38,10 +36,8 @@ public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier, Blockb
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(GizmoSmokeTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 8;
-    private static final double TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.trigger_radius", 3.0D);
-    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.max_owner_distance", 50.0D);
-    private static final DustParticleOptions YELLOW_BURST = new DustParticleOptions(new Vector3f(1.0f, 0.78f, 0.08f), 1.8f);
-
+    private static volatile double TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TRIGGER_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.trigger_radius", 3.0));
+    private static volatile double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_OWNER_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.gizmosmoketrapentity.max_owner_distance", 50.0));
     private UUID ownerId;
     private Direction attachedFace = Direction.UP;
 
@@ -149,10 +145,6 @@ public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier, Blockb
         cloud.setPos(burstCenter.x, burstCenter.y, burstCenter.z);
         serverLevel.addFreshEntity(cloud);
         RangedSoundHelper.playTrapSound(serverLevel, burstCenter, ModSounds.GIZMO_SMOKE_TRAP_TRIGGER.get(), 1.0f, 1.0f);
-        serverLevel.sendParticles(YELLOW_BURST, burstCenter.x, burstCenter.y + 0.35D, burstCenter.z,
-                96, 1.35D, 0.45D, 1.35D, 0.0D);
-        serverLevel.sendParticles(ParticleTypes.CLOUD, burstCenter.x, burstCenter.y + 0.35D, burstCenter.z,
-                36, 1.35D, 0.4D, 1.35D, 0.02D);
         discard();
     }
 
@@ -165,10 +157,24 @@ public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier, Blockb
     }
 
     private boolean canTrigger(LivingEntity entity) {
-        if (!entity.isAlive() || isOwnedBy(entity.getUUID())) {
+        if (!entity.isAlive() || isOwnerOrTeammate(entity)) {
             return false;
         }
         return entity instanceof ServerPlayer || entity instanceof Enemy;
+    }
+
+    private boolean isOwnerOrTeammate(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (isOwnedBy(entity.getUUID())) {
+            return true;
+        }
+        if (!(entity instanceof ServerPlayer) || !(level() instanceof ServerLevel level)) {
+            return false;
+        }
+        Entity owner = owner(level);
+        return DealtTeamManager.areTeammates(owner, entity);
     }
 
     private boolean hasLineOfSightTo(LivingEntity target) {
@@ -188,8 +194,5 @@ public class GizmoSmokeTrapEntity extends Entity implements ItemSupplier, Blockb
     }
 
     private void spawnClientIdleParticles() {
-        if (tickCount % 8 == 0) {
-            level().addParticle(ParticleTypes.SMOKE, getX(), getY() + 0.08D, getZ(), 0.0D, 0.01D, 0.0D);
-        }
     }
 }

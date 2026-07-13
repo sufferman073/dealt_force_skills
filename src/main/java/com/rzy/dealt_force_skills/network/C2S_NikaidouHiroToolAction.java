@@ -4,12 +4,15 @@ import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroSkills;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroToolAction;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationSkills;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.character.tempest.TempestStateManager;
 import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -39,6 +42,7 @@ public class C2S_NikaidouHiroToolAction {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null
+                    || player.isSpectator()
                     || UluruLoiteringMissileEntity.isPlayerControlling(player)
                     || RaptorFalconDroneEntity.isPlayerControlling(player)
                     || player.hasEffect(ModEffects.STUN.get())
@@ -47,11 +51,18 @@ public class C2S_NikaidouHiroToolAction {
                     || StingerStateManager.isDowned(player)
                     || VlinderStateManager.isDowned(player)
                     || TempestStateManager.isActionLocked(player)
-                    || CatDadStateManager.isDowned(player)) {
+                    || NikaidouHiroWitchificationStateManager.isActionLocked(player)
+                    || CatDadStateManager.isDowned(player)
+                    || RoundStartFreezeManager.isFrozen(player)) {
                 return;
             }
-            NikaidouHiroSkills.handleToolAction(player, msg.action);
-            NikaidouHiroStateManager.syncToClient(player);
+            if (NikaidouHiroWitchificationStateManager.isNikaidouHiroWitchification(player)) {
+                NikaidouHiroWitchificationSkills.handleToolAction(player, msg.action);
+                NikaidouHiroWitchificationStateManager.syncToClient(player);
+            } else {
+                NikaidouHiroSkills.handleToolAction(player, msg.action);
+                NikaidouHiroStateManager.syncToClient(player);
+            }
         });
         ctx.get().setPacketHandled(true);
     }

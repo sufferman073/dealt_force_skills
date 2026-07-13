@@ -20,7 +20,7 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VlinderInputHandler {
-    private static final int SELF_HEAL_HOLD_TICKS = DealtForceConfig.intValue("client.vlinder_input_handler.self_heal_hold_ticks", 10);
+    private static volatile int SELF_HEAL_HOLD_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SELF_HEAL_HOLD_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.vlinder_input_handler.self_heal_hold_ticks", 10));
     private static boolean active1WasDown;
     private static int active1HeldTicks;
     private static boolean sentSelfHeal;
@@ -104,8 +104,7 @@ public final class VlinderInputHandler {
             active1HeldTicks++;
             while (KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
             }
-            if (!ClientVlinderHudState.hasEquippedTool()
-                    && active1HeldTicks >= SELF_HEAL_HOLD_TICKS
+            if (active1HeldTicks >= SELF_HEAL_HOLD_TICKS
                     && !sentSelfHeal) {
                 sentSelfHeal = true;
                 NetworkHandler.sendToServer(new C2S_VlinderToolAction(VlinderToolAction.SELF_HEALING_DUST));

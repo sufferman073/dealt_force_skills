@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaArt;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.network.C2S_LexNinjiaPresetAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -11,12 +12,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class LexNinjiaShopManager {
-    private static final long MIND_EXPANSION_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_base_price", 1500L);
-    private static final long MIND_EXPANSION_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_price_step", 650L);
-    private static final long SCIENTIFIC_TOOL_PURCHASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_purchase_price", 6000L);
-    private static final long SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_upgrade_base_price", 3000L);
-    private static final long SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_upgrade_price_step", 1500L);
-
+    private static volatile long MIND_EXPANSION_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MIND_EXPANSION_BASE_PRICE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_base_price", 1500L));
+    private static volatile long MIND_EXPANSION_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MIND_EXPANSION_PRICE_STEP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.mind_expansion_price_step", 650L));
+    private static volatile long SCIENTIFIC_TOOL_PURCHASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCIENTIFIC_TOOL_PURCHASE_PRICE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.lexninjiashopmanager.scientific_tool_purchase_price", 6000L));
+    private static volatile long SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCIENTIFIC_TOOL_UPGRADE_BASE_PRICE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue(
+      "shop.lexninjiashopmanager.scientific_tool_upgrade_base_price", 3000L
+   ));
+    private static volatile long SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCIENTIFIC_TOOL_UPGRADE_PRICE_STEP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue(
+      "shop.lexninjiashopmanager.scientific_tool_upgrade_price_step", 1500L
+   ));
     private LexNinjiaShopManager() {
     }
 
@@ -80,6 +84,7 @@ public final class LexNinjiaShopManager {
             return;
         }
         LexNinjiaStateManager.learnArt(player, art);
+        DfsAchievements.onShopPurchase(player, "lex_ninjia", art.name());
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.lex_ninjia_shop.learned",
                 Component.translatable(art.nameKey()), art.price()), true);
         syncAndReopen(player);
@@ -96,6 +101,8 @@ public final class LexNinjiaShopManager {
             player.displayClientMessage(Component.translatable(equip
                     ? "message.dealt_force_skills.lex_ninjia_shop.no_mind"
                     : "message.dealt_force_skills.lex_ninjia_shop.cannot_unequip"), true);
+        } else if (equip) {
+            DfsAchievements.onLexArtEquipped(player, art.name());
         }
         syncAndReopen(player);
     }
@@ -114,6 +121,7 @@ public final class LexNinjiaShopManager {
             return;
         }
         LexNinjiaStateManager.expandMind(player);
+        DfsAchievements.onShopPurchase(player, "lex_ninjia", "mind_expansion_" + (expansions + 1));
         syncAndReopen(player);
     }
 
@@ -128,6 +136,7 @@ public final class LexNinjiaShopManager {
             return;
         }
         LexNinjiaStateManager.buyScientificTool(player);
+        DfsAchievements.onShopPurchase(player, "lex_ninjia", "scientific_tool");
         syncAndReopen(player);
     }
 
@@ -144,6 +153,7 @@ public final class LexNinjiaShopManager {
             return;
         }
         LexNinjiaStateManager.upgradeScientificTool(player);
+        DfsAchievements.onShopPurchase(player, "lex_ninjia", "scientific_tool_upgrade_" + (level + 1));
         syncAndReopen(player);
     }
 

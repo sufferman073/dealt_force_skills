@@ -6,8 +6,12 @@ import com.rzy.dealt_force_skills.character.CharacterBanManager;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.CharacterSkinSync;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
+import com.rzy.dealt_force_skills.character.chamber.ChamberStateManager;
+import com.rzy.dealt_force_skills.character.corps.CorpsStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
+import com.rzy.dealt_force_skills.character.gambler.GamblerArenaManager;
+import com.rzy.dealt_force_skills.character.gambler.GamblerStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
@@ -16,7 +20,9 @@ import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
 import com.rzy.dealt_force_skills.character.manba.ManbaStateManager;
 import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationStateManager;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
@@ -29,6 +35,9 @@ import com.rzy.dealt_force_skills.character.undead.UndeadStateManager;
 import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
 import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
+import com.rzy.dealt_force_skills.network.C2S_RequestConfigSnapshot;
+import com.rzy.dealt_force_skills.item.DfsEquipmentItem;
+import com.rzy.dealt_force_skills.effect.InjuryManager;
 import com.rzy.dealt_force_skills.network.S2C_SyncSelectedCharacter;
 import com.rzy.dealt_force_skills.shop.HaffCoinManager;
 import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
@@ -52,6 +61,7 @@ public class CharacterEvents {
         DWolfStateManager.copyState(event.getOriginal(), event.getEntity());
         GizmoStateManager.copyState(event.getOriginal(), event.getEntity());
         ShepherdStateManager.copyState(event.getOriginal(), event.getEntity());
+        NTwoStateManager.copyState(event.getOriginal(), event.getEntity());
         LunaStateManager.copyState(event.getOriginal(), event.getEntity());
         HackclawStateManager.copyState(event.getOriginal(), event.getEntity());
         VyronStateManager.copyState(event.getOriginal(), event.getEntity());
@@ -59,6 +69,7 @@ public class CharacterEvents {
         StingerStateManager.copyState(event.getOriginal(), event.getEntity());
         ManbaStateManager.copyState(event.getOriginal(), event.getEntity());
         NikaidouHiroStateManager.copyState(event.getOriginal(), event.getEntity());
+        NikaidouHiroWitchificationStateManager.copyState(event.getOriginal(), event.getEntity());
         CatDadStateManager.copyState(event.getOriginal(), event.getEntity());
         DepartmentOfTransportationStateManager.copyState(event.getOriginal(), event.getEntity());
         UndeadStateManager.copyState(event.getOriginal(), event.getEntity());
@@ -68,11 +79,15 @@ public class CharacterEvents {
         VlinderStateManager.copyState(event.getOriginal(), event.getEntity());
         TempestStateManager.copyState(event.getOriginal(), event.getEntity());
         LexNinjiaStateManager.copyState(event.getOriginal(), event.getEntity());
+        GamblerStateManager.copyState(event.getOriginal(), event.getEntity());
         SaeedStateManager.copyState(event.getOriginal(), event.getEntity());
         GhrothStateManager.copyState(event.getOriginal(), event.getEntity());
+        ChamberStateManager.copyState(event.getOriginal(), event.getEntity());
+        CorpsStateManager.copyState(event.getOriginal(), event.getEntity());
         HaffCoinManager.copy(event.getOriginal(), event.getEntity());
         UndeadSoulManager.copy(event.getOriginal(), event.getEntity());
         LexNinjiaCurrencyManager.copy(event.getOriginal(), event.getEntity());
+        InjuryManager.copyInjuries(event.getOriginal(), event.getEntity());
         if (event.getEntity() instanceof ServerPlayer player) {
             CharacterSkinSync.syncToTracking(player);
         }
@@ -81,22 +96,27 @@ public class CharacterEvents {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            DfsEquipmentItem.removeDuplicatedEquippedHelmet(player);
             String selectedCharacterId = CharacterSelectionManager.getSelectedCharacterId(player).orElse("");
             CharacterAvailability.syncToClient(player);
-            NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(selectedCharacterId), player);
+            C2S_RequestConfigSnapshot.sendSnapshot(player, player.hasPermissions(2));
+            NetworkHandler.sendToPlayer(new S2C_SyncSelectedCharacter(
+                    selectedCharacterId, CharacterSelectionManager.isNormalPlayer(player)), player);
             CharacterSkinSync.syncAllTo(player);
             CharacterSkinSync.syncToTracking(player);
             HaffCoinManager.sync(player);
             UndeadSoulManager.sync(player);
             LexNinjiaCurrencyManager.sync(player);
+            CorpsStateManager.applyPendingDecay(player);
 
             CharacterSelectionManager.getSelectedCharacter(player).ifPresent(character -> {
                 if (player.getServer() != null
-                        && (CharacterBanManager.isServerBanned(player.getServer(), character.id())
-                        || CharacterBanManager.isPlayerBanned(player, character.id()))) {
+                        && (CharacterBanManager.isPlayerBanned(player, character.id())
+                        || (CharacterBanManager.isServerBanned(player.getServer(), character.id())
+                        && !CharacterBanManager.isPlayerAllowed(player, character.id())))) {
                     CharacterSelectionManager.forceReselectionIfSelected(player, character.id(), Component.translatable(
                             "message.dealt_force_skills.selection.force_reselect",
-                            Component.translatable(character.nameTranslationKey())));
+                            character.displayName()));
                     return;
                 }
                 SkillDispatcher.onCharacterSelected(player, character);
@@ -120,6 +140,9 @@ public class CharacterEvents {
 
         RaptorStateManager.recordFootprint(player);
         MorseStateManager.recordObservedPlayerActivity(player);
+        NTwoStateManager.tickGlobal(player);
+        CorpsStateManager.applyPendingDecay(player);
+        GamblerArenaManager.tickPlayer(player);
         SkillDispatcher.tickPlayer(player);
         if (player.tickCount % 5 == 0) {
             SinevaStateManager.syncToClient(player);
@@ -128,6 +151,7 @@ public class CharacterEvents {
             DWolfStateManager.syncToClient(player);
             GizmoStateManager.syncToClient(player);
             ShepherdStateManager.syncToClient(player);
+            NTwoStateManager.syncToClient(player);
             LunaStateManager.syncToClient(player);
             HackclawStateManager.syncToClient(player);
             VyronStateManager.syncToClient(player);
@@ -135,7 +159,9 @@ public class CharacterEvents {
             StingerStateManager.syncToClient(player);
             ManbaStateManager.syncToClient(player);
             NikaidouHiroStateManager.syncToClient(player);
+            NikaidouHiroWitchificationStateManager.syncToClient(player);
             CatDadStateManager.syncToClient(player);
+            CorpsStateManager.syncToClient(player);
             DepartmentOfTransportationStateManager.syncToClient(player);
             UndeadStateManager.syncToClient(player);
             MorseStateManager.syncToClient(player);
@@ -144,8 +170,10 @@ public class CharacterEvents {
             VlinderStateManager.syncToClient(player);
             TempestStateManager.syncToClient(player);
             LexNinjiaStateManager.syncToClient(player);
+            GamblerStateManager.syncToClient(player);
             SaeedStateManager.tick(player);
             GhrothStateManager.syncToClient(player);
+            ChamberStateManager.syncToClient(player);
             HeldToolVisualSync.sync(player);
         }
     }

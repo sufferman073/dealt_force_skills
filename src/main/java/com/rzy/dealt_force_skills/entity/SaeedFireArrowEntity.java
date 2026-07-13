@@ -31,8 +31,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class SaeedFireArrowEntity extends Projectile implements ItemSupplier {
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirearrowentity.bounce_factor", 0.62D);
-    private static final double FIELD_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirearrowentity.field_radius", 6.0D);
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirearrowentity.bounce_factor", 0.62));
+    private static volatile double FIELD_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIELD_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirearrowentity.field_radius", 6.0));
     private boolean canBounce;
     private boolean hitVoicePlayed;
     private int bounces;
@@ -143,7 +143,8 @@ public class SaeedFireArrowEntity extends Projectile implements ItemSupplier {
         if (hit.getEntity() instanceof LivingEntity target) {
             LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
             target.invulnerableTime = 0;
-            boolean damaged = SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, this, owner), com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeed_fire_arrow_entity.skill_hurt.0.damage", 10.0F));
+            boolean damaged = SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(level, this, owner), owner,
+                    com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeed_fire_arrow_entity.skill_hurt.0.damage", 10.0F));
             target.setSecondsOnFire(8);
             if (damaged) {
                 playHitVoiceOnce(level, target.position());

@@ -39,6 +39,70 @@
       }
     ]
   },
+  "hvk_constructor_craft_start": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hvk_constructor/open",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_constructor/use_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_constructor/use_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_constructor/use_3",
+        "stream": false
+      }
+    ]
+  },
+  "hvk_constructor_craft_finish": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hvk_constructor/finish_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_constructor/finish_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_constructor/finish_3",
+        "stream": false
+      }
+    ]
+  },
+  "hvk_disassembler_use": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hvk_disassembler/use_voice_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_disassembler/use_voice_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_disassembler/use_voice_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:hvk_disassembler/use_4",
+        "stream": false
+      }
+    ]
+  },
+  "hvk_disassembler_repel": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:hvk_disassembler/repel_constructor",
+        "stream": false
+      }
+    ]
+  },
   "bomb_suit_equip": {
     "sounds": [
       {
@@ -127,82 +191,28 @@
       }
     ]
   },
-  "sineva_walk": {
-    "sounds": [
-      {
-        "name": "dealt_force_skills:sineva/walk",
-        "stream": false
-      }
-    ]
-  },
-  "sineva_shield_hit": {
-    "sounds": [
-      {
-        "name": "dealt_force_skills:sineva/shield_hit_1",
-        "stream": false
-      },
-      {
-        "name": "dealt_force_skills:sineva/shield_hit_2",
-        "stream": false
-      }
-    ]
-  },
-  "sineva_shield_bash_control": {
-    "sounds": [
-      {
-        "name": "dealt_force_skills:sineva/shield_bash_control_1",
-        "stream": false
-      },
-      {
-        "name": "dealt_force_skills:sineva/shield_bash_control_2",
-        "stream": false
-      },
-      {
-        "name": "dealt_force_skills:sineva/shield_bash_control_3",
-        "stream": false
-      }
-    ]
-  },
-  "sineva_shield_block": {
-    "sounds": [
-      {
-        "name": "minecraft:item/shield/block1",
-        "volume": 0.85
-      },
-      {
-        "name": "minecraft:item/shield/block2",
-        "volume": 0.85
-      },
-      {
-        "name": "minecraft:item/shield/block3",
-        "volume": 0.85
-      },
-      {
-        "name": "minecraft:item/shield/block4",
-        "volume": 0.85
-      },
-      {
-        "name": "minecraft:item/shield/block5",
-        "volume": 0.85
-      }
-    ]
-  },
-  "sineva_projectile_reflect": {
-    "sounds": [
-      {
-        "name": "dealt_force_skills:sineva/projectile_reflect",
-        "stream": false
-      }
-    ]
-  },
-  "sineva_grapple_hit_caster": {
-    "sounds": [
-      {
-        "name": "dealt_force_skills:sineva/grapple_hit_caster",
-        "stream": false
-      }
-    ]
-  },
+  "sineva.shield_bash": {"sounds": ["dealt_force_skills:sineva/shield_bash_3", "dealt_force_skills:sineva/shield_bash_4", "dealt_force_skills:sineva/shield_bash_5", "dealt_force_skills:sineva/shield_bash_6", "dealt_force_skills:sineva/shield_bash_7", "dealt_force_skills:sineva/shield_bash_8"]},
+  "sineva.shield_bash_charge": {"sounds": ["dealt_force_skills:sineva/shield_bash_1", "dealt_force_skills:sineva/shield_bash_2", "dealt_force_skills:sineva/shield_bash_9"]},
+  "sineva.shield_hit": {"sounds": ["dealt_force_skills:sineva/shield_block_1", "dealt_force_skills:sineva/shield_block_2"]},
+  "sineva.projectile_reflect": {"sounds": ["dealt_force_skills:sineva/projectile_reflect"]},
+  "sineva.shield_bash_control_voice": {"sounds": ["dealt_force_skills:sineva/shield_bash_control_voice_1", "dealt_force_skills:sineva/shield_bash_control_voice_2", "dealt_force_skills:sineva/shield_bash_control_voice_3"]},
+  "sineva.shield_toggle": {"sounds": ["dealt_force_skills:sineva/shield_toggle"]},
+  "sineva.grapple_fire": {"sounds": ["dealt_force_skills:sineva/grapple_fire"]},
+  "sineva.riot_suit_prepare": {"sounds": ["dealt_force_skills:sineva/riot_suit_prepare"]},
+  "sineva.riot_suit_walk": {"sounds": ["dealt_force_skills:sineva/riot_suit_walk_1", "dealt_force_skills:sineva/riot_suit_walk_2", "dealt_force_skills:sineva/riot_suit_walk_3", "dealt_force_skills:sineva/riot_suit_walk_4", "dealt_force_skills:sineva/riot_suit_walk_5", "dealt_force_skills:sineva/riot_suit_walk_6", "dealt_force_skills:sineva/riot_suit_walk_7", "dealt_force_skills:sineva/riot_suit_walk_8", "dealt_force_skills:sineva/riot_suit_walk_9", "dealt_force_skills:sineva/riot_suit_walk_10"]},
+  "sineva.grapple_hit": {"sounds": ["dealt_force_skills:sineva/grapple_hit"]},
+  "sineva.grapple_hit_voice": {"sounds": ["dealt_force_skills:sineva/grapple_hit_voice_1", "dealt_force_skills:sineva/grapple_hit_voice_2", "dealt_force_skills:sineva/grapple_hit_voice_3"]},
+  "sineva.grapple_drag": {"sounds": ["dealt_force_skills:sineva/grapple_drag"]},
+  "sineva.grapple_break_voice": {"sounds": ["dealt_force_skills:sineva/grapple_break_voice"]},
+  "sineva.grapple_charge_ready": {"sounds": ["dealt_force_skills:sineva/grapple_charge_ready"]},
+  "sineva.viewport_break": {"sounds": ["dealt_force_skills:sineva/viewport_break"]},
+  "sineva.viewport_break_voice": {"sounds": ["dealt_force_skills:sineva/viewport_break_voice_1", "dealt_force_skills:sineva/viewport_break_voice_2", "dealt_force_skills:sineva/viewport_break_voice_3"]},
+  "sineva.barbed_wire_throw": {"sounds": ["dealt_force_skills:sineva/barbed_wire_throw_1", "dealt_force_skills:sineva/barbed_wire_throw_2", "dealt_force_skills:sineva/barbed_wire_throw_3"]},
+  "sineva.grapple_retract": {"sounds": ["dealt_force_skills:sineva/grapple_retract"]},
+  "sineva.riot_suit_voice": {"sounds": ["dealt_force_skills:sineva/riot_suit_voice_1", "dealt_force_skills:sineva/riot_suit_voice_2", "dealt_force_skills:sineva/riot_suit_voice_3", "dealt_force_skills:sineva/riot_suit_voice_4", "dealt_force_skills:sineva/riot_suit_voice_5", "dealt_force_skills:sineva/riot_suit_voice_6"]},
+  "sineva.barbed_wire_land": {"sounds": ["dealt_force_skills:sineva/barbed_wire_land_1", "dealt_force_skills:sineva/barbed_wire_land_2", "dealt_force_skills:sineva/barbed_wire_land_3", "dealt_force_skills:sineva/barbed_wire_land_4", "dealt_force_skills:sineva/barbed_wire_land_5", "dealt_force_skills:sineva/barbed_wire_land_6"]},
+  "sineva.grapple_charge": {"sounds": ["dealt_force_skills:sineva/grapple_charge"]},
+  "sineva.walk_on_barbed_wire": {"sounds": ["dealt_force_skills:sineva/walk_on_barbed_wire_1", "dealt_force_skills:sineva/walk_on_barbed_wire_2", "dealt_force_skills:sineva/walk_on_barbed_wire_3", "dealt_force_skills:sineva/walk_on_barbed_wire_4", "dealt_force_skills:sineva/walk_on_barbed_wire_5", "dealt_force_skills:sineva/walk_on_barbed_wire_6"]},
   "d_wolf_hand_cannon_equip": {
     "sounds": [
       {
@@ -214,7 +224,35 @@
   "d_wolf_hand_cannon_fire": {
     "sounds": [
       {
-        "name": "dealt_force_skills:d_wolf/hand_cannon_fire",
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_4",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_5",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fire_6",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_hand_cannon_fuse": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/hand_cannon_fuse",
         "stream": false
       }
     ]
@@ -262,7 +300,19 @@
   "d_wolf_overload_start": {
     "sounds": [
       {
-        "name": "dealt_force_skills:d_wolf/overload_start",
+        "name": "dealt_force_skills:d_wolf/overload_start_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_start_2",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_overload_active": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/overload_active",
         "stream": false
       }
     ]
@@ -270,8 +320,44 @@
   "d_wolf_overload_kill_extension": {
     "sounds": [
       {
-        "name": "minecraft:item/totem/use_totem",
-        "volume": 0.7
+        "name": "dealt_force_skills:d_wolf/overload_kill_extension_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_kill_extension_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_kill_extension_3",
+        "stream": false
+      }
+    ]
+  },
+  "d_wolf_overload_step": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_4",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_5",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:d_wolf/overload_step_6",
+        "stream": false
       }
     ]
   },
@@ -675,6 +761,14 @@
       }
     ]
   },
+  "luna_recon_detection": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:luna/position_reveal",
+        "stream": false
+      }
+    ]
+  },
   "luna_position_reveal": {
     "sounds": [
       {
@@ -758,7 +852,7 @@
   "vyron_powered_land": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/powered_land",
+        "name": "dealt_force_skills:vyron/powered_activate",
         "stream": false
       }
     ]
@@ -774,15 +868,47 @@
   "vyron_dash": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/dash",
+        "name": "dealt_force_skills:vyron/dash_1",
         "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/dash_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/dash_3",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_falling_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/falling_loop",
+        "stream": true
       }
     ]
   },
   "vyron_magnetic_bomb_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/magnetic_bomb_equip",
+        "name": "dealt_force_skills:vyron/magnetic_bomb_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_equip_2",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_stow_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_stow_2",
         "stream": false
       }
     ]
@@ -790,7 +916,35 @@
   "vyron_magnetic_bomb_throw": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/magnetic_bomb_throw",
+        "name": "dealt_force_skills:vyron/magnetic_bomb_throw_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_throw_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_throw_3",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_magnetic_bomb_attach": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_attach_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_attach_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_attach_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/magnetic_bomb_attach_4",
         "stream": false
       }
     ]
@@ -811,10 +965,50 @@
       }
     ]
   },
+  "vyron_powered_active": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/powered_active_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/powered_active_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/powered_active_3",
+        "stream": false
+      }
+    ]
+  },
   "vyron_tiger_cannon_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/tiger_cannon_equip",
+        "name": "dealt_force_skills:vyron/tiger_cannon_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_equip_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_equip_3",
+        "stream": false
+      }
+    ]
+  },
+  "vyron_tiger_cannon_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_stow_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_stow_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_stow_3",
         "stream": false
       }
     ]
@@ -822,7 +1016,7 @@
   "vyron_tiger_cannon_ready": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/tiger_cannon_ready",
+        "name": "dealt_force_skills:vyron/tiger_cannon_countdown",
         "stream": false
       }
     ]
@@ -830,7 +1024,27 @@
   "vyron_tiger_cannon_fire": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/tiger_cannon_fire",
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_4",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_5",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_fire_6",
         "stream": false
       }
     ]
@@ -838,7 +1052,11 @@
   "vyron_tiger_cannon_bounce": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/tiger_cannon_bounce",
+        "name": "dealt_force_skills:vyron/tiger_cannon_bounce_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_bounce_2",
         "stream": false
       }
     ]
@@ -846,7 +1064,11 @@
   "vyron_tiger_cannon_explode": {
     "sounds": [
       {
-        "name": "dealt_force_skills:vyron/tiger_cannon_explode",
+        "name": "dealt_force_skills:vyron/tiger_cannon_explode_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:vyron/tiger_cannon_explode_2",
         "stream": false
       }
     ]
@@ -862,7 +1084,31 @@
   "nox_rotor_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/rotor_equip",
+        "name": "dealt_force_skills:nox/rotor_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_equip_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_equip_3",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_stow_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_stow_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_stow_3",
         "stream": false
       }
     ]
@@ -870,7 +1116,15 @@
   "nox_rotor_lock": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/rotor_lock",
+        "name": "dealt_force_skills:nox/rotor_lock_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_lock_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_lock_3",
         "stream": false
       }
     ]
@@ -878,7 +1132,55 @@
   "nox_rotor_throw": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/rotor_throw",
+        "name": "dealt_force_skills:nox/rotor_throw_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_throw_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_throw_3",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_idle_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_idle_loop",
+        "stream": true
+      }
+    ]
+  },
+  "nox_rotor_start_fly": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_start_fly",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_fly_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_fly_loop",
+        "stream": true
+      }
+    ]
+  },
+  "nox_rotor_fly_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_fly_end",
+        "stream": false
+      }
+    ]
+  },
+  "nox_rotor_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/rotor_destroyed",
         "stream": false
       }
     ]
@@ -886,7 +1188,15 @@
   "nox_rotor_bounce": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/rotor_bounce",
+        "name": "dealt_force_skills:nox/rotor_bounce_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_bounce_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/rotor_bounce_3",
         "stream": false
       }
     ]
@@ -902,7 +1212,31 @@
   "nox_flash_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/flash_equip",
+        "name": "dealt_force_skills:nox/flash_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_equip_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_equip_3",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_pin": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_pin_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_pin_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_pin_3",
         "stream": false
       }
     ]
@@ -910,7 +1244,15 @@
   "nox_flash_throw": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/flash_throw",
+        "name": "dealt_force_skills:nox/flash_throw_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_throw_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_throw_3",
         "stream": false
       }
     ]
@@ -926,7 +1268,15 @@
   "nox_flash_explode": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/flash_explode",
+        "name": "dealt_force_skills:nox/flash_explode_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_explode_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_explode_3",
         "stream": false
       }
     ]
@@ -934,7 +1284,27 @@
   "nox_flash_hit": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/flash_hit",
+        "name": "dealt_force_skills:nox/flash_hit_full",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/flash_hit_partial",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_hit_full": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_hit_full",
+        "stream": false
+      }
+    ]
+  },
+  "nox_flash_hit_partial": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/flash_hit_partial",
         "stream": false
       }
     ]
@@ -942,8 +1312,24 @@
   "nox_stealth_start": {
     "sounds": [
       {
-        "name": "dealt_force_skills:nox/stealth_start",
+        "name": "dealt_force_skills:nox/stealth_start_1",
         "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/stealth_start_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:nox/stealth_start_3",
+        "stream": false
+      }
+    ]
+  },
+  "nox_stealth_active_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:nox/stealth_active_loop",
+        "stream": true
       }
     ]
   },
@@ -1398,7 +1784,11 @@
   "raptor_footprint_read_start": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/footprint_read_start",
+        "name": "dealt_force_skills:raptor/footprint_read_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/footprint_read_2",
         "stream": false
       }
     ]
@@ -1406,7 +1796,11 @@
   "raptor_footprint_info": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/footprint_info",
+        "name": "dealt_force_skills:raptor/footprint_read_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/footprint_read_2",
         "stream": false
       }
     ]
@@ -1414,7 +1808,15 @@
   "raptor_falcon_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_equip",
+        "name": "dealt_force_skills:raptor/falcon_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_equip_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_equip_3",
         "stream": false
       }
     ]
@@ -1422,7 +1824,15 @@
   "raptor_falcon_stow": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_stow",
+        "name": "dealt_force_skills:raptor/falcon_stow_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_stow_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_stow_3",
         "stream": false
       }
     ]
@@ -1430,7 +1840,15 @@
   "raptor_falcon_launch": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_launch",
+        "name": "dealt_force_skills:raptor/falcon_launch_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_launch_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_launch_3",
         "stream": false
       }
     ]
@@ -1438,7 +1856,11 @@
   "raptor_falcon_fly": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_fly",
+        "name": "dealt_force_skills:raptor/falcon_fly_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_fly_2",
         "stream": false
       }
     ]
@@ -1462,7 +1884,15 @@
   "raptor_falcon_pulse_throw": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_pulse_throw",
+        "name": "dealt_force_skills:raptor/falcon_pulse_throw_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_pulse_throw_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_pulse_throw_3",
         "stream": false
       }
     ]
@@ -1470,7 +1900,11 @@
   "raptor_falcon_self_destruct_start": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_self_destruct_start",
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_start_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_start_2",
         "stream": false
       }
     ]
@@ -1478,7 +1912,15 @@
   "raptor_falcon_self_destruct_explode": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/falcon_self_destruct_explode",
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_explode_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_explode_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/falcon_self_destruct_explode_3",
         "stream": false
       }
     ]
@@ -1486,7 +1928,47 @@
   "raptor_pulse_grenade_equip": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/pulse_grenade_equip",
+        "name": "dealt_force_skills:raptor/pulse_grenade_equip_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_equip_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_equip_3",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_stow": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_stow_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_stow_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_stow_3",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_pin": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_pin_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_pin_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_pin_3",
         "stream": false
       }
     ]
@@ -1494,7 +1976,43 @@
   "raptor_pulse_grenade_throw": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/pulse_grenade_throw",
+        "name": "dealt_force_skills:raptor/pulse_grenade_throw_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_throw_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_throw_3",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_pulse_grenade_bounce": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_4",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_5",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_bounce_6",
         "stream": false
       }
     ]
@@ -1510,7 +2028,27 @@
   "raptor_pulse_grenade_explode": {
     "sounds": [
       {
-        "name": "dealt_force_skills:raptor/pulse_grenade_explode",
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_2",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_3",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_4",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_5",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/pulse_grenade_explode_6",
         "stream": false
       }
     ]
@@ -1536,6 +2074,22 @@
       {
         "name": "dealt_force_skills:raptor/hummingbird_attach",
         "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_success": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_success",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_active_loop": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_active_loop",
+        "stream": true
       }
     ]
   },
@@ -1567,6 +2121,26 @@
     "sounds": [
       {
         "name": "dealt_force_skills:raptor/hummingbird_lost",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_end": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_end",
+        "stream": false
+      }
+    ]
+  },
+  "raptor_hummingbird_destroyed": {
+    "sounds": [
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_destroyed_1",
+        "stream": false
+      },
+      {
+        "name": "dealt_force_skills:raptor/hummingbird_destroyed_2",
         "stream": false
       }
     ]
@@ -2393,5 +2967,93 @@
   "lex_ninjia_ham_kill_all": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_kill_all", "stream": false}]},
   "lex_ninjia_ham_beast": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_beast", "stream": false}]},
   "lex_ninjia_ham_shadow_kick": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_shadow_kick", "stream": false}]},
-  "lex_ninjia_ham_echo": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_echo", "stream": false}]}
+  "lex_ninjia_ham_echo": {"sounds": [{"name": "dealt_force_skills:lex_ninjia/ham_echo", "stream": false}]},
+  "chamber_passive_funds": {"sounds": [{"name": "dealt_force_skills:chamber/passive_funds", "stream": false}]},
+  "chamber_teleport_card": {"sounds": [{"name": "dealt_force_skills:chamber/teleport_card", "stream": false}]},
+  "chamber_trap_card": {"sounds": [{"name": "dealt_force_skills:chamber/trap_card", "stream": false}]},
+  "chamber_headhunter": {"sounds": [{"name": "dealt_force_skills:chamber/headhunter", "stream": false}]},
+  "chamber_tour_de_force": {"sounds": [{"name": "dealt_force_skills:chamber/tour_de_force", "stream": false}]},
+  "n_two_tracking_stun": {"sounds": ["dealt_force_skills:n_two/tracking_stun_equip_1", "dealt_force_skills:n_two/tracking_stun_equip_2", "dealt_force_skills:n_two/tracking_stun_equip_3"]},
+  "n_two_tracking_stun_throw": {"sounds": ["dealt_force_skills:n_two/tracking_stun_throw_1", "dealt_force_skills:n_two/tracking_stun_throw_2", "dealt_force_skills:n_two/tracking_stun_throw_3"]},
+  "n_two_tracking_stun_burst": {"sounds": [{"name": "dealt_force_skills:n_two/tracking_stun_burst", "stream": false}]},
+  "n_two_tracking_stun_lock": {"sounds": [{"name": "dealt_force_skills:n_two/tracking_stun_lock", "stream": false}]},
+  "n_two_dewar_canister": {"sounds": ["dealt_force_skills:n_two/dewar_equip_1", "dealt_force_skills:n_two/dewar_equip_2", "dealt_force_skills:n_two/dewar_equip_3"]},
+  "n_two_dewar_stow": {"sounds": ["dealt_force_skills:n_two/dewar_stow_1", "dealt_force_skills:n_two/dewar_stow_2", "dealt_force_skills:n_two/dewar_stow_3"]},
+  "n_two_dewar_pin": {"sounds": ["dealt_force_skills:n_two/dewar_pin_1", "dealt_force_skills:n_two/dewar_pin_2", "dealt_force_skills:n_two/dewar_pin_3"]},
+  "n_two_dewar_throw": {"sounds": ["dealt_force_skills:n_two/dewar_throw_1", "dealt_force_skills:n_two/dewar_throw_2", "dealt_force_skills:n_two/dewar_throw_3"]},
+  "n_two_dewar_field": {"sounds": ["dealt_force_skills:n_two/dewar_field_1", "dealt_force_skills:n_two/dewar_field_2", "dealt_force_skills:n_two/dewar_field_3"]},
+  "n_two_ice_field": {"sounds": ["dealt_force_skills:n_two/ice_field_freeze_1", "dealt_force_skills:n_two/ice_field_freeze_2", "dealt_force_skills:n_two/ice_field_freeze_3"]},
+  "n_two_condensed_launcher": {"sounds": ["dealt_force_skills:n_two/condenser_equip_1", "dealt_force_skills:n_two/condenser_equip_2", "dealt_force_skills:n_two/condenser_equip_3"]},
+  "n_two_condensed_charge": {"sounds": ["dealt_force_skills:n_two/condenser_charge_1", "dealt_force_skills:n_two/condenser_charge_2"]},
+  "n_two_condensed_stow": {"sounds": ["dealt_force_skills:n_two/condenser_stow_1", "dealt_force_skills:n_two/condenser_stow_2", "dealt_force_skills:n_two/condenser_stow_3"]},
+  "n_two_condensed_fire": {"sounds": ["dealt_force_skills:n_two/condenser_fire_1", "dealt_force_skills:n_two/condenser_fire_2", "dealt_force_skills:n_two/condenser_fire_3"]},
+  "n_two_condensed_mechanical": {"sounds": ["dealt_force_skills:n_two/condenser_mechanical_1", "dealt_force_skills:n_two/condenser_mechanical_2", "dealt_force_skills:n_two/condenser_mechanical_3", "dealt_force_skills:n_two/condenser_mechanical_4", "dealt_force_skills:n_two/condenser_mechanical_5", "dealt_force_skills:n_two/condenser_mechanical_6"]},
+  "n_two_condensed_bounce": {"sounds": ["dealt_force_skills:n_two/condenser_bounce_1", "dealt_force_skills:n_two/condenser_bounce_2", "dealt_force_skills:n_two/condenser_bounce_3"]},
+  "n_two_condensed_countdown": {"sounds": [{"name": "dealt_force_skills:n_two/condenser_countdown", "stream": false}]},
+  "n_two_condensed_hit": {"sounds": [{"name": "dealt_force_skills:n_two/condenser_hit", "stream": false}]},
+  "n_two_condensed_explode": {"sounds": ["dealt_force_skills:n_two/condenser_explode_1", "dealt_force_skills:n_two/condenser_explode_2", "dealt_force_skills:n_two/condenser_explode_3"]},
+  "n_two_condensed_field": {"sounds": ["dealt_force_skills:n_two/condenser_field_1", "dealt_force_skills:n_two/condenser_field_2"]},
+  "n_two_freeze": {"sounds": [{"name": "dealt_force_skills:n_two/freeze_trigger", "stream": false}]},
+  "corps_warm_enforcement": {"sounds": [{"name": "dealt_force_skills:corps/warm_enforcement", "stream": false}]},
+  "corps_forceful_baton": {"sounds": [{"name": "dealt_force_skills:corps/forceful_baton", "stream": false}]},
+  "corps_core_cast": {"sounds": [{"name": "dealt_force_skills:corps/core_cast", "stream": false}]},
+  "corps_duel_music": {"sounds": [{"name": "dealt_force_skills:corps/duel_music", "stream": true}]},
+  "nikaidou_witch_rewind_rebirth_1": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/rewind_rebirth_1", "stream": false}]},
+  "nikaidou_witch_rewind_rebirth_2": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/rewind_rebirth_2", "stream": false}]},
+  "nikaidou_witch_rewind_rebirth_3": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/rewind_rebirth_3", "stream": false}]},
+  "nikaidou_witch_error_cast": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/error_cast", "stream": false}]},
+  "nikaidou_witch_kill_1": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/kill_1", "stream": false}]},
+  "nikaidou_witch_kill_2": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/kill_2", "stream": false}]},
+  "nikaidou_witch_core_cast": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/core_cast", "stream": false}]},
+  "nikaidou_witch_remnant_lock": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/remnant_lock", "stream": false}]},
+  "nikaidou_witch_remnant_enter": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/remnant_enter", "stream": true}]},
+  "nikaidou_witch_final_enter": {"sounds": [{"name": "dealt_force_skills:nikaidou_hiro_witchification/final_enter", "stream": true}]},
+  "hvk_clone_prototype_use_1": {"sounds": [{"name": "dealt_force_skills:hvk_clone_prototype/use_1", "stream": false}]},
+  "hvk_clone_prototype_use_2": {"sounds": [{"name": "dealt_force_skills:hvk_clone_prototype/use_2", "stream": false}]},
+  "hvk_clone_prototype_use_3": {"sounds": [{"name": "dealt_force_skills:hvk_clone_prototype/use_3", "stream": false}]},
+  "hvk_clone_prototype_use_4": {"sounds": [{"name": "dealt_force_skills:hvk_clone_prototype/use_4", "stream": false}]},
+  "hvk_clone_prototype_use_5": {"sounds": [{"name": "dealt_force_skills:hvk_clone_prototype/use_5", "stream": false}]},
+  "hvk_advanced_treasure_compass_success": {"sounds": [{"name": "dealt_force_skills:hvk_advanced_treasure_compass/success_1", "stream": false}, {"name": "dealt_force_skills:hvk_advanced_treasure_compass/success_2", "stream": false}, {"name": "dealt_force_skills:hvk_advanced_treasure_compass/success_3", "stream": false}, {"name": "dealt_force_skills:hvk_advanced_treasure_compass/success_4", "stream": false}]},
+  "eternal_love_blessing_record": {"sounds": [{"name": "dealt_force_skills:item/eternal_love_blessing_record", "stream": false}]},
+  "eternal_love_blessing_obtain": {"sounds": [{"name": "dealt_force_skills:item/eternal_love_blessing_obtain", "stream": false}]},
+  "interdimensional_block_use_1": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_1", "stream": false}]},
+  "interdimensional_block_use_2": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_2", "stream": false}]},
+  "interdimensional_block_use_3": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_3", "stream": false}]},
+  "interdimensional_block_use_4": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_4", "stream": false}]},
+  "interdimensional_block_use_5": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_5", "stream": false}]},
+  "interdimensional_block_use_6": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_6", "stream": false}]},
+  "interdimensional_block_use_7": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_7", "stream": false}]},
+  "interdimensional_block_use_8": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_8", "stream": false}]},
+  "interdimensional_block_use_9": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_9", "stream": false}]},
+  "interdimensional_block_use_10": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/use_10", "stream": false}]},
+  "interdimensional_block_buried": {"sounds": [{"name": "dealt_force_skills:interdimensional_block/buried", "stream": false}]},
+  "gambler.draw": {"sounds": [{"name": "dealt_force_skills:gambler/draw", "stream": false}]},
+  "gambler.shield_block": {"sounds": [{"name": "dealt_force_skills:gambler/shield_block", "stream": false}]},
+  "gambler.hakko_ichiu_bgm": {"sounds": [{"name": "dealt_force_skills:gambler/hakko_ichiu_bgm", "stream": true}]},
+  "gambler.arena_bgm": {"sounds": [{"name": "dealt_force_skills:gambler/arena_bgm", "stream": true}]},
+  "gambler.core_jackpot_bgm": {"sounds": [{"name": "dealt_force_skills:gambler/core_jackpot_bgm", "stream": true}]},
+  "gambler.power.ride_the_wind": {"sounds": [{"name": "dealt_force_skills:gambler/powers/ride_the_wind", "stream": false}]},
+  "gambler.power.earthshaking_slam": {"sounds": [{"name": "dealt_force_skills:gambler/powers/earthshaking_slam", "stream": false}]},
+  "gambler.power.triple_threat": {"sounds": [{"name": "dealt_force_skills:gambler/powers/triple_threat", "stream": false}]},
+  "gambler.power.shrink_ray": {"sounds": [{"name": "dealt_force_skills:gambler/powers/shrink_ray", "stream": false}]},
+  "gambler.power.vitality_burst": {"sounds": [{"name": "dealt_force_skills:gambler/powers/vitality_burst", "stream": false}]},
+  "gambler.power.frozen_tundra": {"sounds": [{"name": "dealt_force_skills:gambler/powers/frozen_tundra", "stream": false}]},
+  "gambler.power.inspiration": {"sounds": [{"name": "dealt_force_skills:gambler/powers/inspiration", "stream": false}]},
+  "gambler.power.witch_familiar": {"sounds": [{"name": "dealt_force_skills:gambler/powers/witch_familiar", "stream": false}]},
+  "gambler.power.missile_barrage": {"sounds": [{"name": "dealt_force_skills:gambler/powers/missile_barrage", "stream": false}]},
+  "gambler.power.octo_thrower": {"sounds": [{"name": "dealt_force_skills:gambler/powers/octo_thrower", "stream": false}]},
+  "gambler.power.scary_shaper_1000": {"sounds": [{"name": "dealt_force_skills:gambler/powers/scary_shaper_1000", "stream": false}]},
+  "gambler.power.precision_strike": {"sounds": [{"name": "dealt_force_skills:gambler/powers/precision_strike", "stream": false}]},
+  "gambler.power.solar_burn": {"sounds": [{"name": "dealt_force_skills:gambler/powers/solar_burn", "stream": false}]},
+  "gambler.power.unbreakable": {"sounds": [{"name": "dealt_force_skills:gambler/powers/unbreakable", "stream": false}]},
+  "gambler.power.devour": {"sounds": [{"name": "dealt_force_skills:gambler/powers/devour", "stream": false}]},
+  "gambler.power.throw_potato": {"sounds": [{"name": "dealt_force_skills:gambler/powers/throw_potato", "stream": false}]},
+  "gambler.power.orange_peel_shield": {"sounds": [{"name": "dealt_force_skills:gambler/powers/orange_peel_shield", "stream": false}]},
+  "gambler.power.power_punch": {"sounds": [{"name": "dealt_force_skills:gambler/powers/power_punch", "stream": false}]},
+  "gambler.power.inflating_mushroom": {"sounds": [{"name": "dealt_force_skills:gambler/powers/inflating_mushroom", "stream": false}]},
+  "gambler.power.sheepify": {"sounds": [{"name": "dealt_force_skills:gambler/powers/sheepify", "stream": false}]},
+  "gambler.power.blazing_bark": {"sounds": [{"name": "dealt_force_skills:gambler/powers/blazing_bark", "stream": false}]},
+  "gambler.power.gene_amplification": {"sounds": [{"name": "dealt_force_skills:gambler/powers/gene_amplification", "stream": false}]},
+  "skills_cd": {"sounds": [{"name": "dealt_force_skills:skills_cd", "stream": false}]},
+  "skills_ready": {"sounds": [{"name": "dealt_force_skills:skills_ready", "stream": false}]}
 }

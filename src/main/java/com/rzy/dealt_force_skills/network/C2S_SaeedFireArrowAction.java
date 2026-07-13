@@ -9,6 +9,7 @@ import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
 import com.rzy.dealt_force_skills.entity.RaptorFalconDroneEntity;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -39,6 +40,7 @@ public class C2S_SaeedFireArrowAction {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player == null
+                    || player.isSpectator()
                     || !SaeedStateManager.isSaeed(player)
                     || UluruLoiteringMissileEntity.isPlayerControlling(player)
                     || RaptorFalconDroneEntity.isPlayerControlling(player)) {
@@ -49,7 +51,8 @@ public class C2S_SaeedFireArrowAction {
                     || StingerStateManager.isDowned(player)
                     || VlinderStateManager.isDowned(player)
                     || CatDadStateManager.isDowned(player)
-                    || TempestStateManager.isActionLocked(player)) {
+                    || TempestStateManager.isActionLocked(player)
+                    || RoundStartFreezeManager.isFrozen(player)) {
                 return;
             }
             switch (msg.action) {

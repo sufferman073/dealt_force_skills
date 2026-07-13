@@ -5,6 +5,7 @@ import com.rzy.dealt_force_skills.entity.UluruBombletEntity;
 import com.rzy.dealt_force_skills.entity.UluruFireFieldEntity;
 import com.rzy.dealt_force_skills.entity.UluruIncendiaryGrenadeEntity;
 import com.rzy.dealt_force_skills.registry.ModBlocks;
+import com.rzy.dealt_force_skills.registry.ModGameRules;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -178,6 +179,9 @@ public final class UluruExplosionHelper {
     }
 
     public static void destroyQuickCovers(ServerLevel level, Vec3 center, double radius) {
+        if (!ModGameRules.areSkillBlockBreaksEnabled(level)) {
+            return;
+        }
         int minX = (int) Math.floor(center.x - radius);
         int minY = (int) Math.floor(center.y - radius);
         int minZ = (int) Math.floor(center.z - radius);

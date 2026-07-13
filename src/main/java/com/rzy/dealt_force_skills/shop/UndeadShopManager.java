@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.character.undead.UndeadStateManager;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.undead.UndeadSupportManager;
 import com.rzy.dealt_force_skills.character.undead.UndeadUpgradeManager;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
@@ -74,6 +75,7 @@ public final class UndeadShopManager {
         if (entry.isBracelet()) {
             UndeadUpgradeManager.setEquipped(player, entry, true);
         }
+        DfsAchievements.onShopPurchase(player, "undead", entry.id());
         message(player, "message.dealt_force_skills.undead_shop.purchased");
     }
 

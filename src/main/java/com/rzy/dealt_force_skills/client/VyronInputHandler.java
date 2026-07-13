@@ -4,15 +4,19 @@ import com.rzy.dealt_force_skills.config.DealtForceConfig;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.vyron.VyronTool;
 import com.rzy.dealt_force_skills.character.vyron.VyronToolAction;
+import com.rzy.dealt_force_skills.character.vyron.VyronStateManager;
 import com.rzy.dealt_force_skills.client.character.ClientVyronHudState;
 import com.rzy.dealt_force_skills.client.visual.ClientVyronToolAnimationState;
+import com.rzy.dealt_force_skills.compat.ParcoolStaminaBridge;
 import com.rzy.dealt_force_skills.network.C2S_VyronDash;
 import com.rzy.dealt_force_skills.network.C2S_VyronToolAction;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -24,8 +28,8 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class VyronInputHandler {
-    private static final int BOMB_HOLD_EQUIP_TICKS = DealtForceConfig.intValue("client.vyron_input_handler.bomb_hold_equip_ticks", 8);
-    private static final int BOMB_FIRE_TICKS = DealtForceConfig.intValue("client.vyron_input_handler.bomb_fire_ticks", 5);
+    private static volatile int BOMB_HOLD_EQUIP_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_HOLD_EQUIP_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.vyron_input_handler.bomb_hold_equip_ticks", 8));
+    private static volatile int BOMB_FIRE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOMB_FIRE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.vyron_input_handler.bomb_fire_ticks", 5));
     private static boolean active2WasDown;
     private static int active2HeldTicks;
     private static boolean sentBombEquip;
@@ -45,8 +49,10 @@ public final class VyronInputHandler {
         }
 
         while (KeybindRegister.ACTIVE_SKILL_1 != null && KeybindRegister.ACTIVE_SKILL_1.consumeClick()) {
-            Vec3 direction = movementDirection(minecraft);
-            NetworkHandler.sendToServer(new C2S_VyronDash(direction.x, direction.z));
+            if (canDashWithStamina(minecraft.player)) {
+                Vec3 direction = movementDirection(minecraft);
+                NetworkHandler.sendToServer(new C2S_VyronDash(direction.x, direction.z));
+            }
         }
 
         handlePendingBombThrow();
@@ -170,6 +176,24 @@ public final class VyronInputHandler {
                     VyronToolAction.THROW_MAGNETIC_BOMB, pendingBombHighThrow));
             pendingBombHighThrow = false;
         }
+    }
+
+    private static boolean canDashWithStamina(Player player) {
+        int cost = VyronStateManager.DASH_STAMINA_PERCENT_COST;
+        if (cost <= 0) {
+            return true;
+        }
+        if (ClientVyronHudState.dashCooldownTicks() > 0 || ClientVyronHudState.dashTicks() > 0) {
+            return false;
+        }
+        ParcoolStaminaBridge.ConsumeResult result = ParcoolStaminaBridge.canConsumeLocalPercent(player, cost);
+        if (result == ParcoolStaminaBridge.ConsumeResult.SUCCESS) {
+            return true;
+        }
+        player.displayClientMessage(Component.translatable(result == ParcoolStaminaBridge.ConsumeResult.NOT_ENOUGH
+                ? "message.dealt_force_skills.vyron.not_enough_stamina"
+                : "message.dealt_force_skills.vyron.parcool_stamina_unavailable"), true);
+        return false;
     }
 
     private static Vec3 movementDirection(Minecraft minecraft) {

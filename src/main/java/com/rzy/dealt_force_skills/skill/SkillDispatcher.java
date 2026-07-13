@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.skill;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
 import com.rzy.dealt_force_skills.character.CharacterEffectHooks;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
@@ -8,11 +9,18 @@ import com.rzy.dealt_force_skills.character.SkillDefinition;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.character.catdad.CatDadSkills;
 import com.rzy.dealt_force_skills.character.catdad.CatDadStateManager;
+import com.rzy.dealt_force_skills.character.chamber.ChamberSkills;
+import com.rzy.dealt_force_skills.character.chamber.ChamberStateManager;
+import com.rzy.dealt_force_skills.character.corps.CorpsSkills;
+import com.rzy.dealt_force_skills.character.corps.CorpsStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationSkills;
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.electronics.ElectronicInterferenceManager;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfSkills;
 import com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager;
+import com.rzy.dealt_force_skills.character.gambler.GamblerArenaManager;
+import com.rzy.dealt_force_skills.character.gambler.GamblerSkills;
+import com.rzy.dealt_force_skills.character.gambler.GamblerStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoSkills;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.character.ghroth.GhrothSkills;
@@ -29,8 +37,12 @@ import com.rzy.dealt_force_skills.character.morse.MorseSkills;
 import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroSkills;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationSkills;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationStateManager;
 import com.rzy.dealt_force_skills.character.nox.NoxSkills;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoSkills;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoStateManager;
 import com.rzy.dealt_force_skills.character.raptor.RaptorSkills;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedSkills;
@@ -58,6 +70,7 @@ import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.shop.LexNinjiaCurrencyManager;
 import com.rzy.dealt_force_skills.shop.UndeadSoulManager;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -87,6 +100,9 @@ public final class SkillDispatcher {
             DWolfStateManager.initializeIfNeeded(player);
             DWolfStateManager.syncToClient(player);
         }
+        if (ModCharacters.CORPS_ID.equals(character.id())) {
+            CorpsStateManager.initializeIfNeeded(player);
+        }
         if (ModCharacters.GIZMO_ID.equals(character.id())) {
             GizmoStateManager.initializeIfNeeded(player);
             GizmoStateManager.syncToClient(player);
@@ -94,6 +110,10 @@ public final class SkillDispatcher {
         if (ModCharacters.SHEPHERD_ID.equals(character.id())) {
             ShepherdStateManager.initializeIfNeeded(player);
             ShepherdStateManager.syncToClient(player);
+        }
+        if (ModCharacters.N_TWO_ID.equals(character.id())) {
+            NTwoStateManager.initializeIfNeeded(player);
+            NTwoStateManager.syncToClient(player);
         }
         if (ModCharacters.LUNA_ID.equals(character.id())) {
             LunaStateManager.initializeIfNeeded(player);
@@ -123,6 +143,10 @@ public final class SkillDispatcher {
             NikaidouHiroStateManager.initializeIfNeeded(player);
             NikaidouHiroStateManager.syncToClient(player);
         }
+        if (ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID.equals(character.id())) {
+            NikaidouHiroWitchificationStateManager.initializeIfNeeded(player);
+            NikaidouHiroWitchificationStateManager.syncToClient(player);
+        }
         if (ModCharacters.CATDAD_ID.equals(character.id())) {
             CatDadStateManager.initializeIfNeeded(player);
             CatDadStateManager.syncToClient(player);
@@ -140,6 +164,10 @@ public final class SkillDispatcher {
             LexNinjiaStateManager.initializeIfNeeded(player);
             LexNinjiaStateManager.syncToClient(player);
             LexNinjiaCurrencyManager.sync(player);
+        }
+        if (ModCharacters.GAMBLER_ID.equals(character.id())) {
+            GamblerStateManager.initializeIfNeeded(player);
+            GamblerStateManager.syncToClient(player);
         }
         if (ModCharacters.MORSE_ID.equals(character.id())) {
             MorseStateManager.initializeIfNeeded(player);
@@ -169,11 +197,16 @@ public final class SkillDispatcher {
             GhrothStateManager.initializeIfNeeded(player);
             GhrothStateManager.syncToClient(player);
         }
+        if (ModCharacters.CHAMBER_ID.equals(character.id())) {
+            ChamberStateManager.initializeIfNeeded(player);
+            ChamberStateManager.syncToClient(player);
+        }
         player.displayClientMessage(
                 Component.translatable("message.dealt_force_skills.character_selected",
-                        Component.translatable(character.nameTranslationKey())),
+                        character.displayName()),
                 false
         );
+        DfsAchievements.onCharacterSelected(player, character.id());
     }
 
     public static void tickPlayer(ServerPlayer player) {
@@ -189,11 +222,17 @@ public final class SkillDispatcher {
                     if (ModCharacters.D_WOLF_ID.equals(character.id())) {
                         DWolfStateManager.tick(player);
                     }
+                    if (ModCharacters.CORPS_ID.equals(character.id())) {
+                        CorpsStateManager.tick(player);
+                    }
                     if (ModCharacters.GIZMO_ID.equals(character.id())) {
                         GizmoStateManager.tick(player);
                     }
                     if (ModCharacters.SHEPHERD_ID.equals(character.id())) {
                         ShepherdStateManager.tick(player);
+                    }
+                    if (ModCharacters.N_TWO_ID.equals(character.id())) {
+                        NTwoStateManager.tick(player);
                     }
                     if (ModCharacters.LUNA_ID.equals(character.id())) {
                         LunaStateManager.tick(player);
@@ -217,6 +256,9 @@ public final class SkillDispatcher {
                     if (ModCharacters.NIKAIDOU_HIRO_ID.equals(character.id())) {
                         NikaidouHiroStateManager.tick(player);
                     }
+                    if (ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID.equals(character.id())) {
+                        NikaidouHiroWitchificationStateManager.tick(player);
+                    }
                     if (ModCharacters.CATDAD_ID.equals(character.id())) {
                         CatDadStateManager.tick(player);
                     }
@@ -228,6 +270,9 @@ public final class SkillDispatcher {
                     }
                     if (ModCharacters.LEX_NINJIA_ID.equals(character.id())) {
                         LexNinjiaStateManager.tick(player);
+                    }
+                    if (ModCharacters.GAMBLER_ID.equals(character.id())) {
+                        GamblerStateManager.tick(player);
                     }
                     if (ModCharacters.MORSE_ID.equals(character.id())) {
                         MorseStateManager.tick(player);
@@ -250,10 +295,26 @@ public final class SkillDispatcher {
                     if (ModCharacters.GHROTH_ID.equals(character.id())) {
                         GhrothStateManager.tick(player);
                     }
+                    if (ModCharacters.CHAMBER_ID.equals(character.id())) {
+                        ChamberStateManager.tick(player);
+                    }
+                    SkillSoundFeedback.tick(player, character.id());
                 });
     }
 
+    private static boolean finishSkillUse(ServerPlayer player, String characterId, SkillSlot slot, boolean alternate, boolean handled) {
+        SkillSoundFeedback.onSkillResult(player, characterId, slot, handled);
+        if (handled) {
+            DfsAchievements.onSkillUsed(player, characterId, slot, alternate);
+        }
+        return handled;
+    }
+
     public static boolean useSkill(ServerPlayer player, SkillSlot slot, boolean alternate) {
+        if (player.isSpectator()) {
+            return false;
+        }
+
         if (UluruLoiteringMissileEntity.isPlayerControlling(player)
                 || RaptorFalconDroneEntity.isPlayerControlling(player)) {
             return false;
@@ -261,17 +322,25 @@ public final class SkillDispatcher {
 
         if (player.hasEffect(ModEffects.STUN.get())
                 || player.hasEffect(ModEffects.WEBBED.get())
+                || player.hasEffect(ModEffects.N_TWO_FROZEN.get())
                 || player.hasEffect(ModEffects.TEMPEST_DISARMED.get())
                 || StingerStateManager.isDowned(player)
                 || VlinderStateManager.isDowned(player)
                 || CatDadStateManager.isDowned(player)
                 || TempestStateManager.isActionLocked(player)
-                || UndeadStateManager.isRitualDancing(player)) {
+                || NikaidouHiroWitchificationStateManager.isActionLocked(player)
+                || UndeadStateManager.isRitualDancing(player)
+                || RoundStartFreezeManager.isFrozen(player)) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.stunned"), true);
             return false;
         }
 
         if (!slot.canBeTriggeredByKey()) {
+            return false;
+        }
+
+        if (GamblerArenaManager.blocksSkillUse(player)) {
+            player.displayClientMessage(Component.translatable("message.dealt_force_skills.gambler.arena.skill_blocked"), true);
             return false;
         }
 
@@ -291,150 +360,180 @@ public final class SkillDispatcher {
         if (ElectronicInterferenceManager.tryBlockSkillUse(player, character, slot)) {
             return true;
         }
+        SkillSoundFeedback.beginAttempt(player);
         MorseStateManager.recordPlayerAction(player);
 
         if (ModCharacters.SINEVA_ID.equals(character.id())) {
             boolean handled = SinevaSkills.useSkill(player, slot, alternate);
             SinevaStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.ULURU_ID.equals(character.id())) {
             boolean handled = UluruSkills.useSkill(player, slot, alternate);
             UluruStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.D_WOLF_ID.equals(character.id())) {
             boolean handled = DWolfSkills.useSkill(player, slot, alternate);
             DWolfStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
+        }
+
+        if (ModCharacters.CORPS_ID.equals(character.id())) {
+            boolean handled = CorpsSkills.useSkill(player, slot, alternate);
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.GIZMO_ID.equals(character.id())) {
             boolean handled = GizmoSkills.useSkill(player, slot, alternate);
             GizmoStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.SHEPHERD_ID.equals(character.id())) {
             boolean handled = ShepherdSkills.useSkill(player, slot, alternate);
             ShepherdStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
+        }
+
+        if (ModCharacters.N_TWO_ID.equals(character.id())) {
+            boolean handled = NTwoSkills.useSkill(player, slot, alternate);
+            NTwoStateManager.syncToClient(player);
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.LUNA_ID.equals(character.id())) {
             boolean handled = LunaSkills.useSkill(player, slot, alternate);
             LunaStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.HACKCLAW_ID.equals(character.id())) {
             boolean handled = HackclawSkills.useSkill(player, slot, alternate);
             HackclawStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.VYRON_ID.equals(character.id())) {
             boolean handled = VyronSkills.useSkill(player, slot, alternate);
             VyronStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.NOX_ID.equals(character.id())) {
             boolean handled = NoxSkills.useSkill(player, slot, alternate);
             NoxStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.STINGER_ID.equals(character.id())) {
             boolean handled = StingerSkills.useSkill(player, slot, alternate);
             StingerStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.MANBA_ID.equals(character.id())) {
             boolean handled = ManbaSkills.useSkill(player, slot, alternate);
             ManbaStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.NIKAIDOU_HIRO_ID.equals(character.id())) {
             boolean handled = NikaidouHiroSkills.useSkill(player, slot, alternate);
             NikaidouHiroStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
+        }
+
+        if (ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID.equals(character.id())) {
+            boolean handled = NikaidouHiroWitchificationSkills.useSkill(player, slot, alternate);
+            NikaidouHiroWitchificationStateManager.syncToClient(player);
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.CATDAD_ID.equals(character.id())) {
             boolean handled = CatDadSkills.useSkill(player, slot, alternate);
             CatDadStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID.equals(character.id())) {
             boolean handled = DepartmentOfTransportationSkills.useSkill(player, slot, alternate);
             DepartmentOfTransportationStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.UNDEAD_ID.equals(character.id())) {
             boolean handled = UndeadSkills.useSkill(player, slot, alternate);
             UndeadStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.LEX_NINJIA_ID.equals(character.id())) {
             boolean handled = LexNinjiaSkills.useSkill(player, slot, alternate);
             LexNinjiaStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
+        }
+
+        if (ModCharacters.GAMBLER_ID.equals(character.id())) {
+            boolean handled = GamblerSkills.useSkill(player, slot, alternate);
+            GamblerStateManager.syncToClient(player);
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.MORSE_ID.equals(character.id())) {
             boolean handled = MorseSkills.useSkill(player, slot, alternate);
             MorseStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.TOXIK_ID.equals(character.id())) {
             boolean handled = ToxikSkills.useSkill(player, slot, alternate);
             ToxikStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.RAPTOR_ID.equals(character.id())) {
             boolean handled = RaptorSkills.useSkill(player, slot, alternate);
             RaptorStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.VLINDER_ID.equals(character.id())) {
             boolean handled = VlinderSkills.useSkill(player, slot, alternate);
             VlinderStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.TEMPEST_ID.equals(character.id())) {
             boolean handled = TempestSkills.useSkill(player, slot, alternate);
             TempestStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.SAEED_ID.equals(character.id())) {
             boolean handled = SaeedSkills.useSkill(player, slot, alternate);
             SaeedStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         if (ModCharacters.GHROTH_ID.equals(character.id())) {
             boolean handled = GhrothSkills.useSkill(player, slot, alternate);
             GhrothStateManager.syncToClient(player);
-            return handled;
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
+        }
+
+        if (ModCharacters.CHAMBER_ID.equals(character.id())) {
+            boolean handled = ChamberSkills.useSkill(player, slot, alternate);
+            ChamberStateManager.syncToClient(player);
+            return finishSkillUse(player, character.id(), slot, alternate, handled);
         }
 
         player.displayClientMessage(
                 Component.translatable("message.dealt_force_skills.skill_placeholder",
-                        Component.translatable(skill.get().translationKey()),
-                        Component.translatable(character.nameTranslationKey())),
+                        skill.get().displayName(),
+                        character.displayName()),
                 true
         );
         return true;

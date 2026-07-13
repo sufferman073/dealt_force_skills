@@ -8,6 +8,7 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_StingerStimLockStatus;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -20,14 +21,13 @@ import java.util.Comparator;
 import java.util.List;
 
 public final class StingerSkills {
-    private static final double STIM_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_range", 64.0D);
-    private static final double STIM_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_min_alignment", 0.78D);
-    private static final double STIM_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_direct_alignment", 0.975D);
-    private static final double STIM_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_max_off_axis", 2.0D);
-    private static final int STIM_LOCK_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_sync_interval_ticks", 5);
-    private static final int STIM_LOCK_STATUS_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_status_ticks", 8);
-    private static final double STIM_PROJECTILE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_projectile_speed", 2.25D);
-
+    private static volatile double STIM_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_range", 64.0));
+    private static volatile double STIM_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_MIN_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_min_alignment", 0.78));
+    private static volatile double STIM_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_DIRECT_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_direct_alignment", 0.975));
+    private static volatile double STIM_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_MAX_OFF_AXIS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_lock_max_off_axis", 2.0));
+    private static volatile int STIM_LOCK_SYNC_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_SYNC_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_sync_interval_ticks", 5));
+    private static volatile int STIM_LOCK_STATUS_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_LOCK_STATUS_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_skills.stim_lock_status_ticks", 8));
+    private static volatile double STIM_PROJECTILE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_PROJECTILE_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_skills.stim_projectile_speed", 2.25));
     private StingerSkills() {
     }
 
@@ -53,7 +53,7 @@ public final class StingerSkills {
             return;
         }
 
-        List<ServerPlayer> targets = lockedPlayers(player);
+        List<ServerPlayer> targets = lockedPlayers(player, mode);
         NetworkHandler.sendToPlayer(new S2C_StingerStimLockStatus(false, mode.ordinal(), targets.size(), STIM_LOCK_STATUS_TICKS), player);
         for (ServerPlayer target : targets) {
             NetworkHandler.sendToPlayer(new S2C_StingerStimLockStatus(true, mode.ordinal(), 0, STIM_LOCK_STATUS_TICKS), target);
@@ -86,7 +86,8 @@ public final class StingerSkills {
 
     private static boolean equipSmokeGrenade(ServerPlayer player) {
         if (!StingerStateManager.smokeReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.smoke_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.stinger.smoke_cooldown"));
             return true;
         }
         StingerStateManager.setEquippedTool(player, StingerTool.SMOKE_GRENADE);
@@ -98,7 +99,8 @@ public final class StingerSkills {
 
     private static boolean throwSmokeGrenade(ServerPlayer player, boolean highThrow) {
         if (!StingerStateManager.consumeSmoke(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.smoke_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.stinger.smoke_cooldown"));
             return true;
         }
 
@@ -125,7 +127,8 @@ public final class StingerSkills {
             return true;
         }
         if (!StingerStateManager.droneReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.drone_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.stinger.drone_cooldown"));
             return true;
         }
 
@@ -149,7 +152,8 @@ public final class StingerSkills {
             return false;
         }
         if (!StingerStateManager.consumeDrone(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.drone_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.stinger.drone_cooldown"));
             if (requireEquipped) {
                 StingerStateManager.setEquippedTool(player, StingerTool.NONE);
             }
@@ -185,7 +189,7 @@ public final class StingerSkills {
 
     private static boolean selfStim(ServerPlayer player) {
         if (!StingerStateManager.consumeStimCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.stim_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.stinger.stim_empty"));
             return true;
         }
         StingerStateManager.applyStimHeal(player);
@@ -214,12 +218,12 @@ public final class StingerSkills {
             return false;
         }
         if (StingerStateManager.stimCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.stim_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.stinger.stim_empty"));
             return true;
         }
 
         StingerStimMode mode = StingerStateManager.stimMode(player);
-        List<ServerPlayer> targets = lockedPlayers(player);
+        List<ServerPlayer> targets = lockedPlayers(player, mode);
         if (targets.isEmpty()) {
             if (StingerStateManager.consumeStimCharge(player)) {
                 spawnStimProjectile(player, null, mode);
@@ -236,7 +240,7 @@ public final class StingerSkills {
             fired++;
         }
         if (fired <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.stim_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.stinger.stim_empty"));
         }
         return true;
     }
@@ -269,13 +273,16 @@ public final class StingerSkills {
                 SoundSource.PLAYERS, 0.85f, mode == StingerStimMode.HEAL ? 1.12f : 0.88f);
     }
 
-    private static List<ServerPlayer> lockedPlayers(ServerPlayer player) {
+    private static List<ServerPlayer> lockedPlayers(ServerPlayer player, StingerStimMode mode) {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
         double rangeSqr = STIM_LOCK_RANGE * STIM_LOCK_RANGE;
         return player.serverLevel().getEntitiesOfClass(ServerPlayer.class, player.getBoundingBox().inflate(STIM_LOCK_RANGE),
                         target -> target != player
                                 && TargetingUtil.isTargetablePlayer(target)
+                                && (mode == StingerStimMode.HEAL
+                                ? DealtTeamManager.areTeammates(player, target)
+                                : !DealtTeamManager.areTeammates(player, target))
                                 && target.distanceToSqr(player) <= rangeSqr
                                 && isInStimLockCone(eye, look, target))
                 .stream()

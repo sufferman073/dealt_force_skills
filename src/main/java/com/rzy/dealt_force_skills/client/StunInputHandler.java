@@ -49,7 +49,7 @@ public final class StunInputHandler {
         drainKey(minecraft.options.keyRight);
         drainKey(minecraft.options.keyJump);
         drainKey(minecraft.options.keyShift);
-        if (minecraft.screen != null) {
+        if (minecraft.screen != null && !(minecraft.screen instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             minecraft.setScreen(null);
         }
     }
@@ -79,7 +79,8 @@ public final class StunInputHandler {
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (isStunned() && event.getNewScreen() != null) {
+        if (isStunned() && event.getNewScreen() != null
+                && !(event.getNewScreen() instanceof net.minecraft.client.gui.screens.DeathScreen)) {
             event.setCanceled(true);
         }
     }
@@ -107,6 +108,8 @@ public final class StunInputHandler {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.player != null
                 && minecraft.player.isAlive()
+                && !minecraft.player.isSpectator()
+                && !com.rzy.dealt_force_skills.compat.PlayerReviveCompat.isBleeding(minecraft.player)
                 && minecraft.player.hasEffect(ModEffects.STUN.get());
     }
 
@@ -114,6 +117,7 @@ public final class StunInputHandler {
         Minecraft minecraft = Minecraft.getInstance();
         return minecraft.player != null
                 && minecraft.player.isAlive()
+                && !minecraft.player.isSpectator()
                 && minecraft.player.hasEffect(ModEffects.STINGER_DOWNED.get());
     }
 

@@ -66,6 +66,10 @@ public final class ClientUluruHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.ULURU_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.ULURU_ID);
+    }
+
     public static void tick() {
         if (incendiaryRechargeTicks > 0) {
             incendiaryRechargeTicks--;

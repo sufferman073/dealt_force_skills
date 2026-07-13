@@ -1,7 +1,9 @@
 package com.rzy.dealt_force_skills.skill;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.boss.BossCombatRules;
 import com.rzy.dealt_force_skills.registry.ModGameRules;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -13,10 +15,8 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 public final class SkillDamageHelper {
-    private static final float BONUS_PER_EXPERIENCE_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
-            "experience_growth.general.skill_damage_per_level", 0.005f);
-    private static final float NON_PLAYER_TARGET_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("general.skilldamagehelper.non_player_target_multiplier", 5.0f);
-
+    private static volatile float BONUS_PER_EXPERIENCE_LEVEL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BONUS_PER_EXPERIENCE_LEVEL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("experience_growth.general.skill_damage_per_level", 0.005F));
+    private static volatile float NON_PLAYER_TARGET_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NON_PLAYER_TARGET_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("general.skilldamagehelper.non_player_target_multiplier", 5.0F));
     public static final ResourceKey<DamageType> TRUE_SKILL_DAMAGE = key("true_skill");
     public static final ResourceKey<DamageType> SINEVA_BLADE_WIRE = key("sineva_blade_wire");
     public static final ResourceKey<DamageType> SINEVA_GRAPPLE = key("sineva_grapple");
@@ -48,12 +48,13 @@ public final class SkillDamageHelper {
     public static final ResourceKey<DamageType> DEPARTMENT_TRAP_MANUAL = key("department_trap_manual");
     public static final ResourceKey<DamageType> DEPARTMENT_CORE = key("department_core");
     public static final ResourceKey<DamageType> DEPARTMENT_PASSIVE_BLAST = key("department_passive_blast");
+    public static final ResourceKey<DamageType> SHAKEHANDS_REFLECT = key("shakehands_reflect");
 
     private SkillDamageHelper() {
     }
 
     private static ResourceKey<DamageType> key(String id) {
-        return ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(DealtForceSkillsMod.MODID, id));
+        return ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, id));
     }
 
     public static float scale(LivingEntity source, float amount) {
@@ -64,19 +65,36 @@ public final class SkillDamageHelper {
     }
 
     public static boolean hurt(LivingEntity target, DamageSource source, LivingEntity sourceEntity, float amount) {
+        if (shouldSkipTeammateDamage(target, source, sourceEntity)) {
+            return false;
+        }
         return target.hurt(source, scaleForTarget(target, sourceEntity, amount));
     }
 
     public static boolean hurtUnscaled(LivingEntity target, DamageSource source, float amount) {
+        // Reflect damage types must never be blocked by teammate filters — the "attacker" in the
+        // source is the shield holder, not a hostile player dealing skill damage.
+        if (!isReflectDamage(source) && shouldSkipTeammateDamage(target, source, null)) {
+            return false;
+        }
         return target.hurt(source, amount);
+    }
+
+    private static boolean isReflectDamage(DamageSource source) {
+        return source != null && (source.is(SHAKEHANDS_REFLECT) || source.is(CATDAD_REFLECT));
     }
 
     public static float scaleForTarget(LivingEntity target, LivingEntity sourceEntity, float amount) {
         float scaled = scale(sourceEntity, amount);
-        if (!(target instanceof Player)) {
+        if (BossCombatRules.receivesNonPlayerSkillMultiplier(target)) {
             scaled *= NON_PLAYER_TARGET_MULTIPLIER;
         }
         return scaled;
+    }
+
+    private static boolean shouldSkipTeammateDamage(LivingEntity target, DamageSource source, LivingEntity sourceEntity) {
+        Entity attacker = sourceEntity != null ? sourceEntity : source.getEntity();
+        return attacker instanceof Player && target instanceof Player && DealtTeamManager.areTeammates(attacker, target);
     }
 
     public static DamageSource trueDamage(ServerLevel level, Entity directEntity, Entity causingEntity) {
@@ -201,6 +219,10 @@ public final class SkillDamageHelper {
 
     public static DamageSource departmentPassiveBlast(ServerLevel level, Entity directEntity, Entity causingEntity) {
         return source(level, DEPARTMENT_PASSIVE_BLAST, directEntity, causingEntity);
+    }
+
+    public static DamageSource shakehandsReflect(ServerLevel level, Entity directEntity, Entity causingEntity) {
+        return source(level, SHAKEHANDS_REFLECT, directEntity, causingEntity);
     }
 
     public static DamageSource source(ServerLevel level, ResourceKey<DamageType> type, Entity directEntity, Entity causingEntity) {

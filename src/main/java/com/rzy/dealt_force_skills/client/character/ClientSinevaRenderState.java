@@ -28,6 +28,10 @@ public final class ClientSinevaRenderState {
         STATES.keySet().removeIf(id -> minecraft.level.getEntity(id) == null);
     }
 
+    public static void reset() {
+        STATES.clear();
+    }
+
     public static boolean isBombSuitActive(Player player) {
         if (isLocalPlayer(player)) {
             return ClientSinevaHudState.shouldRender() && ClientSinevaHudState.bombSuitActive();

@@ -7,8 +7,10 @@ import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.util.Mth;
 
+/** Single static large smoke billboard for Toxik tear-gas clouds. */
 public class ToxikLargeSmokeParticle extends TextureSheetParticle {
     private final SpriteSet sprites;
+    private final float baseSize;
 
     public ToxikLargeSmokeParticle(ClientLevel level, double x, double y, double z,
                                    double xSpeed, double ySpeed, double zSpeed, SpriteSet sprites) {
@@ -17,17 +19,20 @@ public class ToxikLargeSmokeParticle extends TextureSheetParticle {
             this.remove();
         }
         this.sprites = sprites;
-        this.lifetime = 55 + random.nextInt(35);
-        this.alpha = 0.88F;
-        this.quadSize = 7.2F + random.nextFloat() * 2.4F;
+        this.lifetime = 22 + random.nextInt(6);
+        this.alpha = 0.92F;
+        // Phase 811 was ~4.2–4.8; enlarge +200% (x3) for FOV occlusion, still one particle.
+        this.baseSize = 12.6F + random.nextFloat() * 1.8F;
+        this.quadSize = this.baseSize;
         this.setColor(0.18F + random.nextFloat() * 0.08F,
                 0.95F + random.nextFloat() * 0.05F,
                 0.88F + random.nextFloat() * 0.10F);
         this.setSpriteFromAge(sprites);
-        this.gravity = -0.004F;
-        this.xd = xSpeed * 0.20D + (random.nextDouble() - 0.5D) * 0.16D;
-        this.zd = zSpeed * 0.20D + (random.nextDouble() - 0.5D) * 0.16D;
-        this.yd = ySpeed * 0.35D + random.nextDouble() * 0.045D + 0.012D;
+        this.gravity = 0.0F;
+        this.xd = 0.0D;
+        this.yd = 0.0015D;
+        this.zd = 0.0D;
+        this.hasPhysics = false;
     }
 
     @Override
@@ -38,10 +43,13 @@ public class ToxikLargeSmokeParticle extends TextureSheetParticle {
         }
         super.tick();
         this.setSpriteFromAge(sprites);
+        this.xd = 0.0D;
+        this.yd = 0.0015D;
+        this.zd = 0.0D;
         float ageFraction = (float) this.age / (float) this.lifetime;
-        this.quadSize = Mth.lerp(ageFraction, 8.4F, 3.2F);
-        if (ageFraction > 0.72F) {
-            this.alpha = Mth.lerp((ageFraction - 0.72F) / 0.28F, 0.88F, 0.0F);
+        this.quadSize = Mth.lerp(ageFraction, this.baseSize, this.baseSize * 0.92F);
+        if (ageFraction > 0.75F) {
+            this.alpha = Mth.lerp((ageFraction - 0.75F) / 0.25F, 0.92F, 0.0F);
         }
     }
 

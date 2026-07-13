@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
@@ -34,12 +35,11 @@ import java.util.Set;
 import java.util.UUID;
 
 public class LunaReconArrowEntity extends Projectile implements ItemSupplier, BlockbenchModelPoseProvider {
-    private static final int MAX_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.luna_recon_arrow_entity.max_bounces", 8);
-    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.max_life_ticks", 20 * 20);
-    private static final int MOVE_SCAN_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.move_scan_delay_ticks", 2 * 20);
-    private static final double SCAN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.scan_radius", 40.0D);
-    private static final double MOVE_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.move_threshold_sqr", 0.025D);
-
+    private static volatile int MAX_BOUNCES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_BOUNCES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.luna_recon_arrow_entity.max_bounces", 8));
+    private static volatile int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.max_life_ticks", 400));
+    private static volatile int MOVE_SCAN_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MOVE_SCAN_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.lunareconarrowentity.move_scan_delay_ticks", 40));
+    private static volatile double SCAN_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SCAN_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.scan_radius", 40.0));
+    private static volatile double MOVE_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MOVE_THRESHOLD_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.lunareconarrowentity.move_threshold_sqr", 0.025));
     private int bounces;
     private Vec3 lastForward = new Vec3(0.0D, 0.0D, 1.0D);
     private final Set<UUID> scanned = new HashSet<>();
@@ -72,7 +72,7 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier, Bl
             tickMoveScans();
             if (tickCount % 8 == 0 && level() instanceof ServerLevel serverLevel) {
                 RangedSoundHelper.playThrottled(serverLevel, position(), ModSounds.LUNA_RECON_ARROW_FLY.get(),
-                        SoundSource.PLAYERS, 0.45f, 1.1f, 16.0D, 8, 3.0D);
+                        SoundSource.PLAYERS, 0.45f, 1.1f, SCAN_RADIUS, 8, 3.0D);
             }
         }
 
@@ -169,6 +169,7 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier, Bl
 
         Vec3 center = position();
         AABB box = new AABB(center, center).inflate(SCAN_RADIUS);
+        boolean detectedTarget = false;
         boolean foundPlayer = false;
         for (LivingEntity target : serverLevel.getEntitiesOfClass(LivingEntity.class, box,
                 entity -> entity.isAlive() && entity != owner && entity.distanceToSqr(center) <= SCAN_RADIUS * SCAN_RADIUS)) {
@@ -176,11 +177,17 @@ public class LunaReconArrowEntity extends Projectile implements ItemSupplier, Bl
                 continue;
             }
             scanned.add(target.getUUID());
+            detectedTarget = true;
             pendingMoveScans.put(target.getUUID(), new PendingScan(target.position(), MOVE_SCAN_DELAY_TICKS));
             LunaStateManager.revealToOwner(owner, target, LunaStateManager.RECON_REVEAL_TICKS, target instanceof ServerPlayer);
+            DfsAchievements.recordLunaReconReveal(owner, scanned.size());
             if (target instanceof ServerPlayer) {
                 foundPlayer = true;
             }
+        }
+        if (detectedTarget) {
+            RangedSoundHelper.play(serverLevel, center, ModSounds.LUNA_RECON_DETECTION.get(),
+                    SoundSource.PLAYERS, 0.8F, 1.0F, SCAN_RADIUS);
         }
         if (foundPlayer) {
             owner.displayClientMessage(Component.translatable("message.dealt_force_skills.luna.recon_player_scanned"), true);

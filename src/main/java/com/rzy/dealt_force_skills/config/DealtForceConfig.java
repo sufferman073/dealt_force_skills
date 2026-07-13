@@ -7,8 +7,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Instance-wide gameplay configuration.
@@ -26,11 +33,17 @@ public final class DealtForceConfig {
     private static boolean dirty;
     private static boolean initialPopulationComplete;
     private static final Set<String> COMMENTED_PATHS = new HashSet<>();
+    private static final StackWalker CALLER_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+    private static final List<LiveBinding<?>> LIVE_BINDINGS = new ArrayList<>();
+    private static Map<String, Object> runtimeOverrides = Map.of();
     private static final String[] GAMEPLAY_DEFAULT_CLASSES = {
             "com.rzy.dealt_force_skills.block.BladeWireBlockEntity",
+            "com.rzy.dealt_force_skills.block.HvkAdvancedStandardTemplateConstructorBlockEntity",
             "com.rzy.dealt_force_skills.block.QuickCoverBlockEntity",
             "com.rzy.dealt_force_skills.character.catdad.CatDadStateManager",
+            "com.rzy.dealt_force_skills.character.corps.CorpsStateManager",
             "com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager",
+            "com.rzy.dealt_force_skills.character.gambler.GamblerStateManager",
             "com.rzy.dealt_force_skills.character.department.DepartmentPlacementHelper",
             "com.rzy.dealt_force_skills.character.dwolf.DWolfSkills",
             "com.rzy.dealt_force_skills.character.dwolf.DWolfStateManager",
@@ -129,7 +142,8 @@ public final class DealtForceConfig {
             "com.rzy.dealt_force_skills.shop.UndeadShopEntry",
             "com.rzy.dealt_force_skills.shop.UndeadSoulManager",
             "com.rzy.dealt_force_skills.skill.SkillCooldownHelper",
-            "com.rzy.dealt_force_skills.skill.SkillDamageHelper"
+            "com.rzy.dealt_force_skills.skill.SkillDamageHelper",
+            "com.rzy.dealt_force_skills.team.RoundStartFreezeManager"
     };
 
     private DealtForceConfig() {
@@ -139,6 +153,36 @@ public final class DealtForceConfig {
         config();
     }
 
+    public static synchronized boolean reload() {
+        Path path = configPath();
+        CommentedFileConfig replacement = CommentedFileConfig.builder(path).sync().build();
+        try {
+            replacement.load();
+        } catch (RuntimeException error) {
+            replacement.close();
+            LOGGER.error("Unable to reload {}; keeping the previous configuration", path, error);
+            return false;
+        }
+
+        CommentedFileConfig previous = config;
+        config = replacement;
+        dirty = false;
+        COMMENTED_PATHS.clear();
+        boolean populationWasComplete = initialPopulationComplete;
+        initialPopulationComplete = false;
+        try {
+            populateGameplayDefaults();
+            flush();
+        } finally {
+            initialPopulationComplete = populationWasComplete;
+        }
+        if (previous != null) {
+            previous.close();
+        }
+        LOGGER.info("Reloaded {}", path);
+        return true;
+    }
+
     public static synchronized void flush() {
         if (config != null && dirty) {
             config.save();
@@ -146,9 +190,78 @@ public final class DealtForceConfig {
         }
     }
 
+    /** Exposed for the graphical config editor; prefer {@code *Value} readers in gameplay code. */
+    public static synchronized CommentedFileConfig rawConfig() {
+        return config();
+    }
+
+    public static synchronized void markDirty() {
+        dirty = true;
+    }
+
     public static synchronized void finishInitialPopulation() {
         flush();
         initialPopulationComplete = true;
+    }
+
+    /**
+     * Registers a static gameplay field whose value must be recomputed after a config reload.
+     * The caller class is captured during its static initialization, so private fields and
+     * nested classes do not need a separate generated registry.
+     */
+    public static synchronized <T> T bind(String fieldName, Supplier<T> reader) {
+        Class<?> owner = CALLER_WALKER.getCallerClass();
+        T value = reader.get();
+        LIVE_BINDINGS.add(new LiveBinding<>(owner, fieldName, reader));
+        return value;
+    }
+
+    /** Refreshes all already-loaded config-backed static fields. */
+    public static synchronized boolean refreshLiveValues() {
+        boolean success = true;
+        for (LiveBinding<?> binding : List.copyOf(LIVE_BINDINGS)) {
+            try {
+                Field field = binding.owner().getDeclaredField(binding.fieldName());
+                field.setAccessible(true);
+                Object expected = binding.reader().get();
+                field.set(null, expected);
+                if (!Objects.equals(expected, field.get(null))) {
+                    throw new IllegalStateException("Config field did not retain refreshed value");
+                }
+            } catch (ReflectiveOperationException | RuntimeException error) {
+                success = false;
+                LOGGER.error("Unable to refresh live config field {}#{}",
+                        binding.owner().getName(), binding.fieldName(), error);
+            }
+        }
+        LOGGER.info("Refreshed {} live config fields", LIVE_BINDINGS.size());
+        return success;
+    }
+
+    public static synchronized int liveBindingCount() {
+        return LIVE_BINDINGS.size();
+    }
+
+    /** Client-only in-memory values received from the current server; never persisted locally. */
+    public static synchronized void replaceRuntimeOverrides(List<ConfigEntryData> entries) {
+        Map<String, Object> replacement = new LinkedHashMap<>();
+        if (entries != null) {
+            for (ConfigEntryData entry : entries) {
+                if (entry.file() != ConfigFileId.GAMEPLAY) {
+                    continue;
+                }
+                try {
+                    replacement.put(entry.path(), entry.parsedValue());
+                } catch (RuntimeException error) {
+                    LOGGER.warn("Ignoring invalid runtime config override {}", entry.path(), error);
+                }
+            }
+        }
+        runtimeOverrides = Map.copyOf(replacement);
+    }
+
+    public static synchronized void clearRuntimeOverrides() {
+        runtimeOverrides = Map.of();
     }
 
     public static void populateGameplayDefaults() {
@@ -199,9 +312,23 @@ public final class DealtForceConfig {
         return value instanceof Boolean bool ? bool : defaultValue;
     }
 
+    /**
+     * Read a configured value without seeding a default. Used by other config files
+     * for one-time migration of legacy keys.
+     */
+    public static synchronized Object peekValue(String path) {
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        return config().get(path);
+    }
+
     private static synchronized Object value(String path, Object defaultValue) {
         CommentedFileConfig current = config();
-        Object configured = current.get(path);
+        Object configured = runtimeOverrides.get(path);
+        if (configured == null) {
+            configured = current.get(path);
+        }
         if (configured == null) {
             current.set(path, defaultValue);
             configured = defaultValue;
@@ -222,7 +349,10 @@ public final class DealtForceConfig {
 
     private static synchronized Object value(String path, Object defaultValue, String legacyPath) {
         CommentedFileConfig current = config();
-        Object configured = current.get(path);
+        Object configured = runtimeOverrides.get(path);
+        if (configured == null) {
+            configured = current.get(path);
+        }
         if (configured == null) {
             Object legacy = current.get(legacyPath);
             configured = sameValueKind(legacy, defaultValue) ? legacy : defaultValue;
@@ -244,11 +374,14 @@ public final class DealtForceConfig {
 
     private static CommentedFileConfig config() {
         if (config == null) {
-            Path path = FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
-            config = CommentedFileConfig.builder(path).sync().build();
+            config = CommentedFileConfig.builder(configPath()).sync().build();
             config.load();
         }
         return config;
+    }
+
+    private static Path configPath() {
+        return FMLPaths.CONFIGDIR.get().resolve(FILE_NAME);
     }
 
     private static boolean sameValueKind(Object configured, Object defaultValue) {
@@ -269,7 +402,7 @@ public final class DealtForceConfig {
         String unit = unitHint(path);
         return "Controls " + describePath(path) + ". "
                 + (unit.isEmpty() ? "" : unit + " ")
-                + "Default: " + defaultValue + ". Changes apply after restarting Minecraft.";
+                + "Default: " + defaultValue + ". Changes apply after config-screen Save or /dealtreload.";
     }
 
     private static String unitHint(String path) {
@@ -336,6 +469,9 @@ public final class DealtForceConfig {
         if ("loot".equals(parts[0])) {
             return "loot" + describeRemainder(parts, 1);
         }
+        if ("work_blocks".equals(parts[0])) {
+            return "work block" + describeRemainder(parts, 1);
+        }
         if ("experience_growth".equals(parts[0])) {
             return "experience growth" + describeRemainder(parts, 1);
         }
@@ -394,5 +530,8 @@ public final class DealtForceConfig {
     private static String leaf(String path) {
         int index = path.lastIndexOf('.');
         return index < 0 ? path : path.substring(index + 1);
+    }
+
+    private record LiveBinding<T>(Class<?> owner, String fieldName, Supplier<T> reader) {
     }
 }

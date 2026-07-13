@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.undead;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
@@ -8,6 +9,7 @@ import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_ManbaOpportunityMarkers;
 import com.rzy.dealt_force_skills.network.S2C_SyncUndeadState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.ParticleTypes;
@@ -42,17 +44,34 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class UndeadStateManager {
-    public static final float BASE_MAX_ENERGY = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_max_energy", 100.0F);
-    public static final float BASE_ENERGY_REGEN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_energy_regen_per_tick", 4.0F / 20.0F);
-    public static final double HUNTER_WALL_CLIMB_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_wall_climb_speed_per_tick", 0.80D);
-    private static final float HUNTER_HORIZONTAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.hunter_horizontal_drain_per_tick", 3.0F / 20.0F);
-    private static final float HUNTER_VERTICAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.hunter_vertical_drain_per_tick", 5.0F / 20.0F);
-    private static final double HUNTER_MOVEMENT_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_movement_threshold_sqr", 0.0025D);
-    private static final double HUNTER_MAX_TRACKED_DISPLACEMENT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.hunter_max_tracked_displacement_sqr", 4.0D);
-    private static final float WARRIOR_BLOODLUST_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.warrior_bloodlust_self_health_cost_fraction", 0.04F);
-    private static final double EXPLORER_SPIRIT_OPPORTUNITY_RANGE =
-            com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.undead.undead_state_manager.explorer_spirit_opportunity_range", ManbaStateManager.OPPORTUNITY_WINDOW_RANGE * 2.0D);
+    public static float baseMaxEnergy() {
+        return com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_max_energy", 100.0F);
+    }
 
+    public static float baseEnergyRegenPerTick() {
+        return com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("characters.undead.undead_state_manager.base_energy_regen_per_tick", 4.0F / 20.0F);
+    }
+    public static volatile double HUNTER_WALL_CLIMB_SPEED_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_WALL_CLIMB_SPEED_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_state_manager.hunter_wall_climb_speed_per_tick", 0.8
+   ));
+    private static volatile float HUNTER_HORIZONTAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_HORIZONTAL_DRAIN_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.undead.undead_state_manager.hunter_horizontal_drain_per_tick", 0.15F
+   ));
+    private static volatile float HUNTER_VERTICAL_DRAIN_PER_TICK = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_VERTICAL_DRAIN_PER_TICK", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.undead.undead_state_manager.hunter_vertical_drain_per_tick", 0.25F
+   ));
+    private static volatile double HUNTER_MOVEMENT_THRESHOLD_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_MOVEMENT_THRESHOLD_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_state_manager.hunter_movement_threshold_sqr", 0.0025
+   ));
+    private static volatile double HUNTER_MAX_TRACKED_DISPLACEMENT_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HUNTER_MAX_TRACKED_DISPLACEMENT_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_state_manager.hunter_max_tracked_displacement_sqr", 4.0
+   ));
+    private static volatile float WARRIOR_BLOODLUST_SELF_HEALTH_COST_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARRIOR_BLOODLUST_SELF_HEALTH_COST_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.undead.undead_state_manager.warrior_bloodlust_self_health_cost_fraction", 0.04F
+   ));
+    private static volatile double EXPLORER_SPIRIT_OPPORTUNITY_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLORER_SPIRIT_OPPORTUNITY_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.undead.undead_state_manager.explorer_spirit_opportunity_range", ManbaStateManager.OPPORTUNITY_WINDOW_RANGE * 2.0
+   ));
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".undead";
     private static final String INITIALIZED = "Initialized";
     private static final String PROFESSION = "Profession";
@@ -131,7 +150,7 @@ public final class UndeadStateManager {
         }
         tag.putBoolean(INITIALIZED, true);
         tag.putInt(PROFESSION, UndeadProfession.KNIGHT.ordinal());
-        tag.putFloat(ENERGY, BASE_MAX_ENERGY);
+        tag.putFloat(ENERGY, baseMaxEnergy());
         tag.putLong(DISORIENTED_UNTIL, 0L);
         for (UndeadProfession profession : UndeadProfession.values()) {
             tag.putLong(coreCooldownKey(profession), 0L);
@@ -155,6 +174,19 @@ public final class UndeadStateManager {
         UndeadUpgradeManager.clearAttributes(player);
     }
 
+    public static void clearRoundTransientState(ServerPlayer player) {
+        CompoundTag persistent = player.getPersistentData();
+        if (!persistent.contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
+            clearRuntime(player);
+            return;
+        }
+        clearTransientState(player);
+        if (isUndead(player)) {
+            UndeadUpgradeManager.applyAttributes(player);
+            syncToClient(player);
+        }
+    }
+
     public static void onDeselected(Player player) {
         CompoundTag persistent = player.getPersistentData();
         if (!persistent.contains(ROOT_TAG, Tag.TAG_COMPOUND)) {
@@ -170,7 +202,7 @@ public final class UndeadStateManager {
         }
         initializeIfNeeded(player);
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         UndeadUpgradeManager.applyAttributes(player);
         UndeadSupportManager.tick(player);
 
@@ -189,7 +221,7 @@ public final class UndeadStateManager {
         updateRuntimeInvisibility(player, now);
         updateHunterScatterVisual(player, tag);
         if (now >= tag.getLong(HUNTER_EXHAUSTED_UNTIL)) {
-            addEnergy(player, BASE_ENERGY_REGEN_PER_TICK
+            addEnergy(player, baseEnergyRegenPerTick()
                     * UndeadUpgradeManager.energyRegenMultiplier(player));
         }
         syncToClient(player);
@@ -206,7 +238,8 @@ public final class UndeadStateManager {
         }
         clearProfessionToggles(player, tag);
         tag.putInt(PROFESSION, next.ordinal());
-        tag.putLong(DISORIENTED_UNTIL, player.level().getGameTime() + 2L * 20L);
+        DfsAchievements.recordUndeadLowHealthSwitch(player, next);
+        tag.putLong(DISORIENTED_UNTIL, SkillCooldownHelper.now(player) + 2L * 20L);
         player.displayClientMessage(Component.translatable(
                 "message.dealt_force_skills.undead.profession_changed",
                 Component.translatable(next.translationKey())), true);
@@ -243,7 +276,7 @@ public final class UndeadStateManager {
         if (!isUndead(player)) {
             return false;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         return now < tag.getLong(KNIGHT_PARRY_UNTIL)
                 || now < tag.getLong(EXPLORER_MEDITATING_UNTIL)
@@ -252,12 +285,12 @@ public final class UndeadStateManager {
     }
 
     public static boolean startCoreCooldown(ServerPlayer player, UndeadProfession profession, int ticks) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         String key = coreCooldownKey(profession);
         CompoundTag tag = data(player);
         if (now < tag.getLong(key)) {
-            player.displayClientMessage(Component.translatable(
-                    "message.dealt_force_skills.undead.core_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player, Component.translatable(
+                    "message.dealt_force_skills.undead.core_cooldown"));
             return false;
         }
         tag.putLong(key, now + UndeadUpgradeManager.cooldownTicks(player, ticks));
@@ -270,21 +303,21 @@ public final class UndeadStateManager {
 
     public static void startKnightCharge(ServerPlayer player) {
         data(player).putInt(KNIGHT_CHARGE_TARGET, -1);
-        data(player).putLong(KNIGHT_CHARGE_UNTIL, player.level().getGameTime() + 12L);
+        data(player).putLong(KNIGHT_CHARGE_UNTIL, SkillCooldownHelper.now(player) + 12L);
     }
 
     public static void startKnightCharge(ServerPlayer player, LivingEntity target) {
         data(player).putInt(KNIGHT_CHARGE_TARGET, target.getId());
-        data(player).putLong(KNIGHT_CHARGE_UNTIL, player.level().getGameTime() + 30L);
+        data(player).putLong(KNIGHT_CHARGE_UNTIL, SkillCooldownHelper.now(player) + 30L);
     }
 
     public static void startKnightParry(ServerPlayer player) {
-        data(player).putLong(KNIGHT_PARRY_UNTIL, player.level().getGameTime() + 16L);
+        data(player).putLong(KNIGHT_PARRY_UNTIL, SkillCooldownHelper.now(player) + 16L);
     }
 
     public static void startKnightShield(ServerPlayer player) {
         CompoundTag tag = data(player);
-        tag.putLong(KNIGHT_SHIELD_UNTIL, player.level().getGameTime() + 20L * 20L);
+        tag.putLong(KNIGHT_SHIELD_UNTIL, SkillCooldownHelper.now(player) + 20L * 20L);
         tag.putFloat(KNIGHT_SHIELD, 50.0F);
     }
 
@@ -298,12 +331,12 @@ public final class UndeadStateManager {
     }
 
     public static void startWarriorBloodlust(ServerPlayer player) {
-        data(player).putLong(WARRIOR_BLOODLUST_UNTIL, player.level().getGameTime() + 15L * 20L);
+        data(player).putLong(WARRIOR_BLOODLUST_UNTIL, SkillCooldownHelper.now(player) + 15L * 20L);
     }
 
     public static void toggleExplorerMeditation(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(EXPLORER_MEDITATING_UNTIL)) {
             tag.putLong(EXPLORER_MEDITATING_UNTIL, 0L);
         } else {
@@ -316,7 +349,7 @@ public final class UndeadStateManager {
         if (explorerMeditating(player) || !consumeEnergy(player, 10.0F)) {
             return false;
         }
-        data(player).putLong(EXPLORER_MEDITATING_UNTIL, player.level().getGameTime() + 10L * 20L);
+        data(player).putLong(EXPLORER_MEDITATING_UNTIL, SkillCooldownHelper.now(player) + 10L * 20L);
         player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.1.duration_ticks", 10 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.undead.undead_state_manager.effect.absorption.1.amplifier", 1),
                 false, true, true));
         return true;
@@ -327,15 +360,15 @@ public final class UndeadStateManager {
     }
 
     public static boolean explorerMeditating(Player player) {
-        return player.level().getGameTime() < data(player).getLong(EXPLORER_MEDITATING_UNTIL);
+        return SkillCooldownHelper.now(player) < data(player).getLong(EXPLORER_MEDITATING_UNTIL);
     }
 
     public static void startExplorerSpace(ServerPlayer player) {
-        data(player).putLong(EXPLORER_SPACE_UNTIL, player.level().getGameTime() + 30L * 20L);
+        data(player).putLong(EXPLORER_SPACE_UNTIL, SkillCooldownHelper.now(player) + 30L * 20L);
     }
 
     public static boolean explorerSpaceActive(Player player) {
-        return player.level().getGameTime() < data(player).getLong(EXPLORER_SPACE_UNTIL);
+        return SkillCooldownHelper.now(player) < data(player).getLong(EXPLORER_SPACE_UNTIL);
     }
 
     public static void stopExplorerSpace(ServerPlayer player) {
@@ -348,7 +381,7 @@ public final class UndeadStateManager {
         int duration = UndeadUpgradeManager.has(player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.ROGUE_SILENT)
                 ? 4 * 20
                 : 2 * 20;
-        long until = player.level().getGameTime() + duration;
+        long until = SkillCooldownHelper.now(player) + duration;
         CompoundTag tag = data(player);
         tag.putLong(ROGUE_INVISIBLE_UNTIL, until);
         tag.putLong(ROGUE_INVULNERABLE_UNTIL, until);
@@ -358,13 +391,13 @@ public final class UndeadStateManager {
     public static boolean isRogueInvisible(Player player) {
         return isUndead(player)
                 && profession(player) == UndeadProfession.ROGUE
-                && player.level().getGameTime() < data(player).getLong(ROGUE_INVISIBLE_UNTIL);
+                && SkillCooldownHelper.now(player) < data(player).getLong(ROGUE_INVISIBLE_UNTIL);
     }
 
     public static void startScholarRitual(ServerPlayer player) {
         long duration = UndeadUpgradeManager.has(
                 player, com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED) ? 100L : 50L;
-        data(player).putLong(SCHOLAR_RITUAL_UNTIL, player.level().getGameTime() + duration);
+        data(player).putLong(SCHOLAR_RITUAL_UNTIL, SkillCooldownHelper.now(player) + duration);
     }
 
     public static boolean recordScholarTarget(ServerPlayer player, LivingEntity target) {
@@ -437,11 +470,11 @@ public final class UndeadStateManager {
     }
 
     public static boolean hunterReloadReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(HUNTER_RELOAD_READY_AT);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(HUNTER_RELOAD_READY_AT);
     }
 
     public static void useHunterReload(ServerPlayer player) {
-        data(player).putLong(HUNTER_RELOAD_READY_AT, player.level().getGameTime()
+        data(player).putLong(HUNTER_RELOAD_READY_AT, SkillCooldownHelper.now(player)
                 + UndeadUpgradeManager.cooldownTicks(player, 2 * 20));
         addEnergy(player, 50.0F);
     }
@@ -466,7 +499,7 @@ public final class UndeadStateManager {
     public static void beginSkillInput(ServerPlayer player, com.rzy.dealt_force_skills.character.SkillSlot slot) {
         CompoundTag tag = data(player);
         tag.remove(INPUT_RESOLVED_PREFIX + slot.name());
-        tag.putLong(INPUT_STARTED_PREFIX + slot.name(), player.level().getGameTime());
+        tag.putLong(INPUT_STARTED_PREFIX + slot.name(), SkillCooldownHelper.now(player));
     }
 
     public static int heldSkillInputTicks(ServerPlayer player, com.rzy.dealt_force_skills.character.SkillSlot slot) {
@@ -476,7 +509,7 @@ public final class UndeadStateManager {
             return 0;
         }
         long started = tag.getLong(key);
-        return (int) Math.max(0L, Math.min(20L * 30L, player.level().getGameTime() - started));
+        return (int) Math.max(0L, Math.min(20L * 30L, SkillCooldownHelper.now(player) - started));
     }
 
     public static void clearSkillInput(ServerPlayer player, com.rzy.dealt_force_skills.character.SkillSlot slot) {
@@ -503,6 +536,9 @@ public final class UndeadStateManager {
     }
 
     public static void executeRogueNonPlayer(ServerPlayer owner, LivingEntity victim) {
+        if (!com.rzy.dealt_force_skills.boss.BossCombatRules.canInstantKill(victim)) {
+            return;
+        }
         markRogueExecution(victim, owner);
         DamageSource source = SkillDamageHelper.trueDamage(owner.serverLevel(), owner, owner);
         victim.invulnerableTime = 0;
@@ -545,7 +581,7 @@ public final class UndeadStateManager {
         if (!isUndead(player)) {
             return false;
         }
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         return now < tag.getLong(EXPLORER_SPACE_UNTIL)
                 || UndeadUpgradeManager.isPinkBraceletInvulnerable(player)
@@ -557,7 +593,7 @@ public final class UndeadStateManager {
             return false;
         }
         if (isActionLocked(player)
-                || player.level().getGameTime() < data(player).getLong(EXPLORER_SPACE_UNTIL)) {
+                || SkillCooldownHelper.now(player) < data(player).getLong(EXPLORER_SPACE_UNTIL)) {
             return true;
         }
         revealRogueFromOffense(player);
@@ -569,7 +605,7 @@ public final class UndeadStateManager {
             return amount;
         }
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         UndeadProfession profession = profession(player);
 
         if (UndeadUpgradeManager.isPinkBraceletInvulnerable(player)
@@ -643,6 +679,7 @@ public final class UndeadStateManager {
         }
         amount *= UndeadUpgradeManager.incomingDamageMultiplier(player, source);
         if (UndeadUpgradeManager.tryPinkBraceletFatalGuard(player, amount)) {
+            DfsAchievements.recordFatalAvoidance(player);
             return 0.0F;
         }
         return amount;
@@ -654,7 +691,7 @@ public final class UndeadStateManager {
         }
         UndeadProfession profession = profession(player);
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         float adjusted = amount * UndeadUpgradeManager.outgoingDamageMultiplier(player);
         if (player.getRandom().nextFloat() < UndeadUpgradeManager.criticalChance(player)) {
             adjusted *= 1.5F;
@@ -710,7 +747,7 @@ public final class UndeadStateManager {
     }
 
     public static void applyRupture(ServerPlayer owner, LivingEntity target) {
-        long now = target.level().getGameTime();
+        long now = SkillCooldownHelper.now(target);
         long duration = owner != null && UndeadUpgradeManager.has(
                 owner, com.rzy.dealt_force_skills.shop.UndeadShopEntry.SCHOLAR_RETURNED)
                 ? 8L * 20L + 1L
@@ -1016,6 +1053,7 @@ public final class UndeadStateManager {
                             ? 4.0F
                             : 2.0F;
                     SkillDamageHelper.hurt(target, player.damageSources().playerAttack(player), player, damage);
+                    DfsAchievements.recordUndeadHunterScatterHit(player, target);
                 }
             }
         } else {
@@ -1107,7 +1145,7 @@ public final class UndeadStateManager {
 
     private static float effectiveEnergyCost(Player player, float baseCost) {
         float cost = Math.max(0.0F, baseCost);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(DISORIENTED_UNTIL)) {
             cost *= 2.0F;
@@ -1139,7 +1177,7 @@ public final class UndeadStateManager {
     }
 
     private static void applyOpalBurn(LivingEntity target) {
-        long now = target.level().getGameTime();
+        long now = SkillCooldownHelper.now(target);
         CompoundTag tag = target.getPersistentData();
         tag.putLong(OPAL_BURN_UNTIL, now + 2L * 20L + 1L);
         tag.putLong(OPAL_BURN_NEXT, now + 20L);
@@ -1150,7 +1188,7 @@ public final class UndeadStateManager {
         CompoundTag tag = target.getPersistentData();
         int stacks = Math.min(6, tag.getInt(FROZEN_BLADE_STACKS) + 1);
         tag.putInt(FROZEN_BLADE_STACKS, stacks);
-        tag.putLong(FROZEN_BLADE_UNTIL, target.level().getGameTime() + 5L * 20L);
+        tag.putLong(FROZEN_BLADE_UNTIL, SkillCooldownHelper.now(target) + 5L * 20L);
     }
 
     private static void tickFrozenBlade(LivingEntity entity, CompoundTag tag, long now) {
@@ -1314,8 +1352,7 @@ public final class UndeadStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {

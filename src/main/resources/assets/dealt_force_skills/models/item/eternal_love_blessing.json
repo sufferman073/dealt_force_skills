@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "dealt_force_skills:item/eternal_love_blessing"
+  }
+}

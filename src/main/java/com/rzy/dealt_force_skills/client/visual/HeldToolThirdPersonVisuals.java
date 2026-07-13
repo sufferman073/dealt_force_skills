@@ -3,18 +3,21 @@ package com.rzy.dealt_force_skills.client.visual;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.chamber.ChamberTool;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoTool;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawTool;
 import com.rzy.dealt_force_skills.character.luna.LunaTool;
 import com.rzy.dealt_force_skills.character.morse.MorseTool;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroTool;
 import com.rzy.dealt_force_skills.character.nox.NoxTool;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoTool;
 import com.rzy.dealt_force_skills.character.raptor.RaptorTool;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdTool;
 import com.rzy.dealt_force_skills.character.stinger.StingerTool;
 import com.rzy.dealt_force_skills.character.toxik.ToxikTool;
 import com.rzy.dealt_force_skills.character.uluru.UluruTool;
 import com.rzy.dealt_force_skills.character.vyron.VyronTool;
+import com.rzy.dealt_force_skills.client.character.ClientChamberHudState;
 import com.rzy.dealt_force_skills.client.character.ClientDepartmentHudState;
 import com.rzy.dealt_force_skills.client.character.ClientGizmoHudState;
 import com.rzy.dealt_force_skills.client.character.ClientHackclawHudState;
@@ -24,6 +27,7 @@ import com.rzy.dealt_force_skills.client.character.ClientManbaHudState;
 import com.rzy.dealt_force_skills.client.character.ClientMorseHudState;
 import com.rzy.dealt_force_skills.client.character.ClientNikaidouHiroHudState;
 import com.rzy.dealt_force_skills.client.character.ClientNoxHudState;
+import com.rzy.dealt_force_skills.client.character.ClientNTwoHudState;
 import com.rzy.dealt_force_skills.client.character.ClientRaptorHudState;
 import com.rzy.dealt_force_skills.client.character.ClientShepherdHudState;
 import com.rzy.dealt_force_skills.client.character.ClientSkillModelVisualState;
@@ -37,6 +41,8 @@ import com.rzy.dealt_force_skills.client.renderer.BlockbenchAnimatedModelRendere
 import com.rzy.dealt_force_skills.skill.HeldToolVisual;
 import com.rzy.dealt_force_skills.skill.SkillModelVisual;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.api.distmarker.Dist;
@@ -48,6 +54,29 @@ import net.minecraftforge.fml.common.Mod;
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class HeldToolThirdPersonVisuals {
     private HeldToolThirdPersonVisuals() {
+    }
+
+    public static boolean renderSpectatorFirstPerson(GuiGraphics graphics, int targetEntityId, float partialTick) {
+        ToolSpec spec = visualSpec(ClientHeldToolVisualState.visual(targetEntityId), partialTick);
+        if (spec == null) {
+            return false;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        MultiBufferSource.BufferSource buffers = minecraft.renderBuffers().bufferSource();
+        PoseStack poseStack = graphics.pose();
+        poseStack.pushPose();
+        poseStack.translate(graphics.guiWidth() / 2.0D + 70.0D, graphics.guiHeight() - 8.0D, 210.0D);
+        poseStack.scale(58.0F, -58.0F, 58.0F);
+        poseStack.translate(0.43D, -0.24D, -0.64D);
+        poseStack.mulPose(Axis.YP.rotationDegrees(-24.0F + spec.yaw()));
+        poseStack.mulPose(Axis.XP.rotationDegrees(-24.0F + spec.pitch()));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(10.0F + spec.roll()));
+        poseStack.scale(spec.scale(), spec.scale(), spec.scale());
+        BlockbenchAnimatedModelRenderer.render(spec.model(), spec.animation(), spec.seconds(),
+                poseStack, buffers, 0x00F000F0);
+        buffers.endBatch();
+        poseStack.popPose();
+        return true;
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -94,6 +123,12 @@ public final class HeldToolThirdPersonVisuals {
         }
         if (ClientGizmoHudState.hasEquippedTool()) {
             return gizmo(ClientGizmoHudState.equippedTool(), seconds);
+        }
+        if (ClientChamberHudState.hasEquippedTool()) {
+            return chamber(ClientChamberHudState.equippedTool(), seconds);
+        }
+        if (ClientNTwoHudState.hasEquippedTool()) {
+            return ntwo(ClientNTwoHudState.equippedTool(), seconds);
         }
         if (ClientMorseHudState.hasEquippedTool()) {
             return morse(ClientMorseHudState.equippedTool(), seconds);
@@ -172,6 +207,10 @@ public final class HeldToolThirdPersonVisuals {
             case GIZMO_SMOKE_TRAP -> gizmo(GizmoTool.SMOKE_TRAP, seconds);
             case GIZMO_SPIDER_NEST -> gizmo(GizmoTool.SPIDER_NEST, seconds);
             case GIZMO_T_BOY -> gizmo(GizmoTool.T_BOY, seconds);
+            case CHAMBER_TELEPORT_CARD -> chamber(ChamberTool.TELEPORT_CARD, seconds);
+            case CHAMBER_TRAP_CARD -> chamber(ChamberTool.TRAP_CARD, seconds);
+            case N_TWO_DEWAR_CANISTER -> ntwo(NTwoTool.DEWAR_CANISTER, seconds);
+            case N_TWO_CONDENSER_LAUNCHER -> ntwo(NTwoTool.CONDENSER_LAUNCHER, seconds);
             case MORSE_SHOCK_ORB -> morse(MorseTool.SHOCK_ORB, seconds);
             case MORSE_FLASH_GRENADE -> morse(MorseTool.FLASH_GRENADE, seconds);
             case MORSE_SONAR_DETECTOR -> morse(MorseTool.SONAR_DETECTOR, seconds);
@@ -240,7 +279,7 @@ public final class HeldToolThirdPersonVisuals {
     }
 
     private static ToolSpec flashlight(float seconds) {
-        return new ToolSpec(new ResourceLocation(DealtForceSkillsMod.MODID, "manba_flashlight"),
+        return new ToolSpec(ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, "manba_flashlight"),
                 "idle_hold", seconds, 0.64F,
                 -0.02D, 0.54D, -0.06D, 0.0F, -6.0F, 0.0F);
     }
@@ -250,6 +289,19 @@ public final class HeldToolThirdPersonVisuals {
             case SMOKE_TRAP -> spec("gizmo_smoke_trap", "idle", seconds, 0.22F);
             case SPIDER_NEST -> spec("gizmo_spider_nest_trap", "idle", seconds, 0.34F);
             case T_BOY -> spec("gizmo_t_boy", "idle", seconds, 0.42F);
+            case NONE -> null;
+        };
+    }
+
+    private static ToolSpec chamber(ChamberTool tool, float seconds) {
+        return null;
+    }
+
+    private static ToolSpec ntwo(NTwoTool tool, float seconds) {
+        return switch (tool) {
+            case DEWAR_CANISTER -> spec("shared_hand_grenade", "idle", seconds, 0.44F);
+            case CONDENSER_LAUNCHER -> spec("uluru_missile_launcher", null, seconds, 0.38F,
+                    90.0F, -8.0F, 0.0F);
             case NONE -> null;
         };
     }
@@ -296,7 +348,7 @@ public final class HeldToolThirdPersonVisuals {
             float pitch,
             float roll
     ) {
-        return new ToolSpec(new ResourceLocation(DealtForceSkillsMod.MODID, model),
+        return new ToolSpec(ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, model),
                 animation, seconds, scale, -0.06D, 0.18D, -0.08D, yaw, pitch, roll);
     }
 

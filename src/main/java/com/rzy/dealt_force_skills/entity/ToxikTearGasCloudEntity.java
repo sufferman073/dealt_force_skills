@@ -5,7 +5,6 @@ import com.rzy.dealt_force_skills.character.toxik.ToxikStateManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModParticles;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -26,9 +25,10 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class ToxikTearGasCloudEntity extends Entity implements ItemSupplier {
-    public static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.life_ticks", 20 * 20);
-    public static final double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikteargascloudentity.radius", 6.0D);
-    private static final int BASE_BLIND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.base_blind_ticks", 3 * 20);
+    public static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.life_ticks", 400));
+    public static volatile double RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.toxikteargascloudentity.radius", 4.8));
+    private static final int PARTICLE_REFRESH_TICKS = 15;
+    private static volatile int BASE_BLIND_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASE_BLIND_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.toxikteargascloudentity.base_blind_ticks", 60));
     private UUID ownerId;
     private int lifeTicks = LIFE_TICKS;
 
@@ -97,8 +97,7 @@ public class ToxikTearGasCloudEntity extends Entity implements ItemSupplier {
         LivingEntity owner = owner(level);
         AABB box = new AABB(position(), position()).inflate(RADIUS);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (!TargetingUtil.isTargetableLiving(target)
-                    || (ownerId != null && target.getUUID().equals(ownerId))) {
+            if (!TargetingUtil.isHostileLivingFor(owner, target)) {
                 continue;
             }
             Vec3 center = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D);
@@ -153,21 +152,10 @@ public class ToxikTearGasCloudEntity extends Entity implements ItemSupplier {
         if (ClientVisionHooks.isThermalVisionActive()) {
             return;
         }
-        for (int i = 0; i < 5; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = Math.sqrt(random.nextDouble()) * RADIUS * 0.82D;
-            double x = getX() + Math.cos(angle) * dist;
-            double y = getY() + 0.3D + random.nextDouble() * 4.6D;
-            double z = getZ() + Math.sin(angle) * dist;
-            level().addParticle(ModParticles.TOXIK_LARGE_SMOKE.get(), x, y, z, 0.0D, 0.01D, 0.0D);
+        if (tickCount > 1 && tickCount % PARTICLE_REFRESH_TICKS != 0) {
+            return;
         }
-        for (int i = 0; i < 5; i++) {
-            double angle = random.nextDouble() * Math.PI * 2.0D;
-            double dist = RADIUS * 0.60D + random.nextDouble() * RADIUS * 0.35D;
-            double x = getX() + Math.cos(angle) * dist;
-            double y = getY() + random.nextDouble() * 4.2D;
-            double z = getZ() + Math.sin(angle) * dist;
-            level().addParticle(ParticleTypes.CLOUD, x, y, z, 0.0D, 0.012D, 0.0D);
-        }
+        level().addParticle(ModParticles.TOXIK_LARGE_SMOKE.get(),
+                getX(), getY() + 1.4D, getZ(), 0.0D, 0.0D, 0.0D);
     }
 }

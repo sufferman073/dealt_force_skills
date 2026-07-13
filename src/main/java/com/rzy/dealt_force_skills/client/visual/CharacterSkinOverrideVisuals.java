@@ -41,7 +41,6 @@ public final class CharacterSkinOverrideVisuals {
             if (renderer == null) {
                 continue;
             }
-            renderer.addLayer(new CharacterSkinLayer(renderer));
             ARM_RENDERERS.put(skin, new CharacterSkinArmRenderer(context, "slim".equals(skin)));
         }
     }

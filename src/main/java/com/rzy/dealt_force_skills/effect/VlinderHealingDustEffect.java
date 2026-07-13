@@ -1,5 +1,8 @@
 package com.rzy.dealt_force_skills.effect;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
+import com.rzy.dealt_force_skills.character.vlinder.VlinderStateManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -25,7 +28,13 @@ public class VlinderHealingDustEffect extends MobEffect {
             }
         }
         if (!entity.level().isClientSide && entity.tickCount % 18 == 0 && entity.getHealth() < entity.getMaxHealth()) {
+            float before = entity.getHealth();
             entity.heal(com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("effects.vlinder_healing_dust_effect.heal.0.heal_amount", 1.0F));
+            float healed = entity.getHealth() - before;
+            ServerPlayer owner = VlinderStateManager.healingDustOwner(entity);
+            if (owner != null && healed > 0.0F) {
+                DfsAchievements.recordVlinderHealing(owner, healed);
+            }
         }
     }
 }

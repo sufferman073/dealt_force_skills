@@ -34,24 +34,24 @@ public final class NikaidouHiroHudOverlay {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientNikaidouHiroHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientNikaidouHiroHudState.shouldDisplay()) {
             return;
         }
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawStatus(graphics, font);
         drawMeleeCooldown(graphics, font, minecraft);
         drawSlot(graphics, font, x, y, 0xFFFFE29A, KeybindRegister.CORE_SKILL,
-                Component.translatable("character.dealt_force_skills.nikaidou_hiro.skill.only_i"),
+                coreIcon(),
                 coreCooldown(), coreDetail());
         drawSlot(graphics, font, x + SLOT + GAP, y, 0xFFFF744F, KeybindRegister.ACTIVE_SKILL_2,
-                Component.translatable("character.dealt_force_skills.nikaidou_hiro.skill.erase_sin"),
-                0, active2Detail());
+                active2Icon(),
+                active2Cooldown(), active2Detail());
         drawSlot(graphics, font, x + (SLOT + GAP) * 2, y, 0xFFFFA64B, KeybindRegister.ACTIVE_SKILL_1,
-                Component.translatable("character.dealt_force_skills.nikaidou_hiro.skill.correct_error"),
+                active1Icon(),
                 ClientNikaidouHiroHudState.active1CooldownTicks(), active1Detail());
     }
 
@@ -59,12 +59,20 @@ public final class NikaidouHiroHudOverlay {
         int y = 24;
         if (ClientNikaidouHiroHudState.doomedTicks() > 0) {
             graphics.drawCenteredString(font,
-                    Component.translatable("hud.dealt_force_skills.nikaidou_hiro.doomed",
+                    Component.translatable(ClientNikaidouHiroHudState.isWitchificationDisplayed()
+                                    ? "hud.dealt_force_skills.nikaidou_hiro_witchification.final"
+                                    : "hud.dealt_force_skills.nikaidou_hiro.doomed",
                             cooldownText(ClientNikaidouHiroHudState.doomedTicks())).getString(),
                     graphics.guiWidth() / 2, y, 0xFFFF382E);
             y += 14;
         }
-        if (ClientNikaidouHiroHudState.riftStacks() > 0) {
+        if (ClientNikaidouHiroHudState.isWitchificationDisplayed() && ClientNikaidouHiroHudState.riftStacks() > 0) {
+            graphics.drawCenteredString(font,
+                    Component.translatable("hud.dealt_force_skills.nikaidou_hiro_witchification.anchor",
+                            Component.translatable("hud.dealt_force_skills.generic.ready").getString(),
+                            ClientNikaidouHiroHudState.riftTicks()).getString(),
+                    graphics.guiWidth() / 2, y, 0xFFFFB1E8);
+        } else if (ClientNikaidouHiroHudState.riftStacks() > 0) {
             graphics.drawCenteredString(font,
                     Component.translatable("hud.dealt_force_skills.nikaidou_hiro.stacks",
                             ClientNikaidouHiroHudState.riftStacks(),
@@ -127,7 +135,19 @@ public final class NikaidouHiroHudOverlay {
         return Component.translatable("hud.dealt_force_skills.generic.ready").getString();
     }
 
+    private static int active2Cooldown() {
+        return ClientNikaidouHiroHudState.isWitchificationDisplayed()
+                ? ClientNikaidouHiroHudState.active1Ticks()
+                : 0;
+    }
+
     private static String active2Detail() {
+        if (ClientNikaidouHiroHudState.isWitchificationDisplayed()) {
+            if (ClientNikaidouHiroHudState.active1Ticks() > 0) {
+                return cooldownText(ClientNikaidouHiroHudState.active1Ticks());
+            }
+            return Component.translatable("hud.dealt_force_skills.generic.ready").getString();
+        }
         if (ClientNikaidouHiroHudState.equippedTool() == NikaidouHiroTool.HOT_IRON) {
             return Component.translatable("hud.dealt_force_skills.nikaidou_hiro.hot_iron").getString();
         }
@@ -138,15 +158,40 @@ public final class NikaidouHiroHudOverlay {
     }
 
     private static String active1Detail() {
+        if (ClientNikaidouHiroHudState.isWitchificationDisplayed()) {
+            if (ClientNikaidouHiroHudState.riftStacks() > 0) {
+                return Component.translatable("hud.dealt_force_skills.nikaidou_hiro_witchification.anchor_short").getString();
+            }
+            return Component.translatable("hud.dealt_force_skills.generic.ready").getString();
+        }
         if (ClientNikaidouHiroHudState.active1Ticks() > 0) {
             return cooldownText(ClientNikaidouHiroHudState.active1Ticks());
         }
         return Component.translatable("hud.dealt_force_skills.generic.ready").getString();
     }
 
+    private static Component coreIcon() {
+        return Component.translatable(ClientNikaidouHiroHudState.isWitchificationDisplayed()
+                ? "character.dealt_force_skills.nikaidou_hiro_witchification.skill.save_everyone"
+                : "character.dealt_force_skills.nikaidou_hiro.skill.only_i");
+    }
+
+    private static Component active2Icon() {
+        return Component.translatable(ClientNikaidouHiroHudState.isWitchificationDisplayed()
+                ? "character.dealt_force_skills.nikaidou_hiro_witchification.skill.erase_error"
+                : "character.dealt_force_skills.nikaidou_hiro.skill.erase_sin");
+    }
+
+    private static Component active1Icon() {
+        return Component.translatable(ClientNikaidouHiroHudState.isWitchificationDisplayed()
+                ? "character.dealt_force_skills.nikaidou_hiro_witchification.skill.time_rewind"
+                : "character.dealt_force_skills.nikaidou_hiro.skill.correct_error");
+    }
+
     private static void drawSlot(GuiGraphics graphics, Font font, int x, int y, int accentColor,
                                  KeyMapping key, Component icon, int cooldownTicks, String detail) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA15110F);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA15110F);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -160,7 +205,8 @@ public final class NikaidouHiroHudOverlay {
             drawCenteredClipped(graphics, font, detail, x + SLOT / 2, y + 22, 34, 0xFFE0E4EA);
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

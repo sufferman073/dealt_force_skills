@@ -64,7 +64,7 @@ public class C2S_SaeedGuardCommand {
     public static void handle(C2S_SaeedGuardCommand msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
+            if (player != null && !player.isSpectator()) {
                 SaeedStateManager.commandGuardSkill(player, msg.entityId, msg.slot, msg.targetEntityId,
                         msg.hasAimPoint ? new Vec3(msg.aimX, msg.aimY, msg.aimZ) : null, msg.yaw, msg.pitch);
             }

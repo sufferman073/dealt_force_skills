@@ -26,9 +26,8 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
 
 public class UluruIncendiaryGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final double FIRE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.fire_radius", 6.0);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.bounce_factor", 0.68D);
-
+    private static volatile double FIRE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FIRE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.fire_radius", 6.0));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.uluruincendiarygrenadeentity.bounce_factor", 0.68));
     public UluruIncendiaryGrenadeEntity(EntityType<? extends UluruIncendiaryGrenadeEntity> type, Level level) {
         super(type, level);
     }
@@ -96,20 +95,18 @@ public class UluruIncendiaryGrenadeEntity extends Projectile implements ItemSupp
             explode(groundTop(hit));
             return;
         }
+        Vec3 bounced = bounce(direction, getDeltaMovement());
 
         Vec3 normal = Vec3.atLowerCornerOf(direction.getNormal());
         setPos(hit.getLocation().x + normal.x * 0.04D,
                 hit.getLocation().y + normal.y * 0.04D,
                 hit.getLocation().z + normal.z * 0.04D);
-        setDeltaMovement(bounce(direction, getDeltaMovement()));
+        setDeltaMovement(bounced);
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * BOUNCE_FACTOR, motion.y * 0.86D, motion.z * BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * BOUNCE_FACTOR, -motion.y * 0.45D, motion.z * BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * BOUNCE_FACTOR, motion.y * 0.86D, -motion.z * BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, BOUNCE_FACTOR, 0.45D, 0.86D);
     }
 
     private Vec3 groundTop(BlockHitResult hit) {

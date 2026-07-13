@@ -27,14 +27,14 @@ public final class SaeedHudOverlay {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientSaeedHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientSaeedHudState.shouldDisplay()) {
             return;
         }
 
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
         drawSlot(graphics, font, x, y, 0xFFFFC857, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.saeed.skill.command_order"),
@@ -86,7 +86,8 @@ public final class SaeedHudOverlay {
             int cooldownTicks,
             String detail
     ) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA15110D);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA15110D);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -100,7 +101,8 @@ public final class SaeedHudOverlay {
             HudTextHelper.drawCenteredFitted(graphics, font, detail, x + SLOT / 2, y + 22, 38, 0xFFE0E4EA);
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        HudTextHelper.drawCenteredFitted(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            HudTextHelper.drawCenteredFitted(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static String cooldownText(int ticks) {

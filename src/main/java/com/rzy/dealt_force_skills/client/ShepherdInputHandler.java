@@ -39,7 +39,7 @@ import java.util.Optional;
 public final class ShepherdInputHandler {
     private static final DustParticleOptions TRAP_PREVIEW = new DustParticleOptions(new Vector3f(1.0f, 0.82f, 0.18f), 1.0f);
     private static final int TOOL_ACTION_DEDUP_TICKS = 3;
-    private static final int GRENADE_RELEASE_TICKS = DealtForceConfig.intValue("client.shepherd_input_handler.grenade_release_ticks", 4);
+    private static volatile int GRENADE_RELEASE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GRENADE_RELEASE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.shepherd_input_handler.grenade_release_ticks", 4));
     private static final String TACZ_CLIENT_OPERATOR = "com.tacz.guns.api.client.gameplay.IClientPlayerGunOperator";
 
     private static ShepherdToolAction lastSentToolAction;

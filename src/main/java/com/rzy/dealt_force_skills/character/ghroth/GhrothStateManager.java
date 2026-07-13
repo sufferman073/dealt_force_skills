@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.character.ghroth;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.compat.ParcoolStaminaBridge;
@@ -64,25 +65,29 @@ public final class GhrothStateManager {
     private static final String JUSTICE_MOB_STACKS = "JusticeMobStacks";
     private static final String CEASEFIRE = "Ceasefire";
 
-    private static final int STARS_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.stars_cooldown_ticks", 25 * 20);
-    private static final int STARS_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.stars_duration_ticks", 13 * 20);
-    private static final int JUSTICE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_cooldown_ticks", 25 * 20);
-    private static final int JUSTICE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_duration_ticks", 13 * 20);
-    private static final int NOON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_cooldown_ticks", 50 * 20);
-    private static final int NOON_GAZE_TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_gaze_total_ticks", 6 * 20);
-    private static final int NOON_OUTPUT_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_output_window_ticks", 3 * 20);
-    private static final int NOON_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_duration_ticks", NOON_GAZE_TOTAL_TICKS + NOON_OUTPUT_WINDOW_TICKS);
-    private static final int NOON_MAX_GRANTED_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_max_granted_seconds", 6);
-    private static final int NOON_MAX_DAMAGE_COPIES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_max_damage_copies", 12);
-    private static final int TACTICAL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_cooldown_ticks", 12);
-    private static final int TACTICAL_BOOST_TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_boost_total_ticks", 8);
-    private static final int TACTICAL_IMMUNE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_immune_ticks", 12);
-    private static final int CEASEFIRE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.ceasefire_ticks", 3 * 60 * 20);
-    private static final int JUSTICE_MAX_STACKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_max_stacks", 14);
-    private static final double REVEAL_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.reveal_range", 30.0D);
-    private static final double STARS_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.stars_target_range", 96.0D);
-    private static final double NOON_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.noon_target_range", 96.0D);
-    private static final double NOON_FALLBACK_FREEZE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.noon_fallback_freeze_range", 128.0D);
+    private static volatile int STARS_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STARS_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.stars_cooldown_ticks", 500));
+    private static volatile int STARS_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STARS_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.stars_duration_ticks", 260));
+    private static volatile int JUSTICE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("JUSTICE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_cooldown_ticks", 500));
+    private static volatile int JUSTICE_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("JUSTICE_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_duration_ticks", 260));
+    private static volatile int NOON_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_cooldown_ticks", 1000));
+    private static volatile int NOON_GAZE_TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_GAZE_TOTAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_gaze_total_ticks", 120));
+    private static volatile int NOON_OUTPUT_WINDOW_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_OUTPUT_WINDOW_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_output_window_ticks", 60));
+    private static volatile int NOON_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue(
+      "characters.ghroth.ghroth_state_manager.noon_duration_ticks", NOON_GAZE_TOTAL_TICKS + NOON_OUTPUT_WINDOW_TICKS
+   ));
+    private static volatile int NOON_MAX_GRANTED_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_MAX_GRANTED_SECONDS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_max_granted_seconds", 6));
+    private static volatile int NOON_MAX_DAMAGE_COPIES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_MAX_DAMAGE_COPIES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.noon_max_damage_copies", 12));
+    private static volatile int TACTICAL_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TACTICAL_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_cooldown_ticks", 12));
+    private static volatile int TACTICAL_BOOST_TOTAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TACTICAL_BOOST_TOTAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_boost_total_ticks", 8));
+    private static volatile int TACTICAL_IMMUNE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TACTICAL_IMMUNE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.tactical_immune_ticks", 12));
+    private static volatile int CEASEFIRE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CEASEFIRE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.ceasefire_ticks", 3600));
+    private static volatile int JUSTICE_MAX_STACKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("JUSTICE_MAX_STACKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.justice_max_stacks", 14));
+    private static volatile double REVEAL_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVEAL_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.reveal_range", 30.0));
+    private static volatile double STARS_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STARS_TARGET_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.stars_target_range", 96.0));
+    private static volatile double NOON_TARGET_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_TARGET_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.ghroth.ghroth_state_manager.noon_target_range", 96.0));
+    private static volatile double NOON_FALLBACK_FREEZE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("NOON_FALLBACK_FREEZE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "characters.ghroth.ghroth_state_manager.noon_fallback_freeze_range", 128.0
+   ));
     private static final Map<UUID, FrozenEntityState> FROZEN_ENTITIES = new HashMap<>();
 
     private GhrothStateManager() {
@@ -127,6 +132,10 @@ public final class GhrothStateManager {
         clearRuntimeOnDeath(player);
     }
 
+    public static void clearRuntimeCaches() {
+        FROZEN_ENTITIES.clear();
+    }
+
     public static void tick(ServerPlayer player) {
         if (!isGhroth(player)) {
             return;
@@ -143,7 +152,7 @@ public final class GhrothStateManager {
         } else {
             clearExpiredNoonState(data(player));
         }
-        releaseExpiredFreezes(player.serverLevel(), player.level().getGameTime());
+        releaseExpiredFreezes(player.serverLevel(), SkillCooldownHelper.now(player));
         if (noonActive || player.tickCount % 5 == 0) {
             syncToClient(player);
         }
@@ -151,10 +160,11 @@ public final class GhrothStateManager {
 
     public static boolean useStars(ServerPlayer player) {
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(STARS_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"));
             return true;
         }
         tag.putLong(STARS_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, STARS_COOLDOWN_TICKS));
@@ -166,10 +176,11 @@ public final class GhrothStateManager {
 
     public static boolean useJustice(ServerPlayer player) {
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(JUSTICE_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"));
             return true;
         }
         tag.putLong(JUSTICE_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, JUSTICE_COOLDOWN_TICKS));
@@ -181,10 +192,11 @@ public final class GhrothStateManager {
 
     public static boolean useNoon(ServerPlayer player) {
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         CompoundTag tag = data(player);
         if (now < tag.getLong(NOON_COOLDOWN_UNTIL)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"), true);
+            SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.ghroth.skill_cooldown"));
             return true;
         }
         tag.putLong(NOON_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, NOON_COOLDOWN_TICKS));
@@ -198,15 +210,15 @@ public final class GhrothStateManager {
     }
 
     public static boolean isStarsActive(ServerPlayer player) {
-        return data(player).getLong(STARS_ACTIVE_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(STARS_ACTIVE_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isJusticeActive(ServerPlayer player) {
-        return data(player).getLong(JUSTICE_ACTIVE_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(JUSTICE_ACTIVE_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isNoonActive(ServerPlayer player) {
-        return data(player).getLong(NOON_ACTIVE_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(NOON_ACTIVE_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     private static boolean isNoonCharging(ServerPlayer player) {
@@ -214,7 +226,7 @@ public final class GhrothStateManager {
     }
 
     public static boolean isTacticalImmune(Player player) {
-        return isGhroth(player) && data(player).getLong(TACTICAL_IMMUNE_UNTIL) > player.level().getGameTime();
+        return isGhroth(player) && data(player).getLong(TACTICAL_IMMUNE_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean shouldDodge(Player player, DamageSource source) {
@@ -290,9 +302,12 @@ public final class GhrothStateManager {
             return;
         }
         target.invulnerableTime = 0;
-        SkillDamageHelper.hurtUnscaled(target,
+        boolean damaged = SkillDamageHelper.hurtUnscaled(target,
                 SkillDamageHelper.trueDamage(player.serverLevel(), player, player),
                 damage);
+        if (damaged) {
+            DfsAchievements.recordGhrothStarsHit(player);
+        }
     }
 
     public static int starsCooldownRemainingTicks(Player player) {
@@ -350,7 +365,7 @@ public final class GhrothStateManager {
             return false;
         }
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (tag.getLong(NOON_LAST_COPY_TICK) == now) {
             return false;
         }
@@ -382,15 +397,21 @@ public final class GhrothStateManager {
             return;
         }
         AABB box = player.getBoundingBox().inflate(REVEAL_RANGE);
+        int revealed = 0;
         for (LivingEntity target : player.serverLevel().getEntitiesOfClass(LivingEntity.class, box,
                 entity -> entity != player && entity.isAlive() && !(entity instanceof Player))) {
             target.addEffect(new MobEffectInstance(MobEffects.GLOWING, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.effect.glowing.0.duration_ticks", 14), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.ghroth.ghroth_state_manager.effect.glowing.0.amplifier", 0), true, false));
+            revealed++;
+            DfsAchievements.recordGhrothPassiveRevealTarget(player, target, target.hasEffect(MobEffects.INVISIBILITY));
+        }
+        if (revealed > 0) {
+            DfsAchievements.recordGhrothPassiveReveal(player, revealed);
         }
     }
 
     private static void tickTacticalInput(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(TACTICAL_COOLDOWN_UNTIL) || !player.isSprinting()) {
             return;
         }
@@ -418,7 +439,7 @@ public final class GhrothStateManager {
 
     private static void startTacticalBoost(ServerPlayer player, double speed, String mode) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         Vec3 look = player.getLookAngle();
         Vec3 horizontal = new Vec3(look.x, 0.0D, look.z);
         if (horizontal.lengthSqr() < 0.001D) {
@@ -642,9 +663,7 @@ public final class GhrothStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long now = player.level().getGameTime();
-        long until = data(player).getLong(key);
-        return until <= now ? 0 : (int) Math.min(Integer.MAX_VALUE, until - now);
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static String entityTypeKey(EntityType<?> type) {

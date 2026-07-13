@@ -8,6 +8,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterAvailability;
 import com.rzy.dealt_force_skills.character.CharacterBanManager;
+import com.rzy.dealt_force_skills.character.CharacterBranchPackManager;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
@@ -30,6 +31,9 @@ public final class CharacterBanCommands {
     private static final SuggestionProvider<CommandSourceStack> CHARACTER_SUGGESTIONS = (context, builder) -> {
         for (String suggestion : ModCharacters.commandNameSuggestions()) {
             builder.suggest(quoteIfNeeded(suggestion));
+        }
+        for (CharacterDefinition character : CharacterBranchPackManager.currentCharacters()) {
+            builder.suggest(quoteIfNeeded(character.id()));
         }
         return builder.buildFuture();
     };
@@ -69,7 +73,7 @@ public final class CharacterBanCommands {
     )
             throws CommandSyntaxException {
         CharacterDefinition character = resolveCharacter(characterInput);
-        Component characterName = Component.translatable(character.nameTranslationKey());
+        Component characterName = character.displayName();
         int changedCount = 0;
         int forcedReselections = 0;
 
@@ -110,11 +114,13 @@ public final class CharacterBanCommands {
         boolean changed = disabled
                 ? CharacterBanManager.banServer(source.getServer(), character.id())
                 : CharacterBanManager.unbanServer(source.getServer(), character.id());
-        Component characterName = Component.translatable(character.nameTranslationKey());
+        Component characterName = character.displayName();
         int forcedReselections = 0;
 
         for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
-            if (disabled && CharacterSelectionManager.forceReselectionIfSelected(player, character.id(),
+            if (disabled
+                    && !CharacterBanManager.isPlayerAllowed(player, character.id())
+                    && CharacterSelectionManager.forceReselectionIfSelected(player, character.id(),
                     Component.translatable("message.dealt_force_skills.selection.force_reselect", characterName))) {
                 forcedReselections++;
             }
@@ -137,6 +143,7 @@ public final class CharacterBanCommands {
 
     private static CharacterDefinition resolveCharacter(String input) throws CommandSyntaxException {
         return ModCharacters.findByCommandName(input)
+                .or(() -> CharacterBranchPackManager.findCharacter(input))
                 .orElseThrow(() -> UNKNOWN_CHARACTER.create(input));
     }
 

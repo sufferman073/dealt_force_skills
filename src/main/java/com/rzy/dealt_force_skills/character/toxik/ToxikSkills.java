@@ -55,7 +55,7 @@ public final class ToxikSkills {
 
     private static boolean equipTearGas(ServerPlayer player) {
         if (ToxikStateManager.tearGasCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.toxik.tear_gas_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.toxik.tear_gas_empty"));
             return true;
         }
         ToxikStateManager.setEquippedTool(player, ToxikTool.TEAR_GAS);
@@ -67,7 +67,7 @@ public final class ToxikSkills {
 
     private static boolean throwTearGas(ServerPlayer player, boolean highThrow) {
         if (!ToxikStateManager.consumeTearGas(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.toxik.tear_gas_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.toxik.tear_gas_empty"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -103,7 +103,8 @@ public final class ToxikSkills {
 
     private static boolean equipFirefly(ServerPlayer player) {
         if (ToxikStateManager.fireflyCooldownRemainingTicks(player) > 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.toxik.firefly_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.toxik.firefly_cooldown"));
             return true;
         }
         ToxikStateManager.setEquippedTool(player, ToxikTool.FIREFLY_SWARM);

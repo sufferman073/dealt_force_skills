@@ -15,12 +15,11 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 
 public final class NoxSkills {
-    private static final double ROTOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_range", 48.0D);
-    private static final double ROTOR_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_min_alignment", 0.78D);
-    private static final double ROTOR_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_direct_alignment", 0.975D);
-    private static final double ROTOR_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_max_off_axis", 2.0D);
-    private static final double ROTOR_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_speed", 1.75D);
-
+    private static volatile double ROTOR_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_range", 48.0));
+    private static volatile double ROTOR_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_MIN_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_min_alignment", 0.78));
+    private static volatile double ROTOR_LOCK_DIRECT_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_DIRECT_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_direct_alignment", 0.975));
+    private static volatile double ROTOR_LOCK_MAX_OFF_AXIS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_LOCK_MAX_OFF_AXIS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_lock_max_off_axis", 2.0));
+    private static volatile double ROTOR_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("ROTOR_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.nox.nox_skills.rotor_speed", 1.75));
     private NoxSkills() {
     }
 
@@ -42,7 +41,12 @@ public final class NoxSkills {
 
         return switch (action) {
             case STOW_TOOL -> {
+                NoxTool equipped = NoxStateManager.equippedTool(player);
                 NoxStateManager.setEquippedTool(player, NoxTool.NONE);
+                if (equipped == NoxTool.ROTOR) {
+                    player.level().playSound(null, player.blockPosition(), ModSounds.NOX_ROTOR_STOW.get(),
+                            SoundSource.PLAYERS, 0.72f, 1.0f);
+                }
                 yield true;
             }
             case THROW_ROTOR -> throwRotor(player, targetEntityId);
@@ -57,7 +61,8 @@ public final class NoxSkills {
             return true;
         }
         if (!NoxStateManager.rotorReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.rotor_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.nox.rotor_cooldown"));
             return true;
         }
 
@@ -73,7 +78,8 @@ public final class NoxSkills {
             return false;
         }
         if (!NoxStateManager.consumeRotor(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.rotor_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.nox.rotor_cooldown"));
             NoxStateManager.setEquippedTool(player, NoxTool.NONE);
             return true;
         }
@@ -97,8 +103,14 @@ public final class NoxSkills {
         rotor.setYRot(player.getYRot());
         rotor.setXRot(player.getXRot());
         level.addFreshEntity(rotor);
+        if (target != null) {
+            level.playSound(null, player.blockPosition(), ModSounds.NOX_ROTOR_LOCK.get(),
+                    SoundSource.PLAYERS, 0.72f, 1.0f);
+        }
         level.playSound(null, player.blockPosition(), ModSounds.NOX_ROTOR_THROW.get(),
                 SoundSource.PLAYERS, 0.95f, target == null ? 1.05f : 0.92f);
+        level.playSound(null, rotor.blockPosition(), ModSounds.NOX_ROTOR_START_FLY.get(),
+                SoundSource.PLAYERS, 0.78f, 1.0f);
         NoxStateManager.setEquippedTool(player, NoxTool.NONE);
         return true;
     }
@@ -109,7 +121,7 @@ public final class NoxSkills {
             return true;
         }
         if (NoxStateManager.flashCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.flash_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.nox.flash_empty"));
             return true;
         }
 
@@ -125,7 +137,7 @@ public final class NoxSkills {
             return false;
         }
         if (!NoxStateManager.consumeFlash(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.nox.flash_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.nox.flash_empty"));
             if (requireEquipped) {
                 NoxStateManager.setEquippedTool(player, NoxTool.NONE);
             }
@@ -143,6 +155,8 @@ public final class NoxSkills {
         grenade.setYRot(player.getYRot());
         grenade.setXRot(player.getXRot());
         level.addFreshEntity(grenade);
+        level.playSound(null, player.blockPosition(), ModSounds.NOX_FLASH_PIN.get(),
+                SoundSource.PLAYERS, 0.7f, 1.0f);
         level.playSound(null, player.blockPosition(), ModSounds.NOX_FLASH_THROW.get(),
                 SoundSource.PLAYERS, 0.95f, highThrow ? 0.95f : 1.1f);
         NoxStateManager.setEquippedTool(player, NoxTool.NONE);
@@ -154,7 +168,8 @@ public final class NoxSkills {
             return null;
         }
         Entity entity = player.level().getEntity(entityId);
-        if (!(entity instanceof LivingEntity target) || target == player || !TargetingUtil.isTargetableLiving(target)) {
+        if (!(entity instanceof LivingEntity target) || target == player
+                || !TargetingUtil.isHostileLivingFor(player, target)) {
             return null;
         }
         Vec3 eye = player.getEyePosition();

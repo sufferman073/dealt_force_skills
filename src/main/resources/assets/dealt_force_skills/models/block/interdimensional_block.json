@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "dealt_force_skills:block/interdimensional_block_side",
+    "down": "minecraft:block/farmland",
+    "up": "minecraft:block/farmland",
+    "north": "dealt_force_skills:block/interdimensional_block_side",
+    "south": "dealt_force_skills:block/interdimensional_block_side",
+    "west": "dealt_force_skills:block/interdimensional_block_side",
+    "east": "dealt_force_skills:block/interdimensional_block_side"
+  }
+}

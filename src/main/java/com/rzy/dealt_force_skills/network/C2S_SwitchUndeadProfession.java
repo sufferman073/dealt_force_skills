@@ -20,7 +20,7 @@ public record C2S_SwitchUndeadProfession(int professionOrdinal) {
     public static void handle(C2S_SwitchUndeadProfession msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null && UndeadStateManager.isUndead(player)) {
+            if (player != null && !player.isSpectator() && UndeadStateManager.isUndead(player)) {
                 UndeadStateManager.switchProfession(player,
                         UndeadProfession.byOrdinal(msg.professionOrdinal));
             }

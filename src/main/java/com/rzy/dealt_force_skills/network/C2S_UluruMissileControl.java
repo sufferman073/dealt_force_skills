@@ -3,6 +3,7 @@ package com.rzy.dealt_force_skills.network;
 import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.entity.UluruLoiteringMissileEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.RoundStartFreezeManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
@@ -43,7 +44,7 @@ public class C2S_UluruMissileControl {
     public static void handle(C2S_UluruMissileControl msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player == null) {
+            if (player == null || player.isSpectator()) {
                 return;
             }
             // Client requested release of missile control
@@ -51,7 +52,7 @@ public class C2S_UluruMissileControl {
                 UluruLoiteringMissileEntity.stopPlayerControl(player);
                 return;
             }
-            if (player.hasEffect(ModEffects.STUN.get()) || player.hasEffect(ModEffects.WEBBED.get()) || StingerStateManager.isDowned(player)) {
+            if (player.hasEffect(ModEffects.STUN.get()) || player.hasEffect(ModEffects.WEBBED.get()) || StingerStateManager.isDowned(player) || RoundStartFreezeManager.isFrozen(player)) {
                 return;
             }
             if (player.level().getEntity(msg.entityId) instanceof UluruLoiteringMissileEntity missile

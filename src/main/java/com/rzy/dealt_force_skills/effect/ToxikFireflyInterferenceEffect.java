@@ -1,6 +1,7 @@
 package com.rzy.dealt_force_skills.effect;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SuppressLocalHurtAnimation;
 import net.minecraft.nbt.CompoundTag;
@@ -23,10 +24,11 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
     private static final String SLOW_UUID = "ac9182cc-1ec1-4d09-b286-28fe2424c0c6";
     private static final UUID MAX_HEALTH_MODIFIER_UUID = UUID.fromString("d2b91f85-b6f8-4c63-82b8-ef8b9c89beea");
     private static final String MAX_HEALTH_MODIFIER_NAME = "Toxik firefly temporary max health reduction";
-    private static final double MAX_REDUCTION_RATIO = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("effects.toxikfireflyinterferenceeffect.max_reduction_ratio", 0.9999D);
-    private static final double PER_LEVEL_REDUCTION_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("effects.toxikfireflyinterferenceeffect.per_level_reduction_per_second", 0.01D);
-    private static final int REDUCTION_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("effects.toxikfireflyinterferenceeffect.reduction_interval_ticks", 5);
-
+    private static volatile double MAX_REDUCTION_RATIO = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_REDUCTION_RATIO", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("effects.toxikfireflyinterferenceeffect.max_reduction_ratio", 0.9999));
+    private static volatile double PER_LEVEL_REDUCTION_PER_SECOND = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PER_LEVEL_REDUCTION_PER_SECOND", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "effects.toxikfireflyinterferenceeffect.per_level_reduction_per_second", 0.01
+   ));
+    private static volatile int REDUCTION_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REDUCTION_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("effects.toxikfireflyinterferenceeffect.reduction_interval_ticks", 5));
     public ToxikFireflyInterferenceEffect() {
         super(MobEffectCategory.NEUTRAL, 0xA6FF3D);
         addAttributeModifier(Attributes.MOVEMENT_SPEED,
@@ -43,10 +45,10 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (!(entity.level() instanceof ServerLevel) || !entity.isAlive()) {
+        if (!(entity.level() instanceof ServerLevel level) || !entity.isAlive()) {
             return;
         }
-        applyStackingHealthReduction(entity, amplifier);
+        applyStackingHealthReduction(level, entity, amplifier);
     }
 
     @Override
@@ -78,7 +80,7 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
         tag.remove(OWNER_TAG);
     }
 
-    private static void applyStackingHealthReduction(LivingEntity entity, int amplifier) {
+    private static void applyStackingHealthReduction(ServerLevel level, LivingEntity entity, int amplifier) {
         AttributeInstance maxHealth = entity.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealth == null) {
             return;
@@ -111,6 +113,8 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
                 -newReduced,
                 AttributeModifier.Operation.ADDITION));
         tag.putDouble(REDUCED_HEALTH_TAG, newReduced);
+        owner(level, entity).ifPresent(owner ->
+                DfsAchievements.recordToxikFireflyMaxHealthLoss(owner, entity, newReduced / baseMaxHealth));
 
         float newHealth = (float) Math.max(0.01D, entity.getHealth() - delta);
         float cappedHealth = Math.min(newHealth, entity.getMaxHealth());
@@ -120,7 +124,7 @@ public class ToxikFireflyInterferenceEffect extends MobEffect {
         }
     }
 
-    private static Optional<LivingEntity> owner(ServerLevel level, LivingEntity entity) {
+    public static Optional<ServerPlayer> owner(ServerLevel level, LivingEntity entity) {
         CompoundTag tag = entity.getPersistentData();
         if (!tag.hasUUID(OWNER_TAG)) {
             return Optional.empty();

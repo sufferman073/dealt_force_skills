@@ -25,9 +25,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class ManbaInputHandler {
-    private static final int DUEL_LOCK_TICKS = DealtForceConfig.intValue("client.manba_input_handler.duel_lock_ticks", 10);
-    private static final double DUEL_LOCK_RANGE = DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_range", 32.0D);
-    private static final double DUEL_LOCK_MIN_ALIGNMENT = DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_min_alignment", 0.78D);
+    private static volatile int DUEL_LOCK_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_LOCK_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.manba_input_handler.duel_lock_ticks", 10));
+    private static volatile double DUEL_LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_range", 32.0));
+    private static volatile double DUEL_LOCK_MIN_ALIGNMENT = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DUEL_LOCK_MIN_ALIGNMENT", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.manba_input_handler.duel_lock_min_alignment", 0.78));
     private static boolean active2WasDown;
     private static boolean sentFlashlightStart;
     private static boolean coreWasDown;

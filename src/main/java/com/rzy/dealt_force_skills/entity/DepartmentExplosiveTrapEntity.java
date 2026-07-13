@@ -1,9 +1,10 @@
 package com.rzy.dealt_force_skills.entity;
 
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
-import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.Direction;
@@ -19,7 +20,6 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -45,11 +45,11 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(DepartmentExplosiveTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 45;
-    private static final int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentexplosivetrapentity.auto_detonation_delay_ticks", 20);
-    private static final double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_trigger_radius", 4.0D);
-    private static final double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_damage_radius", 4.0D);
-    private static final double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.manual_damage_radius", 6.0D);
-    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.max_owner_distance", 50.0D);
+    private static volatile int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_DETONATION_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.departmentexplosivetrapentity.auto_detonation_delay_ticks", 20));
+    private static volatile double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_TRIGGER_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_trigger_radius", 4.0));
+    private static volatile double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.auto_damage_radius", 4.0));
+    private static volatile double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MANUAL_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.manual_damage_radius", 6.0));
+    private static volatile double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_OWNER_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.departmentexplosivetrapentity.max_owner_distance", 50.0));
     private static final DustParticleOptions TRAP_DUST = new DustParticleOptions(new Vector3f(1.0F, 0.36F, 0.05F), 1.25F);
 
     private UUID ownerId;
@@ -133,7 +133,10 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     @Override
     public boolean hurt(DamageSource source, float amount) {
         if (!level().isClientSide && amount > 0.0F && level() instanceof ServerLevel level) {
-            armAutoTrigger(level);
+            Entity attacker = source.getEntity();
+            if (!isOwnerOrTeammate(attacker)) {
+                armAutoTrigger(level);
+            }
         }
         return true;
     }
@@ -219,7 +222,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
 
         AABB box = new AABB(position(), position()).inflate(radius);
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
-            if (ownerId != null && ownerId.equals(target.getUUID())) {
+            if (isOwnerOrTeammate(target) && !isOwnedBy(target.getUUID())) {
                 continue;
             }
             if (!TargetingUtil.isTargetableLiving(target)) {
@@ -234,10 +237,9 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
             SkillDamageHelper.hurt(target, source, ownerLiving, manual ? 12.0F : 16.0F);
             target.setDeltaMovement(before.add(target.position().subtract(position()).normalize().scale(manual ? 0.55D : 0.35D)));
             target.hurtMarked = true;
-            if (manual) {
-                target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.department_explosive_trap_entity.effect.sonic_shock.0.duration_ticks", 6 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.department_explosive_trap_entity.effect.sonic_shock.0.amplifier", 0), false, true, true), owner);
-            }
         }
+        SuperbWarfareCompat.damageVehicles(level, position(), radius, source, this,
+                (manual ? 12.0F : 16.0F) / 100.0F, false);
         spawnChargedCreeper(level);
         discardAndNotify(level);
     }
@@ -274,7 +276,7 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
     }
 
     private boolean canTrigger(LivingEntity entity) {
-        if (!entity.isAlive() || isOwnedBy(entity.getUUID()) || !TargetingUtil.isTargetableLiving(entity)) {
+        if (!entity.isAlive() || isOwnerOrTeammate(entity) || !TargetingUtil.isTargetableLiving(entity)) {
             return false;
         }
         if (ownerId != null
@@ -287,6 +289,20 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
                 || entity.getType().getCategory() == MobCategory.MONSTER;
     }
 
+    private boolean isOwnerOrTeammate(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (isOwnedBy(entity.getUUID())) {
+            return true;
+        }
+        if (!(entity instanceof ServerPlayer) || !(level() instanceof ServerLevel level)) {
+            return false;
+        }
+        Entity owner = owner(level);
+        return DealtTeamManager.areTeammates(owner, entity);
+    }
+
     private boolean hasLineOfSightTo(LivingEntity target) {
         Vec3 start = position().add(0.0D, getBbHeight() * 0.5D, 0.0D);
         Vec3 end = target.getEyePosition();
@@ -296,7 +312,8 @@ public class DepartmentExplosiveTrapEntity extends Entity implements ItemSupplie
 
     private void warnNearbyPlayers(ServerLevel level, double radius) {
         AABB box = new AABB(position(), position()).inflate(radius);
-        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box, TargetingUtil::isTargetablePlayer)) {
+        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box,
+                target -> TargetingUtil.isTargetablePlayer(target) && !isOwnerOrTeammate(target))) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.trap_triggered"), true);
         }
     }

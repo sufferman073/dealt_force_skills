@@ -25,8 +25,7 @@ import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class NoxWorldMarkersOverlay {
-    private static final double FLASH_MARKER_DISTANCE = DealtForceConfig.doubleValue("client.nox_world_markers_overlay.flash_marker_distance", 36.0D);
-
+    private static volatile double FLASH_MARKER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_MARKER_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("client.nox_world_markers_overlay.flash_marker_distance", 36.0));
     private NoxWorldMarkersOverlay() {
     }
 

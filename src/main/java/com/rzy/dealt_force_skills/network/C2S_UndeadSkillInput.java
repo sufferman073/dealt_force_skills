@@ -35,7 +35,7 @@ public record C2S_UndeadSkillInput(SkillSlot slot, UndeadSkillInputAction action
     public static void handle(C2S_UndeadSkillInput msg, Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
-            if (player != null) {
+            if (player != null && !player.isSpectator()) {
                 UndeadSkills.handleInput(player, msg.slot, msg.action, msg.heldTicks);
                 UndeadStateManager.syncToClient(player);
             }

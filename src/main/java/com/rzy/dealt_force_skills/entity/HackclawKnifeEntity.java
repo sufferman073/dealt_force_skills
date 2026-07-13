@@ -32,9 +32,8 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class HackclawKnifeEntity extends Projectile implements ItemSupplier {
-    private static final float HIT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.hackclawknifeentity.hit_damage", 50.0f);
-    private static final int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawknifeentity.max_flight_ticks", 120);
-
+    private static volatile float HIT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HIT_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.hackclawknifeentity.hit_damage", 50.0F));
+    private static volatile int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLIGHT_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawknifeentity.max_flight_ticks", 120));
     private UUID ownerId;
 
     public HackclawKnifeEntity(EntityType<? extends HackclawKnifeEntity> type, Level level) {

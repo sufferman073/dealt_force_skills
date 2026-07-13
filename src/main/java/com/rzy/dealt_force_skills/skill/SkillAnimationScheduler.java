@@ -36,6 +36,10 @@ public final class SkillAnimationScheduler {
         ACTIONS.remove(player.getUUID());
     }
 
+    public static void clearAllRuntimeCaches() {
+        ACTIONS.clear();
+    }
+
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END || !(event.player instanceof ServerPlayer player)) {

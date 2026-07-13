@@ -2,8 +2,11 @@ package com.rzy.dealt_force_skills.skill;
 
 import com.rzy.dealt_force_skills.character.department.DepartmentOfTransportationStateManager;
 import com.rzy.dealt_force_skills.character.department.DepartmentTool;
+import com.rzy.dealt_force_skills.character.chamber.ChamberStateManager;
+import com.rzy.dealt_force_skills.character.chamber.ChamberTool;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoStateManager;
 import com.rzy.dealt_force_skills.character.gizmo.GizmoTool;
+import com.rzy.dealt_force_skills.character.ntwo.NTwoStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawStateManager;
 import com.rzy.dealt_force_skills.character.hackclaw.HackclawTool;
 import com.rzy.dealt_force_skills.character.luna.LunaStateManager;
@@ -13,6 +16,7 @@ import com.rzy.dealt_force_skills.character.morse.MorseStateManager;
 import com.rzy.dealt_force_skills.character.morse.MorseTool;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroStateManager;
 import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroTool;
+import com.rzy.dealt_force_skills.character.nikaidou.NikaidouHiroWitchificationStateManager;
 import com.rzy.dealt_force_skills.character.nox.NoxStateManager;
 import com.rzy.dealt_force_skills.character.nox.NoxTool;
 import com.rzy.dealt_force_skills.character.raptor.RaptorStateManager;
@@ -62,11 +66,30 @@ public final class HeldToolVisualSync {
                 case NONE -> HeldToolVisual.NONE;
             };
         }
+        if (NikaidouHiroWitchificationStateManager.isNikaidouHiroWitchification(player)) {
+            return NikaidouHiroWitchificationStateManager.equippedTool(player) == NikaidouHiroTool.RITUAL_SWORD
+                    ? HeldToolVisual.NIKAIDOU_RITUAL_SWORD
+                    : HeldToolVisual.NONE;
+        }
         if (GizmoStateManager.isGizmo(player)) {
             return switch (GizmoStateManager.equippedTool(player)) {
                 case SMOKE_TRAP -> HeldToolVisual.GIZMO_SMOKE_TRAP;
                 case SPIDER_NEST -> HeldToolVisual.GIZMO_SPIDER_NEST;
                 case T_BOY -> HeldToolVisual.GIZMO_T_BOY;
+                case NONE -> HeldToolVisual.NONE;
+            };
+        }
+        if (ChamberStateManager.isChamber(player)) {
+            return switch (ChamberStateManager.equippedTool(player)) {
+                case TELEPORT_CARD -> HeldToolVisual.CHAMBER_TELEPORT_CARD;
+                case TRAP_CARD -> HeldToolVisual.CHAMBER_TRAP_CARD;
+                case NONE -> HeldToolVisual.NONE;
+            };
+        }
+        if (NTwoStateManager.isNTwo(player)) {
+            return switch (NTwoStateManager.equippedTool(player)) {
+                case DEWAR_CANISTER -> HeldToolVisual.N_TWO_DEWAR_CANISTER;
+                case CONDENSER_LAUNCHER -> HeldToolVisual.N_TWO_CONDENSER_LAUNCHER;
                 case NONE -> HeldToolVisual.NONE;
             };
         }

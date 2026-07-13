@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.character.saeed.SaeedGuardType;
 import net.minecraft.core.particles.ParticleTypes;
@@ -7,6 +8,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
@@ -23,11 +25,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SaeedFireFieldEntity extends Entity implements ItemSupplier {
-    private static final int DEFAULT_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedfirefieldentity.default_life_ticks", 6 * 20);
-    private static final int DEFAULT_DAMAGE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedfirefieldentity.default_damage_interval_ticks", 8);
-    private static final double DEFAULT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirefieldentity.default_radius", 6.0D);
-    private static final float DEFAULT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedfirefieldentity.default_damage", 8.0F);
-    private static final int DEFAULT_FIRE_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_fire_field_entity.default_fire_seconds", 8);
+    private static volatile int DEFAULT_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedfirefieldentity.default_life_ticks", 120));
+    private static volatile int DEFAULT_DAMAGE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_DAMAGE_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedfirefieldentity.default_damage_interval_ticks", 8));
+    private static volatile double DEFAULT_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedfirefieldentity.default_radius", 6.0));
+    private static volatile float DEFAULT_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedfirefieldentity.default_damage", 8.0F));
+    private static volatile int DEFAULT_FIRE_SECONDS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DEFAULT_FIRE_SECONDS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_fire_field_entity.default_fire_seconds", 8));
     private static final String KIND_DEFAULT = "default";
     private static final String KIND_IGNITION = "ignition";
     private static final String KIND_NAPALM = "napalm";
@@ -97,19 +99,31 @@ public class SaeedFireFieldEntity extends Entity implements ItemSupplier {
         }
         if (tickCount % Math.max(1, damageIntervalTicks) == 0 && level() instanceof ServerLevel level) {
             LivingEntity owner = owner(level);
+            LivingEntity damageOwner = teamOwner(level).<LivingEntity>map(player -> player).orElse(owner);
             AABB box = new AABB(position(), position()).inflate(radius);
+            int burningTargets = 0;
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
                 if (isFriendlyTarget(target) || target.distanceToSqr(position()) > radius * radius) {
                     continue;
                 }
                 target.invulnerableTime = 0;
+                boolean damaged;
                 if (KIND_NAPALM.equals(fieldKind)) {
-                    SkillDamageHelper.hurtUnscaled(target, SkillDamageHelper.trueDamage(level, this, owner), damage);
+                    damaged = SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(level, this, damageOwner),
+                            damageOwner, damage);
                     target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_fire_field_entity.effect.movement_slowdown.0.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeed_fire_field_entity.effect.movement_slowdown.0.amplifier", 0), false, true, true));
                 } else {
-                    SkillDamageHelper.hurt(target, damageSources().mobProjectile(this, owner), owner, damage);
+                    damaged = SkillDamageHelper.hurt(target, damageSources().mobProjectile(this, damageOwner),
+                            damageOwner, damage);
                 }
                 target.setSecondsOnFire(fireSeconds);
+                if (damaged) {
+                    burningTargets++;
+                }
+            }
+            if (burningTargets > 0) {
+                int finalBurningTargets = burningTargets;
+                teamOwner(level).ifPresent(player -> DfsAchievements.recordSaeedFireTargets(player, finalBurningTargets));
             }
             level.sendParticles(ParticleTypes.FLAME, getX(), getY() + 0.08D, getZ(),
                     KIND_NAPALM.equals(fieldKind) ? 72 : 36, radius * 0.95D, 0.22D, radius * 0.95D, 0.01D);
@@ -158,6 +172,11 @@ public class SaeedFireFieldEntity extends Entity implements ItemSupplier {
         }
         Entity entity = level.getEntity(ownerId);
         return entity instanceof LivingEntity living ? living : null;
+    }
+
+    private Optional<ServerPlayer> teamOwner(ServerLevel level) {
+        UUID teamOwner = teamOwnerUuid().orElse(null);
+        return teamOwner == null ? Optional.empty() : Optional.ofNullable(level.getServer().getPlayerList().getPlayer(teamOwner));
     }
 
     public Optional<UUID> teamOwnerUuid() {

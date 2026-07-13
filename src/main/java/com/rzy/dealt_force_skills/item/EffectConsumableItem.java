@@ -48,6 +48,10 @@ public class EffectConsumableItem extends DfsUseItem {
         return true;
     }
 
+    public List<EffectEntry> blessingPreviewEffects() {
+        return effects;
+    }
+
     public record EffectEntry(Supplier<MobEffect> effect, int durationTicks, int amplifier) {
     }
 }

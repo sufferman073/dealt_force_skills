@@ -53,10 +53,9 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
             SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Integer> DATA_CHARGE_TICKS =
             SynchedEntityData.defineId(TempestWallDrillStingerEntity.class, EntityDataSerializers.INT);
-    private static final int CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.tempestwalldrillstingerentity.charge_ticks", 3 * 20);
-    private static final double RELEASE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.tempestwalldrillstingerentity.release_range", 10.0D);
-    private static final double RELEASE_HALF_WIDTH = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
-            "summons.tempest_wall_drill_stinger.release_half_width", 1.0D);
+    private static volatile int CHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.tempestwalldrillstingerentity.charge_ticks", 60));
+    private static volatile double RELEASE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RELEASE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.tempestwalldrillstingerentity.release_range", 10.0));
+    private static volatile double RELEASE_HALF_WIDTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RELEASE_HALF_WIDTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.tempest_wall_drill_stinger.release_half_width", 2.5));
     private static final DustParticleOptions DRILL_DUST = new DustParticleOptions(new Vector3f(0.62f, 1.0f, 0.45f), 1.15f);
 
     private UUID ownerId;
@@ -254,7 +253,7 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
     }
 
     private void attach(LivingEntity target, Vec3 hitLocation, Vec3 motion) {
-        if (!TargetingUtil.isTargetableLiving(target)) {
+        if (!TargetingUtil.isSelfOrHostileLivingFor(getOwner(), target)) {
             discard();
             return;
         }
@@ -351,7 +350,7 @@ public class TempestWallDrillStingerEntity extends Projectile implements ItemSup
     }
 
     private static boolean applyDisarm(ServerLevel level, LivingEntity target, Entity owner, Set<Integer> disarmed) {
-        if (!TargetingUtil.isTargetableLiving(target) || !disarmed.add(target.getId())) {
+        if (!TargetingUtil.isSelfOrHostileLivingFor(owner, target) || !disarmed.add(target.getId())) {
             return false;
         }
         target.addEffect(new MobEffectInstance(ModEffects.TEMPEST_DISARMED.get(),

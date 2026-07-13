@@ -1,9 +1,11 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.shepherd.ShepherdStateManager;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.Direction;
@@ -43,11 +45,11 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
     private static final EntityDataAccessor<Integer> DATA_ATTACHED_FACE =
             SynchedEntityData.defineId(ShepherdSonicTrapEntity.class, EntityDataSerializers.INT);
     private static final int READY_SOUND_INTERVAL_TICKS = 40;
-    private static final int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdsonictrapentity.auto_detonation_delay_ticks", 10);
-    private static final double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_trigger_radius", 4.0D);
-    private static final double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_damage_radius", 4.0D);
-    private static final double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.manual_damage_radius", 6.0D);
-    private static final double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.max_owner_distance", 50.0D);
+    private static volatile int AUTO_DETONATION_DELAY_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_DETONATION_DELAY_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherdsonictrapentity.auto_detonation_delay_ticks", 10));
+    private static volatile double AUTO_TRIGGER_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_TRIGGER_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_trigger_radius", 4.0));
+    private static volatile double AUTO_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("AUTO_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.auto_damage_radius", 4.0));
+    private static volatile double MANUAL_DAMAGE_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MANUAL_DAMAGE_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.manual_damage_radius", 6.0));
+    private static volatile double MAX_OWNER_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_OWNER_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.shepherdsonictrapentity.max_owner_distance", 50.0));
     private static final DustParticleOptions SONIC_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.83f, 0.20f), 1.35f);
 
     private UUID ownerId;
@@ -225,6 +227,8 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
 
     private void explode(ServerLevel level, double radius) {
         Entity owner = owner(level);
+        ServerPlayer ownerPlayer = owner instanceof ServerPlayer player ? player : null;
+        boolean warned = radius <= AUTO_DAMAGE_RADIUS + 0.01D;
         RangedSoundHelper.playTrapSoundThrottled(level, position(), ModSounds.SHEPHERD_SONIC_TRAP_EXPLODE.get(), 1.0f, 1.0f, 8, 5.0D);
         level.sendParticles(SONIC_DUST, getX(), getY() + 0.25D, getZ(),
                 90, radius * 0.45D, 0.45D, radius * 0.45D, 0.0D);
@@ -236,7 +240,7 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
             if (!TargetingUtil.isTargetableLiving(target)) {
                 continue;
             }
-            if (ownerId != null && target.getUUID().equals(ownerId)) {
+            if (isOwnerOrTeammate(target)) {
                 continue;
             }
             double distance = target.position().add(0.0D, target.getBbHeight() * 0.5D, 0.0D).distanceTo(position());
@@ -250,6 +254,9 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
             target.setDeltaMovement(before);
             target.hurtMarked = true;
             target.addEffect(new MobEffectInstance(ModEffects.SONIC_SHOCK.get(), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_sonic_trap_entity.effect.sonic_shock.0.duration_ticks", 8 * 20), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.shepherd_sonic_trap_entity.effect.sonic_shock.0.amplifier", 1), false, true, true), owner);
+            if (ownerPlayer != null) {
+                DfsAchievements.recordShepherdSonicTrapHit(ownerPlayer, target, warned);
+            }
             RangedSoundHelper.playTrapSoundThrottled(level, target.position(), ModSounds.SHEPHERD_SONIC_SHOCK_HIT.get(),
                     0.58f, 1.0f + (target.getRandom().nextFloat() - 0.5f) * 0.12f, 8, 5.0D);
         }
@@ -279,17 +286,31 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
     }
 
     private boolean canCarrierTrigger(ServerPlayer player) {
-        return player.isAlive() && !isOwnedBy(player.getUUID()) && TargetingUtil.isTargetableLiving(player);
+        return player.isAlive() && !isOwnerOrTeammate(player) && TargetingUtil.isTargetableLiving(player);
     }
 
     private boolean canTrigger(LivingEntity entity) {
-        if (!entity.isAlive() || isOwnedBy(entity.getUUID())) {
+        if (!entity.isAlive() || isOwnerOrTeammate(entity)) {
             return false;
         }
         if (!TargetingUtil.isTargetableLiving(entity)) {
             return false;
         }
         return entity instanceof ServerPlayer || entity instanceof Enemy;
+    }
+
+    private boolean isOwnerOrTeammate(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (isOwnedBy(entity.getUUID())) {
+            return true;
+        }
+        if (!(entity instanceof ServerPlayer) || !(level() instanceof ServerLevel level)) {
+            return false;
+        }
+        Entity owner = owner(level);
+        return DealtTeamManager.areTeammates(owner, entity);
     }
 
     private boolean hasLineOfSightTo(LivingEntity target) {
@@ -301,7 +322,8 @@ public class ShepherdSonicTrapEntity extends Entity implements ItemSupplier, Blo
 
     private void warnNearbyPlayers(ServerLevel level, double radius) {
         AABB box = new AABB(position(), position()).inflate(radius);
-        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box, TargetingUtil::isTargetablePlayer)) {
+        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box,
+                target -> TargetingUtil.isTargetablePlayer(target) && !isOwnerOrTeammate(target))) {
             player.displayClientMessage(Component.translatable("message.dealt_force_skills.shepherd.sonic_trap_triggered"), true);
         }
     }

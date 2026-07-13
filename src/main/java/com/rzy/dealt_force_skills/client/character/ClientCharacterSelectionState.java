@@ -1,7 +1,10 @@
 package com.rzy.dealt_force_skills.client.character;
 
+import com.rzy.dealt_force_skills.character.CharacterBranch;
+import com.rzy.dealt_force_skills.character.CharacterBranchPackManager;
 import com.rzy.dealt_force_skills.character.CharacterAvailability;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
+import com.rzy.dealt_force_skills.character.CharacterRole;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.client.screen.CharacterSelectionScreen;
@@ -9,10 +12,21 @@ import com.rzy.dealt_force_skills.network.C2S_SelectCharacter;
 import com.rzy.dealt_force_skills.network.C2S_UseCharacterSkill;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.client.RaptorFalconController;
+import com.rzy.dealt_force_skills.client.SaeedGuardViewController;
+import com.rzy.dealt_force_skills.client.ClientTeamSpectatorState;
 import com.rzy.dealt_force_skills.client.UluruMissileController;
+import com.rzy.dealt_force_skills.client.UluruGhostEntityManager;
+import com.rzy.dealt_force_skills.client.visual.ClientSinevaKnockdownState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolModelAnimationState;
+import com.rzy.dealt_force_skills.client.visual.ClientToolReleaseAction;
+import com.rzy.dealt_force_skills.client.visual.DWolfSlideVisuals;
+import com.rzy.dealt_force_skills.client.visual.HackclawPathLineRenderer;
+import com.rzy.dealt_force_skills.client.visual.ManbaFlashlightBeamRenderer;
+import com.rzy.dealt_force_skills.client.visual.SinevaPlaceholderVisuals;
 import net.minecraft.client.Minecraft;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,6 +34,8 @@ public final class ClientCharacterSelectionState {
     private static String selectedCharacterId;
     private static boolean receivedServerState;
     private static boolean promptedForCurrentWorld;
+    private static boolean normalPlayer;
+    private static List<CharacterBranch> selectionCatalog = fallbackCatalog();
     private static final Map<String, String> unavailableReasons = new HashMap<>();
 
     private ClientCharacterSelectionState() {
@@ -34,20 +50,41 @@ public final class ClientCharacterSelectionState {
     }
 
     public static boolean isSelectedCharacter(String characterId) {
-        return hasSelectedCharacter() && selectedCharacterId.equals(characterId);
+        return !isLocalPlayerSpectator() && hasSelectedCharacter() && selectedCharacterId.equals(characterId);
+    }
+
+    public static boolean hasDisplayedCharacter() {
+        return !displayedCharacterId().isBlank();
+    }
+
+    public static String displayedCharacterId() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null && minecraft.player.isSpectator()) {
+            return ClientTeamSpectatorState.displayedCharacterId();
+        }
+        return selectedCharacterId();
+    }
+
+    public static boolean isDisplayedCharacter(String characterId) {
+        return characterId != null && characterId.equals(displayedCharacterId());
     }
 
     public static void resetSession() {
         selectedCharacterId = null;
         receivedServerState = false;
         promptedForCurrentWorld = false;
+        normalPlayer = false;
+        selectionCatalog = fallbackCatalog();
         unavailableReasons.clear();
+        ClientTeamSpectatorState.clear();
         ClientCharacterSkinState.clear();
         ClientSinevaHudState.reset();
         ClientUluruHudState.reset();
         ClientDWolfHudState.reset();
         ClientGizmoHudState.reset();
+        ClientChamberHudState.reset();
         ClientShepherdHudState.reset();
+        ClientNTwoHudState.reset();
         ClientLunaHudState.reset();
         ClientHackclawHudState.reset();
         ClientVyronHudState.reset();
@@ -56,9 +93,11 @@ public final class ClientCharacterSelectionState {
         ClientManbaHudState.reset();
         ClientNikaidouHiroHudState.reset();
         ClientCatDadHudState.reset();
+        ClientCorpsHudState.reset();
         ClientDepartmentHudState.reset();
         ClientUndeadHudState.reset();
         ClientLexNinjiaHudState.reset();
+        ClientGamblerHudState.reset();
         ClientMorseHudState.reset();
         ClientToxikHudState.reset();
         ClientRaptorHudState.reset();
@@ -66,11 +105,32 @@ public final class ClientCharacterSelectionState {
         ClientTempestHudState.reset();
         ClientSaeedHudState.reset();
         ClientGhrothState.reset();
+        ClientSinevaRenderState.reset();
+        ClientHackclawCoreVisualState.reset();
+        ClientHeldToolVisualState.reset();
+        ClientLunaBowVisualState.reset();
+        ClientSkillModelVisualState.reset();
+        ClientSinevaKnockdownState.reset();
+        ManbaFlashlightBeamRenderer.reset();
+        ClientToolModelAnimationState.resetAll();
+        ClientToolReleaseAction.reset();
+        HackclawPathLineRenderer.clear();
+        UluruGhostEntityManager.clear();
+        SinevaPlaceholderVisuals.resetTransientState();
+        DWolfSlideVisuals.reset();
+        UluruMissileController.stop(false);
+        RaptorFalconController.stop(false);
+        SaeedGuardViewController.stop(false);
     }
 
     public static void syncSelectedCharacter(String characterId) {
+        syncSelectedCharacter(characterId, false);
+    }
+
+    public static void syncSelectedCharacter(String characterId, boolean normalPlayer) {
         receivedServerState = true;
         selectedCharacterId = characterId == null || characterId.isBlank() ? null : characterId;
+        ClientCharacterSelectionState.normalPlayer = normalPlayer && selectedCharacterId == null;
         ClientCharacterSkinState.syncLocalSelectedCharacter(selectedCharacterId);
         if (!isSelectedCharacter(ModCharacters.SINEVA_ID)) {
             ClientSinevaHudState.reset();
@@ -85,8 +145,14 @@ public final class ClientCharacterSelectionState {
         if (!isSelectedCharacter(ModCharacters.GIZMO_ID)) {
             ClientGizmoHudState.reset();
         }
+        if (!isSelectedCharacter(ModCharacters.CHAMBER_ID)) {
+            ClientChamberHudState.reset();
+        }
         if (!isSelectedCharacter(ModCharacters.SHEPHERD_ID)) {
             ClientShepherdHudState.reset();
+        }
+        if (!isSelectedCharacter(ModCharacters.N_TWO_ID)) {
+            ClientNTwoHudState.reset();
         }
         if (!isSelectedCharacter(ModCharacters.LUNA_ID)) {
             ClientLunaHudState.reset();
@@ -106,11 +172,15 @@ public final class ClientCharacterSelectionState {
         if (!isSelectedCharacter(ModCharacters.MANBA_ID)) {
             ClientManbaHudState.reset();
         }
-        if (!isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_ID)) {
+        if (!isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_ID)
+                && !isSelectedCharacter(ModCharacters.NIKAIDOU_HIRO_WITCHIFICATION_ID)) {
             ClientNikaidouHiroHudState.reset();
         }
         if (!isSelectedCharacter(ModCharacters.CATDAD_ID)) {
             ClientCatDadHudState.reset();
+        }
+        if (!isSelectedCharacter(ModCharacters.CORPS_ID)) {
+            ClientCorpsHudState.reset();
         }
         if (!isSelectedCharacter(ModCharacters.DEPARTMENT_OF_TRANSPORTATION_ID)) {
             ClientDepartmentHudState.reset();
@@ -120,6 +190,9 @@ public final class ClientCharacterSelectionState {
         }
         if (!isSelectedCharacter(ModCharacters.LEX_NINJIA_ID)) {
             ClientLexNinjiaHudState.reset();
+        }
+        if (!isSelectedCharacter(ModCharacters.GAMBLER_ID)) {
+            ClientGamblerHudState.reset();
         }
         if (!isSelectedCharacter(ModCharacters.MORSE_ID)) {
             ClientMorseHudState.reset();
@@ -159,6 +232,35 @@ public final class ClientCharacterSelectionState {
         }
     }
 
+    public static void syncSelectionCatalog(List<CharacterBranch> branches) {
+        selectionCatalog = branches == null ? List.of() : List.copyOf(branches);
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.screen instanceof CharacterSelectionScreen screen) {
+            screen.refreshCharacterWidgets();
+        }
+    }
+
+    public static List<CharacterBranch> selectionCatalog() {
+        return selectionCatalog;
+    }
+
+    public static Optional<CharacterDefinition> catalogCharacter(String characterId) {
+        if (characterId == null || characterId.isBlank()) {
+            return Optional.empty();
+        }
+        return selectionCatalog.stream()
+                .flatMap(branch -> branch.characters().stream())
+                .filter(character -> character.id().equals(characterId))
+                .findFirst()
+                .or(() -> ModCharacters.get(characterId));
+    }
+
+    private static List<CharacterBranch> fallbackCatalog() {
+        return CharacterRole.DISPLAY_ORDER.stream()
+                .map(CharacterBranchPackManager::fallbackBranch)
+                .toList();
+    }
+
     public static boolean canSelect(CharacterDefinition character) {
         return selectionBlockedMessageKey(character).isEmpty();
     }
@@ -176,7 +278,8 @@ public final class ClientCharacterSelectionState {
 
     public static void openInitialSelectionIfNeeded() {
         Minecraft minecraft = Minecraft.getInstance();
-        if (!receivedServerState || hasSelectedCharacter() || promptedForCurrentWorld || minecraft.screen != null) {
+        if (!receivedServerState || hasSelectedCharacter() || normalPlayer || promptedForCurrentWorld
+                || minecraft.screen != null || isLocalPlayerSpectator()) {
             return;
         }
         openSelectionScreen();
@@ -191,11 +294,12 @@ public final class ClientCharacterSelectionState {
     }
 
     private static void openSelectionScreen(boolean allowReselection) {
-        if (UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
+        if (isLocalPlayerSpectator() || UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
             return;
         }
 
         if (!receivedServerState
+                || (normalPlayer && !allowReselection)
                 || (hasSelectedCharacter() && !allowReselection && !canReselectInCurrentMode())) {
             return;
         }
@@ -209,10 +313,10 @@ public final class ClientCharacterSelectionState {
     }
 
     public static void selectCharacter(String characterId) {
-        if (UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
+        if (isLocalPlayerSpectator() || UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
             return;
         }
-        Optional<CharacterDefinition> character = ModCharacters.get(characterId);
+        Optional<CharacterDefinition> character = catalogCharacter(characterId);
         if (character.isEmpty() || !canSelect(character.get())) {
             return;
         }
@@ -232,14 +336,23 @@ public final class ClientCharacterSelectionState {
     }
 
     public static void useSkill(SkillSlot slot, boolean alternate) {
-        if (!receivedServerState || UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
+        if (!receivedServerState || isLocalPlayerSpectator()
+                || UluruMissileController.isControlling() || RaptorFalconController.isControlling()) {
             return;
         }
 
         if (!hasSelectedCharacter()) {
+            if (normalPlayer) {
+                return;
+            }
             openSelectionScreen();
             return;
         }
         NetworkHandler.sendToServer(new C2S_UseCharacterSkill(slot, alternate));
+    }
+
+    public static boolean isLocalPlayerSpectator() {
+        Minecraft minecraft = Minecraft.getInstance();
+        return minecraft.player != null && minecraft.player.isSpectator();
     }
 }

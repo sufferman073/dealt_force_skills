@@ -75,6 +75,10 @@ public final class ClientVyronHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.VYRON_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.VYRON_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != VyronTool.NONE;
     }

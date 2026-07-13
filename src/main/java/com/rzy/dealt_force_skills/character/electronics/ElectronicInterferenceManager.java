@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.character.electronics;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.CharacterDefinition;
 import com.rzy.dealt_force_skills.character.ModCharacters;
 import com.rzy.dealt_force_skills.character.SkillSlot;
@@ -23,12 +24,17 @@ import com.rzy.dealt_force_skills.entity.VlinderActiveDefenseDroneEntity;
 import com.rzy.dealt_force_skills.entity.VlinderMedicalDroneEntity;
 import com.rzy.dealt_force_skills.entity.VlinderRemoteSmokeRoundEntity;
 import com.rzy.dealt_force_skills.registry.ModEffects;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.UUID;
 
 public final class ElectronicInterferenceManager {
     private ElectronicInterferenceManager() {
@@ -66,9 +72,15 @@ public final class ElectronicInterferenceManager {
         AABB search = player.getBoundingBox().inflate(HackclawInterferenceFieldEntity.RADIUS);
         for (HackclawInterferenceFieldEntity field : level.getEntitiesOfClass(
                 HackclawInterferenceFieldEntity.class, search, HackclawInterferenceFieldEntity::isActive)) {
-            if (field.position().distanceToSqr(player.position()) <= field.radius() * field.radius()) {
-                return field;
+            if (field.position().distanceToSqr(player.position()) > field.radius() * field.radius()) {
+                continue;
             }
+            // Own / teammate interference fields do not disable ally electronic skills.
+            ServerPlayer fieldOwner = field.ownerPlayer(level);
+            if (fieldOwner != null && DealtTeamManager.isSelfOrTeammate(fieldOwner, player)) {
+                continue;
+            }
+            return field;
         }
         return null;
     }
@@ -78,16 +90,23 @@ public final class ElectronicInterferenceManager {
             return 0;
         }
 
+        ServerPlayer fieldOwner = field.ownerPlayer(level);
         AABB box = new AABB(field.position(), field.position()).inflate(field.radius());
         int destroyed = 0;
+        boolean destroyedFreshDevice = false;
         for (Entity entity : level.getEntities(field, box, ElectronicInterferenceManager::isDestroyableElectronicDevice)) {
-            if (!entity.isRemoved()) {
-                discardElectronicDevice(entity);
-                destroyed++;
+            if (entity.isRemoved() || isSelfOrAllyElectronicDevice(fieldOwner, entity)) {
+                continue;
             }
+            destroyedFreshDevice |= entity.tickCount <= 40;
+            discardElectronicDevice(entity);
+            destroyed++;
         }
         if (destroyed > 0) {
-            field.markSuccessfulInterference();
+            field.markSuccessfulInterference(destroyed);
+            if (fieldOwner != null && destroyedFreshDevice) {
+                DfsAchievements.recordHackclawDestroyedFreshElectronic(fieldOwner);
+            }
         }
         return destroyed;
     }
@@ -102,6 +121,40 @@ public final class ElectronicInterferenceManager {
             }
         }
         return destroyed;
+    }
+
+    /**
+     * Hackclaw interference fields never destroy or disable electronic devices belonging to the caster or teammates.
+     */
+    private static boolean isSelfOrAllyElectronicDevice(ServerPlayer fieldOwner, Entity entity) {
+        if (fieldOwner == null || entity == null) {
+            return false;
+        }
+        UUID deviceOwnerId = resolveDeviceOwnerId(entity);
+        if (deviceOwnerId == null) {
+            return false;
+        }
+        if (deviceOwnerId.equals(fieldOwner.getUUID())) {
+            return true;
+        }
+        ServerPlayer deviceOwner = fieldOwner.server.getPlayerList().getPlayer(deviceOwnerId);
+        return deviceOwner != null && DealtTeamManager.areTeammates(fieldOwner, deviceOwner);
+    }
+
+    private static UUID resolveDeviceOwnerId(Entity entity) {
+        if (entity instanceof Projectile projectile && projectile.getOwner() != null) {
+            return projectile.getOwner().getUUID();
+        }
+        if (entity instanceof UluruLoiteringMissileEntity missile && missile.getOwner() != null) {
+            return missile.getOwner().getUUID();
+        }
+        // Summon entities persist owner under "Owner" UUID in entity NBT.
+        CompoundTag tag = new CompoundTag();
+        entity.saveWithoutId(tag);
+        if (tag.hasUUID("Owner")) {
+            return tag.getUUID("Owner");
+        }
+        return null;
     }
 
     public static boolean isElectronicSkill(CharacterDefinition character, SkillSlot slot) {

@@ -17,6 +17,10 @@ public class ModSounds {
             DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, DealtForceSkillsMod.MODID);
 
     public static final Map<String, RegistryObject<SoundEvent>> LEX_NINJIA_SOUNDS = registerLexNinjiaSounds();
+    public static final Map<String, RegistryObject<SoundEvent>> GAMBLER_POWER_SOUNDS = registerGamblerPowerSounds();
+
+    public static final RegistryObject<SoundEvent> SKILLS_CD = reg("skills_cd");
+    public static final RegistryObject<SoundEvent> SKILLS_READY = reg("skills_ready");
 
     public static final RegistryObject<SoundEvent> SHIELD_BASH = reg("shield_bash");
 
@@ -25,14 +29,38 @@ public class ModSounds {
 
     public static final RegistryObject<SoundEvent> WIRE_PLACE = reg("wire_place");
     public static final RegistryObject<SoundEvent> WIRE_STEP = reg("wire_step");
+    public static final RegistryObject<SoundEvent> HVK_CONSTRUCTOR_CRAFT_START =
+            reg("hvk_constructor_craft_start");
+    public static final RegistryObject<SoundEvent> HVK_CONSTRUCTOR_CRAFT_FINISH =
+            reg("hvk_constructor_craft_finish");
+    public static final RegistryObject<SoundEvent> HVK_DISASSEMBLER_USE =
+            reg("hvk_disassembler_use");
+    public static final RegistryObject<SoundEvent> HVK_DISASSEMBLER_REPEL =
+            reg("hvk_disassembler_repel");
 
     public static final RegistryObject<SoundEvent> BOMB_SUIT_EQUIP = reg("bomb_suit_equip");
-    public static final RegistryObject<SoundEvent> SINEVA_WALK = reg("sineva_walk");
-    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_HIT = reg("sineva_shield_hit");
-    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BASH_CONTROL = reg("sineva_shield_bash_control");
-    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BLOCK = reg("sineva_shield_block");
-    public static final RegistryObject<SoundEvent> SINEVA_PROJECTILE_REFLECT = reg("sineva_projectile_reflect");
-    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_HIT_CASTER = reg("sineva_grapple_hit_caster");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BASH = reg("sineva.shield_bash");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BASH_CHARGE = reg("sineva.shield_bash_charge");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_HIT = reg("sineva.shield_hit");
+    public static final RegistryObject<SoundEvent> SINEVA_PROJECTILE_REFLECT = reg("sineva.projectile_reflect");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_BASH_CONTROL_VOICE = reg("sineva.shield_bash_control_voice");
+    public static final RegistryObject<SoundEvent> SINEVA_SHIELD_TOGGLE = reg("sineva.shield_toggle");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_FIRE = reg("sineva.grapple_fire");
+    public static final RegistryObject<SoundEvent> SINEVA_RIOT_SUIT_PREPARE = reg("sineva.riot_suit_prepare");
+    public static final RegistryObject<SoundEvent> SINEVA_RIOT_SUIT_WALK = reg("sineva.riot_suit_walk");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_HIT = reg("sineva.grapple_hit");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_HIT_VOICE = reg("sineva.grapple_hit_voice");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_DRAG = reg("sineva.grapple_drag");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_BREAK_VOICE = reg("sineva.grapple_break_voice");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_CHARGE_READY = reg("sineva.grapple_charge_ready");
+    public static final RegistryObject<SoundEvent> SINEVA_VIEWPORT_BREAK = reg("sineva.viewport_break");
+    public static final RegistryObject<SoundEvent> SINEVA_VIEWPORT_BREAK_VOICE = reg("sineva.viewport_break_voice");
+    public static final RegistryObject<SoundEvent> SINEVA_BARBED_WIRE_THROW = reg("sineva.barbed_wire_throw");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_RETRACT = reg("sineva.grapple_retract");
+    public static final RegistryObject<SoundEvent> SINEVA_RIOT_SUIT_VOICE = reg("sineva.riot_suit_voice");
+    public static final RegistryObject<SoundEvent> SINEVA_BARBED_WIRE_LAND = reg("sineva.barbed_wire_land");
+    public static final RegistryObject<SoundEvent> SINEVA_GRAPPLE_CHARGE = reg("sineva.grapple_charge");
+    public static final RegistryObject<SoundEvent> SINEVA_WALK_ON_BARBED_WIRE = reg("sineva.walk_on_barbed_wire");
 
     public static final RegistryObject<SoundEvent> INCENDIARY_READY = reg("incendiary_ready");
     public static final RegistryObject<SoundEvent> INCENDIARY_THROW = reg("incendiary_throw");
@@ -43,19 +71,22 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> QUICK_COVER_DEPLOY = reg("quick_cover_deploy");
 
     public static final RegistryObject<SoundEvent> MISSILE_FIRE = reg("missile_fire");
-    public static final RegistryObject<SoundEvent> MISSILE_FLY = reg("missile_fly");
+    public static final RegistryObject<SoundEvent> MISSILE_FLY = regFixed("missile_fly", 64.0F);
     public static final RegistryObject<SoundEvent> MISSILE_EXPLODE = reg("missile_explode");
     public static final RegistryObject<SoundEvent> BOMBLET_EXPLODE = reg("bomblet_explode");
 
     public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_EQUIP = reg("d_wolf_hand_cannon_equip");
     public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_FIRE = reg("d_wolf_hand_cannon_fire");
+    public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_FUSE = reg("d_wolf_hand_cannon_fuse");
     public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_IMPACT = reg("d_wolf_hand_cannon_impact");
     public static final RegistryObject<SoundEvent> D_WOLF_HAND_CANNON_EXPLODE = reg("d_wolf_hand_cannon_explode");
     public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_EQUIP = reg("d_wolf_smoke_equip");
     public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_THROW = reg("d_wolf_smoke_throw");
     public static final RegistryObject<SoundEvent> D_WOLF_SMOKE_BURST = reg("d_wolf_smoke_burst");
     public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_START = reg("d_wolf_overload_start");
+    public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_ACTIVE = reg("d_wolf_overload_active");
     public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_KILL_EXTENSION = reg("d_wolf_overload_kill_extension");
+    public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_STEP = reg("d_wolf_overload_step");
     public static final RegistryObject<SoundEvent> D_WOLF_OVERLOAD_END = reg("d_wolf_overload_end");
 
     public static final RegistryObject<SoundEvent> GIZMO_SMOKE_TRAP_EQUIP = reg("gizmo_smoke_trap_equip");
@@ -108,7 +139,8 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> LUNA_GRENADE_EXPLODE = reg("luna_grenade_explode");
     public static final RegistryObject<SoundEvent> LUNA_GRENADE_HIT = reg("luna_grenade_hit");
     public static final RegistryObject<SoundEvent> LUNA_ARMOR_BREAK = reg("luna_armor_break");
-    public static final RegistryObject<SoundEvent> LUNA_RECON_ARROW_FLY = reg("luna_recon_arrow_fly");
+    public static final RegistryObject<SoundEvent> LUNA_RECON_ARROW_FLY = regFixed("luna_recon_arrow_fly", 40.0F);
+    public static final RegistryObject<SoundEvent> LUNA_RECON_DETECTION = regFixed("luna_recon_detection", 40.0F);
     public static final RegistryObject<SoundEvent> LUNA_POSITION_REVEAL = reg("luna_position_reveal");
     public static final RegistryObject<SoundEvent> LUNA_REVEAL_VOICE = reg("luna_reveal_voice");
 
@@ -124,11 +156,16 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> VYRON_POWERED_LAND = reg("vyron_powered_land");
     public static final RegistryObject<SoundEvent> VYRON_POWERED_ACTIVATE = reg("vyron_powered_activate");
     public static final RegistryObject<SoundEvent> VYRON_DASH = reg("vyron_dash");
+    public static final RegistryObject<SoundEvent> VYRON_FALLING_LOOP = reg("vyron_falling_loop");
     public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_EQUIP = reg("vyron_magnetic_bomb_equip");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_STOW = reg("vyron_magnetic_bomb_stow");
     public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_THROW = reg("vyron_magnetic_bomb_throw");
+    public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_ATTACH = reg("vyron_magnetic_bomb_attach");
     public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_COUNTDOWN = reg("vyron_magnetic_bomb_countdown");
     public static final RegistryObject<SoundEvent> VYRON_MAGNETIC_BOMB_EXPLODE = reg("vyron_magnetic_bomb_explode");
+    public static final RegistryObject<SoundEvent> VYRON_POWERED_ACTIVE = reg("vyron_powered_active");
     public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_EQUIP = reg("vyron_tiger_cannon_equip");
+    public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_STOW = reg("vyron_tiger_cannon_stow");
     public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_READY = reg("vyron_tiger_cannon_ready");
     public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_FIRE = reg("vyron_tiger_cannon_fire");
     public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_BOUNCE = reg("vyron_tiger_cannon_bounce");
@@ -136,16 +173,26 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> VYRON_TIGER_CANNON_HIT_FEEDBACK = reg("vyron_tiger_cannon_hit_feedback");
 
     public static final RegistryObject<SoundEvent> NOX_ROTOR_EQUIP = reg("nox_rotor_equip");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_STOW = reg("nox_rotor_stow");
     public static final RegistryObject<SoundEvent> NOX_ROTOR_LOCK = reg("nox_rotor_lock");
     public static final RegistryObject<SoundEvent> NOX_ROTOR_THROW = reg("nox_rotor_throw");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_IDLE_LOOP = reg("nox_rotor_idle_loop");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_START_FLY = reg("nox_rotor_start_fly");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_FLY_LOOP = reg("nox_rotor_fly_loop");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_FLY_END = reg("nox_rotor_fly_end");
+    public static final RegistryObject<SoundEvent> NOX_ROTOR_DESTROYED = reg("nox_rotor_destroyed");
     public static final RegistryObject<SoundEvent> NOX_ROTOR_BOUNCE = reg("nox_rotor_bounce");
     public static final RegistryObject<SoundEvent> NOX_ROTOR_EXPLODE = reg("nox_rotor_explode");
     public static final RegistryObject<SoundEvent> NOX_FLASH_EQUIP = reg("nox_flash_equip");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_PIN = reg("nox_flash_pin");
     public static final RegistryObject<SoundEvent> NOX_FLASH_THROW = reg("nox_flash_throw");
     public static final RegistryObject<SoundEvent> NOX_FLASH_BOUNCE = reg("nox_flash_bounce");
     public static final RegistryObject<SoundEvent> NOX_FLASH_EXPLODE = reg("nox_flash_explode");
     public static final RegistryObject<SoundEvent> NOX_FLASH_HIT = reg("nox_flash_hit");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_HIT_FULL = reg("nox_flash_hit_full");
+    public static final RegistryObject<SoundEvent> NOX_FLASH_HIT_PARTIAL = reg("nox_flash_hit_partial");
     public static final RegistryObject<SoundEvent> NOX_STEALTH_START = reg("nox_stealth_start");
+    public static final RegistryObject<SoundEvent> NOX_STEALTH_ACTIVE_LOOP = reg("nox_stealth_active_loop");
     public static final RegistryObject<SoundEvent> NOX_STEALTH_WARNING = reg("nox_stealth_warning");
     public static final RegistryObject<SoundEvent> NOX_DECOY_BREAK = reg("nox_decoy_break");
 
@@ -159,6 +206,11 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> MANBA_DUEL_CONTROL_4 = reg("manba_duel_control_4");
     public static final RegistryObject<SoundEvent> MANBA_DUEL_REVIVE = reg("manba_duel_revive");
     public static final RegistryObject<SoundEvent> MANBA_DUEL_EXECUTE = reg("manba_duel_execute");
+    public static final RegistryObject<SoundEvent> GAMBLER_DRAW = reg("gambler.draw");
+    public static final RegistryObject<SoundEvent> GAMBLER_SHIELD_BLOCK = reg("gambler.shield_block");
+    public static final RegistryObject<SoundEvent> GAMBLER_HAKKO_ICHIU_BGM = reg("gambler.hakko_ichiu_bgm");
+    public static final RegistryObject<SoundEvent> GAMBLER_ARENA_BGM = reg("gambler.arena_bgm");
+    public static final RegistryObject<SoundEvent> GAMBLER_CORE_JACKPOT_BGM = reg("gambler.core_jackpot_bgm");
 
     public static final RegistryObject<SoundEvent> STINGER_SMOKE_EQUIP = reg("stinger_smoke_equip");
     public static final RegistryObject<SoundEvent> STINGER_SMOKE_THROW = reg("stinger_smoke_throw");
@@ -213,21 +265,28 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_LAUNCH = reg("raptor_falcon_launch");
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_FLY = reg("raptor_falcon_fly");
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_TARGET_FOUND = reg("raptor_falcon_target_found");
-    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_POSITION_REVEAL = reg("raptor_falcon_position_reveal");
+    public static final RegistryObject<SoundEvent> RAPTOR_FALCON_POSITION_REVEAL = regFixed("raptor_falcon_position_reveal", 32.0F);
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_PULSE_THROW = reg("raptor_falcon_pulse_throw");
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_SELF_DESTRUCT_START = reg("raptor_falcon_self_destruct_start");
     public static final RegistryObject<SoundEvent> RAPTOR_FALCON_SELF_DESTRUCT_EXPLODE = reg("raptor_falcon_self_destruct_explode");
     public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_EQUIP = reg("raptor_pulse_grenade_equip");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_STOW = reg("raptor_pulse_grenade_stow");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_PIN = reg("raptor_pulse_grenade_pin");
     public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_THROW = reg("raptor_pulse_grenade_throw");
+    public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_BOUNCE = reg("raptor_pulse_grenade_bounce");
     public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_COUNTDOWN = reg("raptor_pulse_grenade_countdown");
     public static final RegistryObject<SoundEvent> RAPTOR_PULSE_GRENADE_EXPLODE = reg("raptor_pulse_grenade_explode");
     public static final RegistryObject<SoundEvent> RAPTOR_PULSE_STAGGER_HIT = reg("raptor_pulse_stagger_hit");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_TARGET_AVAILABLE = reg("raptor_hummingbird_target_available");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_ATTACH = reg("raptor_hummingbird_attach");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_SUCCESS = reg("raptor_hummingbird_success");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_ACTIVE_LOOP = reg("raptor_hummingbird_active_loop");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_REVEAL = reg("raptor_hummingbird_reveal");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_VIEW_ENTER = reg("raptor_hummingbird_view_enter");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_VIEW_EXIT = reg("raptor_hummingbird_view_exit");
     public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_LOST = reg("raptor_hummingbird_lost");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_END = reg("raptor_hummingbird_end");
+    public static final RegistryObject<SoundEvent> RAPTOR_HUMMINGBIRD_DESTROYED = reg("raptor_hummingbird_destroyed");
     public static final RegistryObject<SoundEvent> TEMPEST_EXPLOSIVE_SPINE_ACTIVATE = reg("tempest_explosive_spine_activate");
     public static final RegistryObject<SoundEvent> TEMPEST_DANGER_NEAR_MISS = reg("tempest_danger_near_miss");
     public static final RegistryObject<SoundEvent> TEMPEST_EXPLOSION_TRIGGER = reg("tempest_explosion_trigger");
@@ -298,6 +357,16 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> NIKAIDOU_RITUAL_SWORD_HIT = reg("nikaidou_ritual_sword_hit");
     public static final RegistryObject<SoundEvent> NIKAIDOU_DOOM_TRIGGER = reg("nikaidou_doom_trigger");
     public static final RegistryObject<SoundEvent> NIKAIDOU_DOOM_DEATH = reg("nikaidou_doom_death");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_REWIND_REBIRTH_1 = reg("nikaidou_witch_rewind_rebirth_1");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_REWIND_REBIRTH_2 = reg("nikaidou_witch_rewind_rebirth_2");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_REWIND_REBIRTH_3 = reg("nikaidou_witch_rewind_rebirth_3");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_ERROR_CAST = reg("nikaidou_witch_error_cast");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_KILL_1 = reg("nikaidou_witch_kill_1");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_KILL_2 = reg("nikaidou_witch_kill_2");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_CORE_CAST = reg("nikaidou_witch_core_cast");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_REMNANT_LOCK = reg("nikaidou_witch_remnant_lock");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_REMNANT_ENTER = reg("nikaidou_witch_remnant_enter");
+    public static final RegistryObject<SoundEvent> NIKAIDOU_WITCH_FINAL_ENTER = reg("nikaidou_witch_final_enter");
     public static final RegistryObject<SoundEvent> CATDAD_REFLECT = reg("catdad_reflect");
     public static final RegistryObject<SoundEvent> CATDAD_HISS = reg("catdad_hiss");
     public static final RegistryObject<SoundEvent> CATDAD_POWER_STRIKE = reg("catdad_power_strike");
@@ -365,6 +434,37 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> GHROTH_PURCHASE_SUCCESS_6 = reg("ghroth_purchase_success_6");
     public static final RegistryObject<SoundEvent> GHROTH_PURCHASE_SUCCESS_7 = reg("ghroth_purchase_success_7");
 
+    public static final RegistryObject<SoundEvent> CHAMBER_PASSIVE_FUNDS = reg("chamber_passive_funds");
+    public static final RegistryObject<SoundEvent> CHAMBER_TELEPORT_CARD = reg("chamber_teleport_card");
+    public static final RegistryObject<SoundEvent> CHAMBER_TRAP_CARD = reg("chamber_trap_card");
+    public static final RegistryObject<SoundEvent> CHAMBER_HEADHUNTER = reg("chamber_headhunter");
+    public static final RegistryObject<SoundEvent> CHAMBER_TOUR_DE_FORCE = reg("chamber_tour_de_force");
+    public static final RegistryObject<SoundEvent> N_TWO_TRACKING_STUN = reg("n_two_tracking_stun");
+    public static final RegistryObject<SoundEvent> N_TWO_TRACKING_STUN_THROW = reg("n_two_tracking_stun_throw");
+    public static final RegistryObject<SoundEvent> N_TWO_TRACKING_STUN_BURST = reg("n_two_tracking_stun_burst");
+    public static final RegistryObject<SoundEvent> N_TWO_TRACKING_STUN_LOCK = reg("n_two_tracking_stun_lock");
+    public static final RegistryObject<SoundEvent> N_TWO_DEWAR_CANISTER = reg("n_two_dewar_canister");
+    public static final RegistryObject<SoundEvent> N_TWO_DEWAR_STOW = reg("n_two_dewar_stow");
+    public static final RegistryObject<SoundEvent> N_TWO_DEWAR_PIN = reg("n_two_dewar_pin");
+    public static final RegistryObject<SoundEvent> N_TWO_DEWAR_THROW = reg("n_two_dewar_throw");
+    public static final RegistryObject<SoundEvent> N_TWO_DEWAR_FIELD = reg("n_two_dewar_field");
+    public static final RegistryObject<SoundEvent> N_TWO_ICE_FIELD = reg("n_two_ice_field");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_LAUNCHER = reg("n_two_condensed_launcher");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_CHARGE = reg("n_two_condensed_charge");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_STOW = reg("n_two_condensed_stow");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_FIRE = reg("n_two_condensed_fire");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_MECHANICAL = reg("n_two_condensed_mechanical");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_BOUNCE = reg("n_two_condensed_bounce");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_COUNTDOWN = reg("n_two_condensed_countdown");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_HIT = reg("n_two_condensed_hit");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_EXPLODE = reg("n_two_condensed_explode");
+    public static final RegistryObject<SoundEvent> N_TWO_CONDENSED_FIELD = reg("n_two_condensed_field");
+    public static final RegistryObject<SoundEvent> N_TWO_FREEZE = reg("n_two_freeze");
+    public static final RegistryObject<SoundEvent> CORPS_WARM_ENFORCEMENT = reg("corps_warm_enforcement");
+    public static final RegistryObject<SoundEvent> CORPS_FORCEFUL_BATON = reg("corps_forceful_baton");
+    public static final RegistryObject<SoundEvent> CORPS_CORE_CAST = reg("corps_core_cast");
+    public static final RegistryObject<SoundEvent> CORPS_DUEL_MUSIC = reg("corps_duel_music");
+
     public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_START = reg("item_armor_repair_start");
     public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_WORK = reg("item_armor_repair_work");
     public static final RegistryObject<SoundEvent> ITEM_ARMOR_REPAIR_FINISH = reg("item_armor_repair_finish");
@@ -388,10 +488,34 @@ public class ModSounds {
     public static final RegistryObject<SoundEvent> ITEM_MEDICINE_FINISH = reg("item_medicine_finish");
     public static final RegistryObject<SoundEvent> ITEM_SPECIAL_SUPPLY_START = reg("item_special_supply_start");
     public static final RegistryObject<SoundEvent> ITEM_SPECIAL_SUPPLY_FINISH = reg("item_special_supply_finish");
+    public static final RegistryObject<SoundEvent> HVK_CLONE_PROTOTYPE_USE_1 = reg("hvk_clone_prototype_use_1");
+    public static final RegistryObject<SoundEvent> HVK_CLONE_PROTOTYPE_USE_2 = reg("hvk_clone_prototype_use_2");
+    public static final RegistryObject<SoundEvent> HVK_CLONE_PROTOTYPE_USE_3 = reg("hvk_clone_prototype_use_3");
+    public static final RegistryObject<SoundEvent> HVK_CLONE_PROTOTYPE_USE_4 = reg("hvk_clone_prototype_use_4");
+    public static final RegistryObject<SoundEvent> HVK_CLONE_PROTOTYPE_USE_5 = reg("hvk_clone_prototype_use_5");
+    public static final RegistryObject<SoundEvent> HVK_ADVANCED_TREASURE_COMPASS_SUCCESS = reg("hvk_advanced_treasure_compass_success");
+    public static final RegistryObject<SoundEvent> ETERNAL_LOVE_BLESSING_RECORD = reg("eternal_love_blessing_record");
+    public static final RegistryObject<SoundEvent> ETERNAL_LOVE_BLESSING_OBTAIN = reg("eternal_love_blessing_obtain");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_1 = reg("interdimensional_block_use_1");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_2 = reg("interdimensional_block_use_2");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_3 = reg("interdimensional_block_use_3");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_4 = reg("interdimensional_block_use_4");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_5 = reg("interdimensional_block_use_5");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_6 = reg("interdimensional_block_use_6");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_7 = reg("interdimensional_block_use_7");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_8 = reg("interdimensional_block_use_8");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_9 = reg("interdimensional_block_use_9");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_USE_10 = reg("interdimensional_block_use_10");
+    public static final RegistryObject<SoundEvent> INTERDIMENSIONAL_BLOCK_BURIED = reg("interdimensional_block_buried");
 
     private static RegistryObject<SoundEvent> reg(String id) {
         return SOUNDS.register(id, () -> SoundEvent.createVariableRangeEvent(
-                new ResourceLocation(DealtForceSkillsMod.MODID, id)));
+                ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, id)));
+    }
+
+    private static RegistryObject<SoundEvent> regFixed(String id, float range) {
+        return SOUNDS.register(id, () -> SoundEvent.createFixedRangeEvent(
+                ResourceLocation.fromNamespaceAndPath(DealtForceSkillsMod.MODID, id), range));
     }
 
     private static Map<String, RegistryObject<SoundEvent>> registerLexNinjiaSounds() {
@@ -405,6 +529,42 @@ public class ModSounds {
 
     public static SoundEvent lexNinjiaSound(String id) {
         RegistryObject<SoundEvent> sound = LEX_NINJIA_SOUNDS.get(id);
+        return sound == null ? null : sound.get();
+    }
+
+    private static Map<String, RegistryObject<SoundEvent>> registerGamblerPowerSounds() {
+        Map<String, RegistryObject<SoundEvent>> sounds = new LinkedHashMap<>();
+        for (String id : new String[] {
+                "ride_the_wind",
+                "earthshaking_slam",
+                "triple_threat",
+                "shrink_ray",
+                "vitality_burst",
+                "frozen_tundra",
+                "inspiration",
+                "witch_familiar",
+                "missile_barrage",
+                "octo_thrower",
+                "scary_shaper_1000",
+                "precision_strike",
+                "solar_burn",
+                "unbreakable",
+                "devour",
+                "throw_potato",
+                "orange_peel_shield",
+                "power_punch",
+                "inflating_mushroom",
+                "sheepify",
+                "blazing_bark",
+                "gene_amplification"
+        }) {
+            sounds.put(id, reg("gambler.power." + id));
+        }
+        return Collections.unmodifiableMap(sounds);
+    }
+
+    public static SoundEvent gamblerPowerSound(String id) {
+        RegistryObject<SoundEvent> sound = GAMBLER_POWER_SOUNDS.get(id);
         return sound == null ? null : sound.get();
     }
 }

@@ -89,17 +89,23 @@ public class BladeWireProjectileEntity extends Projectile implements ItemSupplie
         Direction direction = hit.getDirection();
         Vec3 motion = getDeltaMovement();
 
-        if (direction == Direction.UP || motion.y < -0.35 || bounces >= 3) {
+        if (direction == Direction.UP) {
+            deploy(hit.getBlockPos().relative(direction));
+            return;
+        }
+
+        if (bounces >= 3) {
             deploy(hit.getBlockPos().relative(direction));
             return;
         }
 
         bounces++;
-        Vec3 next = switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * 0.65, motion.y * 0.85, motion.z * 0.85);
-            case Y -> new Vec3(motion.x * 0.85, -motion.y * 0.45, motion.z * 0.85);
-            case Z -> new Vec3(motion.x * 0.85, motion.y * 0.85, -motion.z * 0.65);
-        };
+        Vec3 next = com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, 0.65D, 0.45D, 0.85D);
+        if (next.lengthSqr() < 0.018D) {
+            deploy(hit.getBlockPos().relative(direction));
+            return;
+        }
         setDeltaMovement(next);
         Vec3 location = hit.getLocation();
         setPos(location.x + next.x * 0.05, location.y + next.y * 0.05, location.z + next.z * 0.05);

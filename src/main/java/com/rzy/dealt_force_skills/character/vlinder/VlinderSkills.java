@@ -57,7 +57,7 @@ public final class VlinderSkills {
             return true;
         }
         if (VlinderStateManager.medicalCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.medical_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vlinder.medical_empty"));
             return true;
         }
         VlinderStateManager.setEquippedTool(player, VlinderTool.MEDICAL_DRONE);
@@ -93,7 +93,7 @@ public final class VlinderSkills {
             return true;
         }
         if (!VlinderStateManager.consumeMedicalCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.medical_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vlinder.medical_empty"));
             return true;
         }
 
@@ -120,7 +120,7 @@ public final class VlinderSkills {
             return true;
         }
         if (!VlinderStateManager.consumeMedicalCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.medical_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vlinder.medical_empty"));
             return true;
         }
         VlinderStateManager.applyHealingDust(player, player);
@@ -135,7 +135,7 @@ public final class VlinderSkills {
             return true;
         }
         if (!VlinderStateManager.consumeSmokeCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.smoke_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vlinder.smoke_empty"));
             return true;
         }
         ServerLevel level = player.serverLevel();
@@ -160,7 +160,8 @@ public final class VlinderSkills {
             return true;
         }
         if (!VlinderStateManager.consumeCore(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.core_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.vlinder.core_cooldown"));
             return true;
         }
         ServerLevel level = player.serverLevel();

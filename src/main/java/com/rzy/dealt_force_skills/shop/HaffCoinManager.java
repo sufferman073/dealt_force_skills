@@ -1,6 +1,8 @@
 package com.rzy.dealt_force_skills.shop;
 
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
+import com.rzy.dealt_force_skills.character.chamber.ChamberStateManager;
+import com.rzy.dealt_force_skills.character.corps.CorpsStateManager;
 import com.rzy.dealt_force_skills.character.ghroth.GhrothStateManager;
 import com.rzy.dealt_force_skills.character.lexninjia.LexNinjiaStateManager;
 import com.rzy.dealt_force_skills.character.saeed.SaeedStateManager;
@@ -16,11 +18,11 @@ import net.minecraft.world.entity.player.Player;
 public final class HaffCoinManager {
     private static final String COINS = DealtForceSkillsMod.MODID + ".haff_coins";
     private static final String LAST_SURVIVAL_AWARD_TICK = DealtForceSkillsMod.MODID + ".haff_last_survival_award_tick";
-    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.survival_award_interval_ticks", 60L * 20L);
-    private static final long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.survival_award", 500L);
-    private static final long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.player_kill_award", 4500L);
-    private static final long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.player_death_award", 6000L);
-
+    private static volatile long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.survival_award_interval_ticks", 1200L));
+    private static volatile long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.survival_award", 1500L));
+    private static volatile long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_KILL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.player_kill_award", 9000L));
+    private static volatile long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_DEATH_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.haffcoinmanager.player_death_award", 12000L));
+    private static volatile double MOB_KILL_HEALTH_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MOB_KILL_HEALTH_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("shop.haffcoinmanager.mob_kill_health_multiplier", 10.0));
     private HaffCoinManager() {
     }
 
@@ -47,6 +49,7 @@ public final class HaffCoinManager {
                 && !LexNinjiaStateManager.isLexNinjia(player)
                 && !SaeedStateManager.isSaeed(player)
                 && (GhrothStateManager.isGhroth(player)
+                || ChamberStateManager.hasHaffPassive(player)
                 || player.serverLevel().getGameRules().getBoolean(ModGameRules.DEALT_FORCE_SHOP));
     }
 
@@ -54,7 +57,9 @@ public final class HaffCoinManager {
         if (amount <= 0L || !canEarnCoins(player)) {
             return;
         }
-        set(player, safeAdd(get(player), amount));
+        long scaled = ChamberStateManager.scaleHaffIncome(player, amount);
+        set(player, safeAdd(get(player), scaled));
+        CorpsStateManager.shareHaffCoins(player, scaled);
     }
 
     public static long grant(ServerPlayer player, long amount) {
@@ -82,7 +87,7 @@ public final class HaffCoinManager {
             add(killer, PLAYER_KILL_AWARD);
             return;
         }
-        add(killer, Math.max(1L, Math.round(victim.getMaxHealth() * 10.0D)));
+        add(killer, Math.max(1L, Math.round(victim.getMaxHealth() * MOB_KILL_HEALTH_MULTIPLIER)));
     }
 
     public static void awardDeath(ServerPlayer player) {
@@ -113,9 +118,10 @@ public final class HaffCoinManager {
         NetworkHandler.sendToPlayer(new S2C_SyncHaffCoins(get(player)), player);
     }
 
-    private static void set(ServerPlayer player, long amount) {
+    public static long set(ServerPlayer player, long amount) {
         player.getPersistentData().putLong(COINS, Math.max(0L, amount));
         sync(player);
+        return get(player);
     }
 
     private static long safeAdd(long left, long right) {

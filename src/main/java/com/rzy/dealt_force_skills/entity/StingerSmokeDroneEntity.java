@@ -1,11 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
-import com.rzy.dealt_force_skills.util.ClientVisionHooks;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
-import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -22,18 +19,17 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.NetworkHooks;
-import org.joml.Vector3f;
 
 import java.util.UUID;
 
 public class StingerSmokeDroneEntity extends Entity implements ItemSupplier {
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.life_ticks", 10 * 20);
-    private static final int SMOKE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.smoke_interval_ticks", 8);
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.speed", 0.42D);
-    private static final double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.guide_distance", 32.0D);
-    private static final double GUIDE_ARRIVAL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.guide_arrival_distance_sqr", 1.6D * 1.6D);
-    private static final DustParticleOptions DRONE_DUST = new DustParticleOptions(new Vector3f(0.45f, 1.0f, 0.62f), 1.1f);
-
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.life_ticks", 200));
+    private static volatile int SMOKE_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokedroneentity.smoke_interval_ticks", 8));
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.speed", 0.42));
+    private static volatile double GUIDE_DISTANCE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDE_DISTANCE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokedroneentity.guide_distance", 32.0));
+    private static volatile double GUIDE_ARRIVAL_DISTANCE_SQR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("GUIDE_ARRIVAL_DISTANCE_SQR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue(
+      "summons.stingersmokedroneentity.guide_arrival_distance_sqr", 2.5600000000000005
+   ));
     private UUID ownerId;
     private boolean guided;
     private double directionX;
@@ -179,8 +175,6 @@ public class StingerSmokeDroneEntity extends Entity implements ItemSupplier {
         );
         cloud.setPos(getX(), getY(), getZ());
         level.addFreshEntity(cloud);
-        level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(),
-                60, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.45D, StingerSmokeCloudEntity.RADIUS * 0.35D, 0.025D);
     }
 
     private Entity owner(ServerLevel level) {
@@ -188,12 +182,5 @@ public class StingerSmokeDroneEntity extends Entity implements ItemSupplier {
     }
 
     private void spawnClientParticles() {
-        if (ClientVisionHooks.isThermalVisionActive()) {
-            return;
-        }
-        level().addParticle(DRONE_DUST, getX(), getY(), getZ(), 0.0D, 0.0D, 0.0D);
-        if (tickCount % 3 == 0) {
-            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(), 0.0D, 0.01D, 0.0D);
-        }
     }
 }

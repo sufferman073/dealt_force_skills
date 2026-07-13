@@ -1,8 +1,10 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
+import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -34,22 +36,21 @@ import java.util.Map;
 import java.util.UUID;
 
 public class HackclawFlashDroneEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_lifetime_ticks", 12 * 20);
-    private static final int FAST_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.fast_flight_ticks", 8);
-    private static final int LOOK_REQUIRED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.look_required_ticks", 10);
-    private static final int FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.flash_ticks", 6 * 20);
-    private static final int MAX_FLASHES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.max_flashes", 2);
-    private static final int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_health", 4);
-    private static final int WARNING_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.warning_interval_ticks", 20);
-    private static final double SLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.slow_speed", 0.12D);
-    private static final double LOOK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.look_radius", 15.0D);
-    private static final double WARNING_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.warning_radius", 20.0D);
-    private static final double VIEW_DOT_THRESHOLD = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.view_dot_threshold", 0.50D);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.bounce_factor", 0.55D);
-    private static final double COLLISION_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclaw_flash_drone_entity.collision_step", 0.45D);
+    private static volatile int MAX_LIFETIME_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LIFETIME_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_lifetime_ticks", 240));
+    private static volatile int FAST_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FAST_FLIGHT_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.fast_flight_ticks", 8));
+    private static volatile int LOOK_REQUIRED_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LOOK_REQUIRED_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.look_required_ticks", 10));
+    private static volatile int FLASH_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("FLASH_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.flash_ticks", 120));
+    private static volatile int MAX_FLASHES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLASHES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.max_flashes", 2));
+    private static volatile int MAX_HEALTH = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_HEALTH", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.max_health", 4));
+    private static volatile int WARNING_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARNING_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclawflashdroneentity.warning_interval_ticks", 20));
+    private static volatile double SLOW_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SLOW_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.slow_speed", 0.12));
+    private static volatile double LOOK_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LOOK_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.look_radius", 15.0));
+    private static volatile double WARNING_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("WARNING_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.warning_radius", 20.0));
+    private static volatile double VIEW_DOT_THRESHOLD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("VIEW_DOT_THRESHOLD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.view_dot_threshold", 0.5));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.bounce_factor", 0.55));
+    private static volatile double COLLISION_STEP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("COLLISION_STEP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclaw_flash_drone_entity.collision_step", 0.45));
     private static final double SURFACE_OFFSET = 0.08D;
-    private static final double MIN_BOUNCE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.min_bounce_speed", 0.06D);
-
+    private static volatile double MIN_BOUNCE_SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MIN_BOUNCE_SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.hackclawflashdroneentity.min_bounce_speed", 0.06));
     private final Map<UUID, Integer> lookTicks = new HashMap<>();
     private UUID ownerId;
     private int health = MAX_HEALTH;
@@ -298,12 +299,22 @@ public class HackclawFlashDroneEntity extends Projectile implements ItemSupplier
     }
 
     private void flash(ServerLevel level, ServerPlayer target) {
+        LivingEntity flashOwner = owner(level);
+        if (TargetingUtil.shouldSkipFriendlyControl(flashOwner, target)) {
+            return;
+        }
         target.addEffect(new MobEffectInstance(ModEffects.HACKCLAW_FLASH_BLIND.get(),
-                FLASH_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.effect.hackclaw_flash_blind.0.amplifier", 0), false, false, true), owner(level));
+                FLASH_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.hackclaw_flash_drone_entity.effect.hackclaw_flash_blind.0.amplifier", 0), false, false, true), flashOwner);
         RangedSoundHelper.playThrottled(level, target.position(), ModSounds.HACKCLAW_FLASH_DRONE_FLASH.get(),
                 SoundSource.PLAYERS, 0.9f, 1.0f, 18.0D, 3, 3.0D);
         level.sendParticles(ParticleTypes.FLASH, getX(), getY() + 0.25D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
         flashesUsed++;
+        if (flashOwner instanceof ServerPlayer ownerPlayer) {
+            DfsAchievements.recordHackclawFlashDroneTargets(ownerPlayer, flashesUsed);
+            if (guidedTargetId == target.getId()) {
+                DfsAchievements.recordHackclawAdvancedPathFlash(ownerPlayer, target);
+            }
+        }
     }
 
     private LivingEntity owner(ServerLevel level) {

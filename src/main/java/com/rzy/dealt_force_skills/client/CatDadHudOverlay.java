@@ -27,15 +27,15 @@ public final class CatDadHudOverlay {
             return;
         }
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || minecraft.options.hideGui || !ClientCatDadHudState.shouldRender()) {
+        if (minecraft.player == null || minecraft.options.hideGui || !ClientCatDadHudState.shouldDisplay()) {
             return;
         }
         GuiGraphics graphics = event.getGuiGraphics();
         Font font = minecraft.font;
-        int x = 8;
-        int y = Math.max(8, graphics.guiHeight() - 68);
+        int x = ClientHudLayout.x(8);
+        int y = ClientHudLayout.y(Math.max(8, graphics.guiHeight() - 68));
 
-        drawStatus(graphics, font);
+        drawStatus(graphics, font, x, y);
         drawSlot(graphics, font, x, y, 0xFFFFC46A, KeybindRegister.CORE_SKILL,
                 Component.translatable("character.dealt_force_skills.catdad.skill.highway"),
                 ClientCatDadHudState.coreCooldownTicks(), coreDetail());
@@ -47,7 +47,16 @@ public final class CatDadHudOverlay {
                 ClientCatDadHudState.hissCooldownTicks(), hissDetail());
     }
 
-    private static void drawStatus(GuiGraphics graphics, Font font) {
+    private static void drawStatus(GuiGraphics graphics, Font font, int skillX, int skillY) {
+        int maxLives = ClientCatDadHudState.fatalDownedMaxUses();
+        if (maxLives > 0) {
+            int remaining = Math.max(0, ClientCatDadHudState.fatalDownedRemainingUses());
+            int skillWidth = SLOT * 3 + GAP * 2;
+            HudTextHelper.drawCenteredFitted(graphics, font,
+                    Component.translatable("hud.dealt_force_skills.catdad.lives", remaining, maxLives).getString(),
+                    skillX + skillWidth / 2, Math.max(8, skillY - 11), skillWidth, 0xFFFFD993);
+        }
+
         int y = 24;
         if (ClientCatDadHudState.downedTicks() > 0) {
             graphics.drawCenteredString(font,
@@ -92,7 +101,8 @@ public final class CatDadHudOverlay {
 
     private static void drawSlot(GuiGraphics graphics, Font font, int x, int y, int accentColor,
                                  KeyMapping key, Component icon, int cooldownTicks, String detail) {
-        graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA17120E);
+        try (ClientHudLayout.ButtonScale ignored = ClientHudLayout.scaleButton(graphics, x, y, SLOT)) {
+            graphics.fill(x, y, x + SLOT, y + SLOT, 0xAA17120E);
         graphics.fill(x, y, x + SLOT, y + 1, accentColor);
         graphics.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, accentColor);
         graphics.fill(x, y, x + 1, y + SLOT, accentColor);
@@ -106,7 +116,8 @@ public final class CatDadHudOverlay {
             drawCenteredClipped(graphics, font, detail, x + SLOT / 2, y + 22, 34, 0xFFE0E4EA);
         }
         String keyName = key == null ? "?" : key.getTranslatedKeyMessage().getString();
-        drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+            drawCenteredClipped(graphics, font, keyName, x + SLOT / 2, y + 35, 38, 0xFFFFFFFF);
+        }
     }
 
     private static void drawCenteredClipped(GuiGraphics graphics, Font font, String text, int centerX, int y, int width, int color) {

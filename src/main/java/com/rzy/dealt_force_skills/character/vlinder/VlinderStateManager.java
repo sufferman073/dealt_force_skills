@@ -1,14 +1,17 @@
 package com.rzy.dealt_force_skills.character.vlinder;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.compat.PlayerReviveCompat;
 import com.rzy.dealt_force_skills.entity.VlinderActiveDefenseDroneEntity;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncVlinderState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -29,22 +32,22 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class VlinderStateManager {
-    public static final int MEDICAL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_max_charges", 2);
-    public static final int MEDICAL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_recharge_ticks", 40 * 20);
-    public static final int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_max_charges", 2);
-    public static final int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_recharge_ticks", 40 * 20);
-    public static final int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.core_cooldown_ticks", 100 * 20);
-    public static final int HEALING_DUST_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.healing_dust_ticks", 20 * 20);
-    public static final int MEDICAL_WASTE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_waste_ticks", 20 * 20);
-    public static final int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.downed_duration_ticks", 90 * 20);
-    public static final int RESCUE_PROTECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.rescue_protection_ticks", 60 * 20);
-    public static final int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_other_ticks", 5 * 20);
-    public static final int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_self_ticks", 3 * 20);
-    public static final double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.revive_range", 1.5D);
-    public static final double LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.lock_range", 96.0D);
-
+    public static volatile int MEDICAL_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MEDICAL_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_max_charges", 2));
+    public static volatile int MEDICAL_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MEDICAL_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_recharge_ticks", 800));
+    public static volatile int SMOKE_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_max_charges", 2));
+    public static volatile int SMOKE_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.smoke_recharge_ticks", 800));
+    public static volatile int CORE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CORE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.core_cooldown_ticks", 2000));
+    public static volatile int HEALING_DUST_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("HEALING_DUST_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.healing_dust_ticks", 400));
+    public static volatile int MEDICAL_WASTE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MEDICAL_WASTE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.medical_waste_ticks", 400));
+    public static volatile int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOWNED_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.downed_duration_ticks", 600));
+    public static volatile int RESCUE_PROTECTION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("RESCUE_PROTECTION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.rescue_protection_ticks", 1200));
+    public static volatile int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_OTHER_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_other_ticks", 100));
+    public static volatile int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_SELF_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.revive_self_ticks", 60));
+    public static volatile double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.revive_range", 1.5));
+    public static volatile double LOCK_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LOCK_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.vlinder.vlinder_state_manager.lock_range", 96.0));
     private static final DustParticleOptions DOWNED_DUST = new DustParticleOptions(new Vector3f(1.0f, 0.35f, 0.72f), 1.25f);
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".vlinder";
     private static final String INITIALIZED = "Initialized";
@@ -62,7 +65,11 @@ public final class VlinderStateManager {
     private static final String DOWNED_UNTIL = "DownedUntil";
     private static final String RESCUE_PROTECTION_UNTIL = "RescueProtectionUntil";
     private static final String VLINDER_BUFF_UNTIL = "VlinderBuffUntil";
+    private static final String VLINDER_BUFF_OWNER = "VlinderBuffOwner";
+    private static final String PLASMA_OWNER = "PlasmaOwner";
+    private static final String SELF_RESCUE_COMPLETED_UNTIL = "SelfRescueCompletedUntil";
     private static final String EXECUTING_DOWNED_DEATH = "ExecutingDownedDeath";
+    private static final String HEALING_DUST_OWNER = ROOT_TAG + ".HealingDustOwner";
 
     private VlinderStateManager() {
     }
@@ -110,7 +117,7 @@ public final class VlinderStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         recharge(player, now, MEDICAL_CHARGES, MEDICAL_NEXT_RECHARGE, MEDICAL_MAX_CHARGES, MEDICAL_RECHARGE_TICKS);
         recharge(player, now, SMOKE_CHARGES, SMOKE_NEXT_RECHARGE, SMOKE_MAX_CHARGES, SMOKE_RECHARGE_TICKS);
         updateLockedTarget(player);
@@ -128,7 +135,7 @@ public final class VlinderStateManager {
             return;
         }
 
-        int remaining = (int) Math.min(Integer.MAX_VALUE, until - player.level().getGameTime());
+        int remaining = (int) Math.min(Integer.MAX_VALUE, until - SkillCooldownHelper.now(player));
         if (remaining <= 0) {
             expireDowned(player);
             return;
@@ -163,7 +170,7 @@ public final class VlinderStateManager {
 
     public static void enterDowned(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long until = player.level().getGameTime() + DOWNED_DURATION_TICKS;
+        long until = SkillCooldownHelper.now(player) + DOWNED_DURATION_TICKS;
         tag.putLong(DOWNED_UNTIL, until);
         tag.putInt(SELF_RESCUE_TICKS, 0);
         tag.putInt(RESCUE_TARGET_ID, -1);
@@ -175,6 +182,10 @@ public final class VlinderStateManager {
         player.level().playSound(null, player.blockPosition(), ModSounds.VLINDER_DOWNED_TRIGGER.get(),
                 SoundSource.PLAYERS, 0.9F, 1.0F);
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.downed"), true);
+        ServerPlayer owner = vlinderBuffOwner(player);
+        if (owner != null && owner != player) {
+            DfsAchievements.recordVlinderVitalProtection(owner, player);
+        }
     }
 
     public static void clearDowned(ServerPlayer player, boolean fullHeal, boolean quick) {
@@ -214,7 +225,7 @@ public final class VlinderStateManager {
     }
 
     public static boolean isDowned(Player player) {
-        return data(player).getLong(DOWNED_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(DOWNED_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isExecutingDownedDeath(Player player) {
@@ -222,25 +233,43 @@ public final class VlinderStateManager {
     }
 
     public static int downedRemainingTicks(Player player) {
-        long remaining = data(player).getLong(DOWNED_UNTIL) - player.level().getGameTime();
+        long remaining = data(player).getLong(DOWNED_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
     public static int rescueProtectionRemainingTicks(Player player) {
-        long remaining = data(player).getLong(RESCUE_PROTECTION_UNTIL) - player.level().getGameTime();
+        long remaining = data(player).getLong(RESCUE_PROTECTION_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
     public static boolean hasVlinderSuppliedBuff(Player player) {
-        return data(player).getLong(VLINDER_BUFF_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(VLINDER_BUFF_UNTIL) > SkillCooldownHelper.now(player);
+    }
+
+    public static ServerPlayer vlinderBuffOwner(ServerPlayer player) {
+        CompoundTag tag = data(player);
+        if (!tag.hasUUID(VLINDER_BUFF_OWNER)) {
+            return null;
+        }
+        UUID id = tag.getUUID(VLINDER_BUFF_OWNER);
+        return player.server.getPlayerList().getPlayer(id);
     }
 
     public static void markVlinderSuppliedBuff(Player player, int durationTicks) {
-        long until = player.level().getGameTime() + Math.max(1, durationTicks);
-        data(player).putLong(VLINDER_BUFF_UNTIL, Math.max(data(player).getLong(VLINDER_BUFF_UNTIL), until));
+        markVlinderSuppliedBuff(player, durationTicks, null);
+    }
+
+    public static void markVlinderSuppliedBuff(Player player, int durationTicks, ServerPlayer owner) {
+        long until = SkillCooldownHelper.now(player) + Math.max(1, durationTicks);
+        CompoundTag tag = data(player);
+        tag.putLong(VLINDER_BUFF_UNTIL, Math.max(tag.getLong(VLINDER_BUFF_UNTIL), until));
+        if (owner != null) {
+            tag.putUUID(VLINDER_BUFF_OWNER, owner.getUUID());
+        }
     }
 
     public static void applyHealingDust(ServerPlayer owner, LivingEntity target) {
+        target.getPersistentData().putUUID(HEALING_DUST_OWNER, owner.getUUID());
         target.addEffect(new MobEffectInstance(ModEffects.VLINDER_HEALING_DUST.get(),
                 HEALING_DUST_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_healing_dust.3.amplifier", 0), false, true, true), owner);
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
@@ -251,8 +280,19 @@ public final class VlinderStateManager {
             }
         }
         if (target instanceof Player player) {
-            markVlinderSuppliedBuff(player, HEALING_DUST_TICKS);
+            markVlinderSuppliedBuff(player, HEALING_DUST_TICKS, owner);
         }
+    }
+
+    public static ServerPlayer healingDustOwner(LivingEntity target) {
+        if (!(target.level() instanceof ServerLevel level)) {
+            return null;
+        }
+        CompoundTag tag = target.getPersistentData();
+        if (!tag.hasUUID(HEALING_DUST_OWNER)) {
+            return null;
+        }
+        return level.getServer().getPlayerList().getPlayer(tag.getUUID(HEALING_DUST_OWNER));
     }
 
     public static void applyMedicalWaste(ServerPlayer owner, LivingEntity target) {
@@ -265,9 +305,37 @@ public final class VlinderStateManager {
     }
 
     public static void markPlasmaInjected(ServerPlayer target) {
-        int duration = Math.max(20, downedRemainingTicks(target));
+        markPlasmaInjected(null, target);
+    }
+
+    public static void markPlasmaInjected(ServerPlayer owner, ServerPlayer target) {
+        if (owner != null && PlayerReviveCompat.isBleeding(target)) {
+            PlayerReviveCompat.quickReviveWithVlinder(owner, target, true);
+            return;
+        }
+        int duration = Math.max(20, Math.max(downedRemainingTicks(target), PlayerReviveCompat.downedRemainingTicks(target)));
+        if (owner != null) {
+            data(target).putUUID(PLASMA_OWNER, owner.getUUID());
+        }
         target.addEffect(new MobEffectInstance(ModEffects.VLINDER_PLASMA_INJECTED.get(),
                 duration, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_plasma_injected.6.amplifier", 0), false, true, true));
+    }
+
+    public static boolean shouldLetActiveDefenseAbsorbFatal(ServerPlayer player, float incomingDamage) {
+        CompoundTag tag = data(player);
+        return isVlinder(player)
+                && incomingDamage >= player.getHealth()
+                && incomingDamage < player.getHealth() + player.getAbsorptionAmount()
+                && tag.getLong(SELF_RESCUE_COMPLETED_UNTIL) >= SkillCooldownHelper.now(player)
+                && hasVlinderSuppliedBuff(player);
+    }
+
+    public static ServerPlayer plasmaOwner(ServerPlayer target) {
+        CompoundTag tag = data(target);
+        if (!tag.hasUUID(PLASMA_OWNER)) {
+            return null;
+        }
+        return target.server.getPlayerList().getPlayer(tag.getUUID(PLASMA_OWNER));
     }
 
     public static VlinderTool equippedTool(Player player) {
@@ -343,7 +411,7 @@ public final class VlinderStateManager {
 
     public static boolean consumeCore(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(CORE_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -410,9 +478,13 @@ public final class VlinderStateManager {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle().normalize();
         double rangeSqr = LOCK_RANGE * LOCK_RANGE;
+        VlinderDroneMode mode = droneMode(player);
         return player.server.getPlayerList().getPlayers().stream()
                 .filter(target -> target != player && target.level() == player.level())
                 .filter(TargetingUtil::isTargetablePlayer)
+                .filter(target -> mode == VlinderDroneMode.HEAL
+                        ? DealtTeamManager.areTeammates(player, target)
+                        : !DealtTeamManager.areTeammates(player, target))
                 .filter(target -> target.distanceToSqr(player) <= rangeSqr)
                 .filter(target -> inLockCone(eye, look, target))
                 .min(Comparator.comparingDouble(player::distanceToSqr))
@@ -455,6 +527,8 @@ public final class VlinderStateManager {
                 player.level().playSound(null, player.blockPosition(), ModSounds.VLINDER_SELF_RESCUE_COMPLETE.get(),
                         SoundSource.PLAYERS, 0.9F, 1.05F);
                 clearDowned(player, true, false);
+                data(player).putLong(SELF_RESCUE_COMPLETED_UNTIL, SkillCooldownHelper.now(player) + 60L * 20L);
+                DfsAchievements.onRescue(player, player, true, "vlinder");
             }
             return;
         }
@@ -466,10 +540,22 @@ public final class VlinderStateManager {
         }
 
         if (target.hasEffect(ModEffects.VLINDER_PLASMA_INJECTED.get())) {
-            clearDowned(target, true, true);
+            boolean ownPlasma = plasmaOwner(target) == player;
+            boolean revived = false;
+            if (PlayerReviveCompat.isBleeding(target)) {
+                revived = PlayerReviveCompat.quickReviveWithVlinder(player, target, true);
+            }
+            if (isDowned(target)) {
+                clearDowned(target, true, true);
+                DfsAchievements.onRescue(player, target, false, "vlinder");
+                DfsAchievements.recordVlinderActiveDefenseRescue(player, target, ownPlasma, true);
+                revived = true;
+            }
             resetRescue(tag);
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.quick_rescue_done",
-                    target.getDisplayName()), true);
+            if (revived) {
+                player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.quick_rescue_done",
+                        target.getDisplayName()), true);
+            }
             return;
         }
 
@@ -484,10 +570,20 @@ public final class VlinderStateManager {
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.rescuing",
                 target.getDisplayName(), progressBar(ticks, REVIVE_OTHER_TICKS)), true);
         if (ticks >= REVIVE_OTHER_TICKS) {
-            clearDowned(target, true, false);
-            resetRescue(tag);
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.rescue_done",
-                    target.getDisplayName()), true);
+            boolean revived = false;
+            if (PlayerReviveCompat.isBleeding(target)) {
+                revived = PlayerReviveCompat.revive(target, true);
+            }
+            if (isDowned(target)) {
+                clearDowned(target, true, false);
+                revived = true;
+            }
+            if (revived) {
+                DfsAchievements.onRescue(player, target, false, "vlinder");
+                resetRescue(tag);
+                player.displayClientMessage(Component.translatable("message.dealt_force_skills.vlinder.rescue_done",
+                        target.getDisplayName()), true);
+            }
         }
     }
 
@@ -495,7 +591,8 @@ public final class VlinderStateManager {
         double rangeSqr = REVIVE_RANGE * REVIVE_RANGE;
         return player.server.getPlayerList().getPlayers().stream()
                 .filter(target -> target != player && target.level() == player.level())
-                .filter(target -> TargetingUtil.isTargetablePlayer(target) && isDowned(target))
+                .filter(target -> DealtTeamManager.areTeammates(player, target))
+                .filter(target -> TargetingUtil.isTargetablePlayer(target) && isRescuableDowned(target))
                 .filter(target -> target.distanceToSqr(player) <= rangeSqr)
                 .min(Comparator.comparingDouble(player::distanceToSqr))
                 .orElse(null);
@@ -509,7 +606,8 @@ public final class VlinderStateManager {
             if (target.level() != player.level() || !TargetingUtil.isTargetablePlayer(target)) {
                 continue;
             }
-            if (showPlayers && target != player) {
+            boolean teammate = DealtTeamManager.areTeammates(player, target);
+            if (showPlayers && target != player && teammate) {
                 markers.add(new VlinderWorldMarker(
                         target.getId() == lockedId ? VlinderMarkerType.LOCKED_PLAYER : VlinderMarkerType.PLAYER,
                         target.getId(),
@@ -519,12 +617,22 @@ public final class VlinderStateManager {
                         0
                 ));
             }
-            if (isDowned(target)) {
+            if (teammate && isDowned(target)) {
                 markers.add(new VlinderWorldMarker(
                         VlinderMarkerType.DOWNED_PLAYER,
                         target.getId(),
                         target.position(),
                         downedRemainingTicks(target),
+                        0,
+                        0
+                ));
+            }
+            if (teammate && !isDowned(target) && PlayerReviveCompat.isBleeding(target)) {
+                markers.add(new VlinderWorldMarker(
+                        VlinderMarkerType.DOWNED_PLAYER,
+                        target.getId(),
+                        target.position(),
+                        PlayerReviveCompat.downedRemainingTicks(target),
                         0,
                         0
                 ));
@@ -544,8 +652,12 @@ public final class VlinderStateManager {
         return markers.size() > 36 ? List.copyOf(markers.subList(0, 36)) : List.copyOf(markers);
     }
 
+    private static boolean isRescuableDowned(ServerPlayer player) {
+        return isDowned(player) || PlayerReviveCompat.isBleeding(player);
+    }
+
     private static void grantRescueProtection(ServerPlayer player) {
-        long until = player.level().getGameTime() + RESCUE_PROTECTION_TICKS;
+        long until = SkillCooldownHelper.now(player) + RESCUE_PROTECTION_TICKS;
         data(player).putLong(RESCUE_PROTECTION_UNTIL, until);
         player.addEffect(new MobEffectInstance(ModEffects.VLINDER_RESCUE_PROTECTION.get(),
                 RESCUE_PROTECTION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.vlinder.vlinder_state_manager.effect.vlinder_rescue_protection.7.amplifier", 0), false, true, true));
@@ -587,7 +699,7 @@ public final class VlinderStateManager {
         }
         tag.putInt(chargeKey, charges - 1);
         if (charges - 1 < max && tag.getLong(rechargeKey) <= 0L) {
-            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, player.level().getGameTime(), rechargeTicks));
+            tag.putLong(rechargeKey, SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), rechargeTicks));
         }
         return true;
     }
@@ -613,8 +725,7 @@ public final class VlinderStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static void resetRescue(CompoundTag tag) {

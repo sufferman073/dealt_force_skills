@@ -1,5 +1,7 @@
 package com.rzy.dealt_force_skills.character.department;
 
+import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+
 import com.rzy.dealt_force_skills.character.SkillSlot;
 import com.rzy.dealt_force_skills.entity.DepartmentExplosiveTrapEntity;
 import com.rzy.dealt_force_skills.entity.DepartmentOverheatLaserEntity;
@@ -24,6 +26,16 @@ public final class DepartmentOfTransportationSkills {
     private static final Map<UUID, ToolActionStamp> LAST_TOOL_ACTIONS = new HashMap<>();
 
     private DepartmentOfTransportationSkills() {
+    }
+
+    public static void clearForPlayer(ServerPlayer player) {
+        if (player != null) {
+            LAST_TOOL_ACTIONS.remove(player.getUUID());
+        }
+    }
+
+    public static void clearRuntimeCaches() {
+        LAST_TOOL_ACTIONS.clear();
     }
 
     public static boolean useSkill(ServerPlayer player, SkillSlot slot, boolean alternate) {
@@ -88,7 +100,8 @@ public final class DepartmentOfTransportationSkills {
             return true;
         }
         if (!DepartmentOfTransportationStateManager.trapReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.department.trap_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.department.trap_cooldown"));
             return true;
         }
         if (DepartmentOfTransportationStateManager.countTraps(player) >= DepartmentOfTransportationStateManager.TRAP_ACTIVE_LIMIT) {
@@ -186,7 +199,7 @@ public final class DepartmentOfTransportationSkills {
     }
 
     private static boolean isDuplicateToolAction(ServerPlayer player, DepartmentToolAction action, int targetEntityId) {
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         ToolActionStamp previous = LAST_TOOL_ACTIONS.get(player.getUUID());
         if (previous != null
                 && previous.action == action

@@ -25,10 +25,9 @@ import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = DealtForceSkillsMod.MODID, value = Dist.CLIENT)
 public final class SinevaShieldInputHandler {
-    private static final int BASH_STAMINA_PERCENT_COST = DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_stamina_percent_cost", 20);
-    private static final int CHARGE_STAMINA_PERCENT_COST = DealtForceConfig.intValue("client.sineva_shield_input_handler.charge_stamina_percent_cost", 30);
-    private static final int BASH_ACTIVE_STAMINA_TICKS = DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_active_stamina_ticks", 20);
-
+    private static volatile int BASH_STAMINA_PERCENT_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASH_STAMINA_PERCENT_COST", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_stamina_percent_cost", 20));
+    private static volatile int CHARGE_STAMINA_PERCENT_COST = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("CHARGE_STAMINA_PERCENT_COST", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.sineva_shield_input_handler.charge_stamina_percent_cost", 30));
+    private static volatile int BASH_ACTIVE_STAMINA_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BASH_ACTIVE_STAMINA_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("client.sineva_shield_input_handler.bash_active_stamina_ticks", 20));
     private static int lockedHotbarSlot = -1;
 
     private SinevaShieldInputHandler() {

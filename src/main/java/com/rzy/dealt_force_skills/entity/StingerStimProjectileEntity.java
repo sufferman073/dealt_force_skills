@@ -4,6 +4,7 @@ import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import com.rzy.dealt_force_skills.character.stinger.StingerStimMode;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.RangedSoundHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.ParticleTypes;
@@ -15,6 +16,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.projectile.ItemSupplier;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -31,9 +33,8 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class StingerStimProjectileEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingerstimprojectileentity.max_life_ticks", 120);
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingerstimprojectileentity.speed", 2.25D);
-
+    private static volatile int MAX_LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingerstimprojectileentity.max_life_ticks", 120));
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingerstimprojectileentity.speed", 2.25));
     private UUID targetId;
     private StingerStimMode mode = StingerStimMode.HEAL;
 
@@ -152,11 +153,21 @@ public class StingerStimProjectileEntity extends Projectile implements ItemSuppl
         }
 
         LivingEntity owner = getOwner() instanceof LivingEntity living ? living : null;
+        if (owner instanceof ServerPlayer ownerPlayer) {
+            if (mode == StingerStimMode.HEAL && !DealtTeamManager.isSelfOrTeammate(ownerPlayer, target)) {
+                discard();
+                return;
+            }
+            if (mode != StingerStimMode.HEAL && DealtTeamManager.areTeammates(ownerPlayer, target)) {
+                discard();
+                return;
+            }
+        }
         if (mode == StingerStimMode.HEAL) {
             StingerStateManager.applyStimHeal(target);
         } else {
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(serverLevel, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.stinger_stim_projectile_entity.skill_hurt.0.damage", 4.0f));
+            SkillDamageHelper.hurt(target, SkillDamageHelper.trueDamage(serverLevel, this, owner), owner, com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.stinger_stim_projectile_entity.skill_hurt.0.damage", 20.0f));
             StingerStateManager.applyStimSuppression(target);
         }
         RangedSoundHelper.playThrottled(serverLevel, target.position(), ModSounds.STINGER_STIM_HIT.get(),

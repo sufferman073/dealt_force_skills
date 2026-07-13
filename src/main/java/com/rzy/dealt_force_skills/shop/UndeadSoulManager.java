@@ -14,11 +14,12 @@ public final class UndeadSoulManager {
     private static final String SOULS = DealtForceSkillsMod.MODID + ".undead_souls";
     private static final String LAST_SURVIVAL_AWARD_TICK =
             DealtForceSkillsMod.MODID + ".undead_last_survival_award_tick";
-    private static final long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award_interval_ticks", 60L * 20L);
-    private static final long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award", 500L);
-    private static final long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_kill_award", 4500L);
-    private static final long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_death_award", 6000L);
-
+    private static volatile long SURVIVAL_AWARD_INTERVAL_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD_INTERVAL_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award_interval_ticks", 1200L));
+    private static volatile long SURVIVAL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SURVIVAL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.survival_award", 500L));
+    private static volatile long PLAYER_KILL_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_KILL_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_kill_award", 4500L));
+    private static volatile long PLAYER_DEATH_AWARD = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("PLAYER_DEATH_AWARD", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.longValue("shop.undeadsoulmanager.player_death_award", 6000L));
+    private static volatile double MOB_KILL_HEALTH_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MOB_KILL_HEALTH_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("shop.undeadsoulmanager.mob_kill_health_multiplier", 10.0));
+    private static volatile double EXPLORER_MULTIPLIER = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLORER_MULTIPLIER", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("shop.undeadsoulmanager.explorer_multiplier", 1.5));
     private UndeadSoulManager() {
     }
 
@@ -41,7 +42,7 @@ public final class UndeadSoulManager {
         }
         long base = victim instanceof Player
                 ? PLAYER_KILL_AWARD
-                : Math.max(1L, Math.round(victim.getMaxHealth() * 10.0D));
+                : Math.max(1L, Math.round(victim.getMaxHealth() * MOB_KILL_HEALTH_MULTIPLIER));
         add(killer, explorerAdjusted(killer, base));
     }
 
@@ -104,13 +105,14 @@ public final class UndeadSoulManager {
 
     private static long explorerAdjusted(ServerPlayer player, long amount) {
         return UndeadStateManager.profession(player) == UndeadProfession.EXPLORER
-                ? Math.max(1L, Math.round(amount * 1.5D))
+                ? Math.max(1L, Math.round(amount * EXPLORER_MULTIPLIER))
                 : amount;
     }
 
-    private static void set(ServerPlayer player, long amount) {
+    public static long set(ServerPlayer player, long amount) {
         player.getPersistentData().putLong(SOULS, Math.max(0L, amount));
         sync(player);
+        return get(player);
     }
 
     private static long safeAdd(long left, long right) {

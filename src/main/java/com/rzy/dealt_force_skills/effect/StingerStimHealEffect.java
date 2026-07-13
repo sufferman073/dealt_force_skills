@@ -1,5 +1,6 @@
 package com.rzy.dealt_force_skills.effect;
 
+import com.rzy.dealt_force_skills.character.stinger.StingerStateManager;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -23,6 +24,12 @@ public class StingerStimHealEffect extends MobEffect {
             if (effect.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
                 entity.removeEffect(effect.getEffect());
             }
+        }
+        // 5% max health per second while the stim heal effect is active.
+        if (!entity.level().isClientSide
+                && entity.getHealth() > 0.0F
+                && entity.tickCount % 20 == 0) {
+            entity.heal(entity.getMaxHealth() * Math.max(0.0F, StingerStateManager.STIM_HEAL_PER_SECOND_FRACTION));
         }
     }
 }

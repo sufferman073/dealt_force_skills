@@ -21,6 +21,8 @@ public class S2C_SyncSinevaState {
     private final boolean shieldDeployed;
     private final int viewportHealth;
     private final int viewportMaxHealth;
+    private final int shieldDurability;
+    private final int shieldMaxDurability;
 
     public S2C_SyncSinevaState(
             int bladeWireCharges,
@@ -34,7 +36,9 @@ public class S2C_SyncSinevaState {
             boolean bombSuitActive,
             boolean shieldDeployed,
             int viewportHealth,
-            int viewportMaxHealth
+            int viewportMaxHealth,
+            int shieldDurability,
+            int shieldMaxDurability
     ) {
         this.bladeWireCharges = bladeWireCharges;
         this.bladeWireMaxCharges = bladeWireMaxCharges;
@@ -48,6 +52,8 @@ public class S2C_SyncSinevaState {
         this.shieldDeployed = shieldDeployed;
         this.viewportHealth = viewportHealth;
         this.viewportMaxHealth = viewportMaxHealth;
+        this.shieldDurability = shieldDurability;
+        this.shieldMaxDurability = shieldMaxDurability;
     }
 
     public static void encode(S2C_SyncSinevaState msg, FriendlyByteBuf buf) {
@@ -63,6 +69,8 @@ public class S2C_SyncSinevaState {
         buf.writeBoolean(msg.shieldDeployed);
         buf.writeVarInt(msg.viewportHealth);
         buf.writeVarInt(msg.viewportMaxHealth);
+        buf.writeVarInt(msg.shieldDurability);
+        buf.writeVarInt(msg.shieldMaxDurability);
     }
 
     public static S2C_SyncSinevaState decode(FriendlyByteBuf buf) {
@@ -77,6 +85,8 @@ public class S2C_SyncSinevaState {
                 buf.readVarInt(),
                 buf.readBoolean(),
                 buf.readBoolean(),
+                buf.readVarInt(),
+                buf.readVarInt(),
                 buf.readVarInt(),
                 buf.readVarInt()
         );
@@ -97,7 +107,9 @@ public class S2C_SyncSinevaState {
                         msg.bombSuitActive,
                         msg.shieldDeployed,
                         msg.viewportHealth,
-                        msg.viewportMaxHealth
+                        msg.viewportMaxHealth,
+                        msg.shieldDurability,
+                        msg.shieldMaxDurability
                 )
         ));
         ctx.get().setPacketHandled(true);

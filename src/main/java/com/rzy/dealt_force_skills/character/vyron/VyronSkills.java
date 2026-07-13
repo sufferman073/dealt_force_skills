@@ -27,8 +27,15 @@ public final class VyronSkills {
     }
 
     public static boolean tryDash(ServerPlayer player, Vec3 direction) {
+        if (!VyronStateManager.isVyron(player)) {
+            return false;
+        }
+        if (!VyronStateManager.isDashReady(player)) {
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.vyron.dash_cooldown"));
+            return true;
+        }
         if (!VyronStateManager.startDash(player, direction)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.dash_cooldown"), true);
             return true;
         }
         return true;
@@ -45,7 +52,15 @@ public final class VyronSkills {
             case THROW_MAGNETIC_BOMB -> throwMagneticBomb(player, highThrow);
             case FIRE_TIGER_CANNON -> fireTigerCannon(player);
             case STOW_TOOL -> {
+                VyronTool equipped = VyronStateManager.equippedTool(player);
                 VyronStateManager.setEquippedTool(player, VyronTool.NONE);
+                if (equipped == VyronTool.MAGNETIC_BOMB) {
+                    RangedSoundHelper.playThrottled(player.serverLevel(), player.position(), ModSounds.VYRON_MAGNETIC_BOMB_STOW.get(),
+                            SoundSource.PLAYERS, 0.75f, 1.0f, 16.0D, 5, 3.0D);
+                } else if (equipped == VyronTool.TIGER_CANNON) {
+                    RangedSoundHelper.playThrottled(player.serverLevel(), player.position(), ModSounds.VYRON_TIGER_CANNON_STOW.get(),
+                            SoundSource.PLAYERS, 0.75f, 1.0f, 16.0D, 5, 3.0D);
+                }
                 yield true;
             }
         };
@@ -64,7 +79,7 @@ public final class VyronSkills {
             return true;
         }
         if (VyronStateManager.bombCharges(player) <= 0) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.bomb_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vyron.bomb_empty"));
             return true;
         }
         VyronStateManager.setEquippedTool(player, VyronTool.MAGNETIC_BOMB);
@@ -78,7 +93,7 @@ public final class VyronSkills {
             return true;
         }
         if (!VyronStateManager.consumeBombCharge(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.bomb_empty"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player, Component.translatable("message.dealt_force_skills.vyron.bomb_empty"));
             VyronStateManager.setEquippedTool(player, VyronTool.NONE);
             return true;
         }
@@ -104,10 +119,13 @@ public final class VyronSkills {
     private static boolean toggleTigerCannon(ServerPlayer player) {
         if (VyronStateManager.equippedTool(player) == VyronTool.TIGER_CANNON) {
             VyronStateManager.setEquippedTool(player, VyronTool.NONE);
+            RangedSoundHelper.playThrottled(player.serverLevel(), player.position(), ModSounds.VYRON_TIGER_CANNON_STOW.get(),
+                    SoundSource.PLAYERS, 0.75f, 1.0f, 16.0D, 5, 3.0D);
             return true;
         }
         if (!VyronStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.tiger_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.vyron.tiger_cooldown"));
             return true;
         }
         VyronStateManager.setEquippedTool(player, VyronTool.TIGER_CANNON);
@@ -122,7 +140,8 @@ public final class VyronSkills {
             return false;
         }
         if (!VyronStateManager.isCoreReady(player)) {
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.vyron.tiger_cooldown"), true);
+            com.rzy.dealt_force_skills.skill.SkillCooldownHelper.notifyCooldown(player,
+                    Component.translatable("message.dealt_force_skills.vyron.tiger_cooldown"));
             VyronStateManager.setEquippedTool(player, VyronTool.NONE);
             return true;
         }
@@ -136,8 +155,6 @@ public final class VyronSkills {
         shell.setYRot(player.getYRot());
         shell.setXRot(player.getXRot());
         level.addFreshEntity(shell);
-        RangedSoundHelper.playThrottled(level, shell.position(), ModSounds.VYRON_TIGER_CANNON_READY.get(),
-                SoundSource.PLAYERS, 0.82f, 1.0f, 18.0D, 6, 3.0D);
         RangedSoundHelper.playThrottled(level, player.position(), ModSounds.VYRON_TIGER_CANNON_FIRE.get(),
                 SoundSource.PLAYERS, 1.0f, 1.0f, 18.0D, 4, 3.0D);
         VyronStateManager.setCoreCooldown(player);

@@ -1,10 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
-import com.rzy.dealt_force_skills.util.ClientVisionHooks;
 import com.rzy.dealt_force_skills.registry.ModEntities;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import net.minecraft.core.Direction;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
@@ -27,9 +25,8 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.UUID;
 
 public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplier {
-    private static final int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokegrenadeentity.max_flight_ticks", 80);
-    private static final double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokegrenadeentity.bounce_factor", 0.7D);
-
+    private static volatile int MAX_FLIGHT_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("MAX_FLIGHT_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.stingersmokegrenadeentity.max_flight_ticks", 80));
+    private static volatile double BOUNCE_FACTOR = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("BOUNCE_FACTOR", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.stingersmokegrenadeentity.bounce_factor", 0.7));
     private UUID ownerId;
 
     public StingerSmokeGrenadeEntity(EntityType<? extends StingerSmokeGrenadeEntity> type, Level level) {
@@ -67,12 +64,7 @@ public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplie
         setDeltaMovement(motion.add(0.0D, -0.045D, 0.0D).scale(0.985D));
         checkInsideBlocks();
 
-        if (level().isClientSide) {
-            if (ClientVisionHooks.isThermalVisionActive()) {
-                return;
-            }
-            level().addParticle(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY() + 0.08D, getZ(), 0.0D, 0.01D, 0.0D);
-        } else if (tickCount > MAX_FLIGHT_TICKS) {
+        if (!level().isClientSide && tickCount > MAX_FLIGHT_TICKS) {
             burst(position());
         }
     }
@@ -101,7 +93,8 @@ public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplie
 
     private void handleBlockHit(BlockHitResult hit) {
         Direction direction = hit.getDirection();
-        if (direction == Direction.UP) {
+        Vec3 bounced = bounce(direction, getDeltaMovement());
+        if (direction == Direction.UP && bounced.lengthSqr() < 0.012D) {
             burst(hit.getLocation());
             return;
         }
@@ -110,15 +103,12 @@ public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplie
         setPos(hit.getLocation().x + normal.x * 0.04D,
                 hit.getLocation().y + normal.y * 0.04D,
                 hit.getLocation().z + normal.z * 0.04D);
-        setDeltaMovement(bounce(direction, getDeltaMovement()));
+        setDeltaMovement(bounced);
     }
 
     private Vec3 bounce(Direction direction, Vec3 motion) {
-        return switch (direction.getAxis()) {
-            case X -> new Vec3(-motion.x * BOUNCE_FACTOR, motion.y * 0.86D, motion.z * BOUNCE_FACTOR);
-            case Y -> new Vec3(motion.x * BOUNCE_FACTOR, -motion.y * 0.45D, motion.z * BOUNCE_FACTOR);
-            case Z -> new Vec3(motion.x * BOUNCE_FACTOR, motion.y * 0.86D, -motion.z * BOUNCE_FACTOR);
-        };
+        return com.rzy.dealt_force_skills.util.ProjectileBouncePhysics.reflect(
+                direction, motion, BOUNCE_FACTOR, 0.45D, 0.86D);
     }
 
     private void burst(Vec3 center) {
@@ -129,8 +119,6 @@ public class StingerSmokeGrenadeEntity extends Projectile implements ItemSupplie
 
         serverLevel.playSound(null, center.x, center.y, center.z, ModSounds.STINGER_SMOKE_BURST.get(),
                 SoundSource.PLAYERS, 1.1f, 1.0f);
-        serverLevel.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, center.x, center.y + 0.35D, center.z,
-                300, StingerSmokeCloudEntity.RADIUS * 0.62D, 1.15D, StingerSmokeCloudEntity.RADIUS * 0.62D, 0.03D);
         StingerSmokeCloudEntity cloud = new StingerSmokeCloudEntity(
                 ModEntities.STINGER_SMOKE_CLOUD.get(),
                 serverLevel,

@@ -19,7 +19,7 @@ public class C2S_BuyHaffShopItem {
     }
 
     public static C2S_BuyHaffShopItem decode(FriendlyByteBuf buf) {
-        return new C2S_BuyHaffShopItem(buf.readUtf(128));
+        return new C2S_BuyHaffShopItem(buf.readUtf(256));
     }
 
     public static void handle(C2S_BuyHaffShopItem msg, Supplier<NetworkEvent.Context> ctx) {

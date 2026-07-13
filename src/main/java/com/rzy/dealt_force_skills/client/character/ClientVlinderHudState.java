@@ -113,6 +113,10 @@ public final class ClientVlinderHudState {
         return synced && ClientCharacterSelectionState.isSelectedCharacter(ModCharacters.VLINDER_ID);
     }
 
+    public static boolean shouldDisplay() {
+        return synced && ClientCharacterSelectionState.isDisplayedCharacter(ModCharacters.VLINDER_ID);
+    }
+
     public static boolean hasEquippedTool() {
         return shouldRender() && equippedTool != VlinderTool.NONE;
     }

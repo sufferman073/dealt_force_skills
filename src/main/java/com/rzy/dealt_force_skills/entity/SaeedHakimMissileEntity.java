@@ -1,6 +1,8 @@
 package com.rzy.dealt_force_skills.entity;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.character.uluru.UluruExplosionHelper;
+import com.rzy.dealt_force_skills.compat.SuperbWarfareCompat;
 import com.rzy.dealt_force_skills.registry.ModSounds;
 import com.rzy.dealt_force_skills.skill.SkillDamageHelper;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
@@ -32,13 +34,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier {
-    private static final int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedhakimmissileentity.life_ticks", 5 * 20);
-    private static final double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedhakimmissileentity.speed", 1.35D);
-    private static final double TURN_KEEP = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeed_hakim_missile_entity.turn_keep", 0.82D);
-    private static final double TURN_PULL = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeed_hakim_missile_entity.turn_pull", 0.28D);
-    private static final double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedhakimmissileentity.explosion_radius", 3.0D);
-    private static final float EXPLOSION_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedhakimmissileentity.explosion_damage", 40.0F);
-
+    private static volatile int LIFE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("LIFE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("summons.saeedhakimmissileentity.life_ticks", 100));
+    private static volatile double SPEED = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SPEED", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedhakimmissileentity.speed", 1.35));
+    private static volatile double TURN_KEEP = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TURN_KEEP", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeed_hakim_missile_entity.turn_keep", 0.82));
+    private static volatile double TURN_PULL = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("TURN_PULL", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeed_hakim_missile_entity.turn_pull", 0.28));
+    private static volatile double EXPLOSION_RADIUS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_RADIUS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("summons.saeedhakimmissileentity.explosion_radius", 3.0));
+    private static volatile float EXPLOSION_DAMAGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("EXPLOSION_DAMAGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue("summons.saeedhakimmissileentity.explosion_damage", 40.0F));
     private UUID ownerId;
     private int targetId = -1;
     private boolean hasAimPoint;
@@ -48,6 +49,7 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
     private double directionX;
     private double directionY;
     private double directionZ = 1.0D;
+    private boolean aroundObstacle;
 
     public SaeedHakimMissileEntity(EntityType<? extends SaeedHakimMissileEntity> type, Level level) {
         super(type, level);
@@ -97,6 +99,7 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
             return;
         }
 
+        markAroundObstacle(level);
         Vec3 direction = guidedDirection(level);
         rememberDirection(direction);
         Vec3 motion = direction.scale(SPEED);
@@ -134,6 +137,7 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
         directionX = tag.getDouble("DirectionX");
         directionY = tag.getDouble("DirectionY");
         directionZ = tag.getDouble("DirectionZ");
+        aroundObstacle = tag.getBoolean("AroundObstacle");
     }
 
     @Override
@@ -149,6 +153,7 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
         tag.putDouble("DirectionX", directionX);
         tag.putDouble("DirectionY", directionY);
         tag.putDouble("DirectionZ", directionZ);
+        tag.putBoolean("AroundObstacle", aroundObstacle);
     }
 
     @Override
@@ -197,7 +202,9 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
                 36, 1.1D, 0.45D, 1.1D, 0.03D);
 
         SaeedGuardEntity owner = ownerGuard(level).orElse(null);
+        LivingEntity damageOwner = owner == null ? null : owner.owner().<LivingEntity>map(player -> player).orElse(owner);
         AABB box = new AABB(center, center).inflate(EXPLOSION_RADIUS);
+        boolean killedTarget = false;
         for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, box, LivingEntity::isAlive)) {
             if (!TargetingUtil.isTargetableLiving(target) || isFriendly(target)) {
                 continue;
@@ -210,10 +217,20 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
             if (damage <= 0.0F) {
                 continue;
             }
+            boolean wasAlive = target.isAlive();
             target.invulnerableTime = 0;
-            SkillDamageHelper.hurt(target, SkillDamageHelper.uluruMissile(level, this, owner), owner, damage);
+            boolean damaged = SkillDamageHelper.hurt(target, SkillDamageHelper.uluruMissile(level, this, damageOwner), damageOwner, damage);
+            if (damaged && wasAlive && !target.isAlive()) {
+                killedTarget = true;
+            }
             target.hurtMarked = true;
         }
+        if (owner != null && killedTarget) {
+            owner.owner().ifPresent(player -> DfsAchievements.recordSaeedHakimMissileKill(player, aroundObstacle));
+        }
+        SuperbWarfareCompat.damageVehicles(level, center, EXPLOSION_RADIUS,
+                SkillDamageHelper.uluruMissile(level, this, damageOwner), this,
+                EXPLOSION_DAMAGE / 100.0F, true);
         discard();
     }
 
@@ -227,6 +244,20 @@ public class SaeedHakimMissileEntity extends Projectile implements ItemSupplier 
         }
         Entity entity = level.getEntity(ownerId);
         return entity instanceof SaeedGuardEntity guard ? Optional.of(guard) : Optional.empty();
+    }
+
+    private void markAroundObstacle(ServerLevel level) {
+        if (aroundObstacle || targetId < 0) {
+            return;
+        }
+        Optional<SaeedGuardEntity> guard = ownerGuard(level);
+        if (guard.isEmpty()) {
+            return;
+        }
+        Entity target = level.getEntity(targetId);
+        if (target instanceof LivingEntity living && living.isAlive() && !guard.get().hasLineOfSight(living)) {
+            aroundObstacle = true;
+        }
     }
 
     private boolean isFriendly(Entity entity) {

@@ -1,12 +1,15 @@
 package com.rzy.dealt_force_skills.character.stinger;
 
+import com.rzy.dealt_force_skills.advancement.DfsAchievements;
 import com.rzy.dealt_force_skills.DealtForceSkillsMod;
 import com.rzy.dealt_force_skills.character.CharacterSelectionManager;
 import com.rzy.dealt_force_skills.character.ModCharacters;
+import com.rzy.dealt_force_skills.compat.PlayerReviveCompat;
 import com.rzy.dealt_force_skills.network.NetworkHandler;
 import com.rzy.dealt_force_skills.network.S2C_SyncStingerState;
 import com.rzy.dealt_force_skills.registry.ModEffects;
 import com.rzy.dealt_force_skills.skill.SkillCooldownHelper;
+import com.rzy.dealt_force_skills.team.DealtTeamManager;
 import com.rzy.dealt_force_skills.util.TargetingUtil;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.nbt.CompoundTag;
@@ -27,16 +30,22 @@ import java.util.List;
 import java.util.Optional;
 
 public final class StingerStateManager {
-    public static final int SMOKE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.smoke_cooldown_ticks", 40 * 20);
-    public static final int DRONE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.drone_cooldown_ticks", 55 * 20);
-    public static final int STIM_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_max_charges", 6);
-    public static final int STIM_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_recharge_ticks", 25 * 20);
-    public static final int STIM_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_duration_ticks", 20 * 20);
-    public static final int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_duration_ticks", 45 * 20);
-    public static final int DOWNED_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_cooldown_ticks", 60 * 20);
-    public static final int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_other_ticks", 3 * 20);
-    public static final int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_self_ticks", 20);
-    public static final double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_state_manager.revive_range", 1.5D);
+    public static volatile int SMOKE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("SMOKE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.smoke_cooldown_ticks", 800));
+    public static volatile int DRONE_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DRONE_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.drone_cooldown_ticks", 1100));
+    public static volatile int STIM_MAX_CHARGES = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_MAX_CHARGES", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_max_charges", 6));
+    public static volatile int STIM_RECHARGE_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_RECHARGE_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_recharge_ticks", 500));
+    public static volatile int STIM_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.stim_duration_ticks", 400));
+    public static volatile int DOWNED_DURATION_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOWNED_DURATION_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_duration_ticks", 400));
+    public static volatile float STIM_INSTANT_HEAL_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_INSTANT_HEAL_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.stinger.stinger_state_manager.stim_instant_heal_fraction", 0.2F
+   ));
+    public static volatile float STIM_HEAL_PER_SECOND_FRACTION = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("STIM_HEAL_PER_SECOND_FRACTION", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.floatValue(
+      "characters.stinger.stinger_state_manager.stim_heal_per_second_fraction", 0.05F
+   ));
+    public static volatile int DOWNED_COOLDOWN_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("DOWNED_COOLDOWN_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.downed_cooldown_ticks", 1200));
+    public static volatile int REVIVE_OTHER_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_OTHER_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_other_ticks", 60));
+    public static volatile int REVIVE_SELF_TICKS = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_SELF_TICKS", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.revive_self_ticks", 20));
+    public static volatile double REVIVE_RANGE = com.rzy.dealt_force_skills.config.DealtForceConfig.bind("REVIVE_RANGE", () -> com.rzy.dealt_force_skills.config.DealtForceConfig.doubleValue("characters.stinger.stinger_state_manager.revive_range", 1.5));
     private static final DustParticleOptions DOWNED_DUST = new DustParticleOptions(new Vector3f(0.28f, 0.86f, 1.0f), 1.25f);
 
     private static final String ROOT_TAG = DealtForceSkillsMod.MODID + ".stinger";
@@ -53,6 +62,7 @@ public final class StingerStateManager {
     private static final String DOWNED_UNTIL = "DownedUntil";
     private static final String DOWNED_COOLDOWN_UNTIL = "DownedCooldownUntil";
     private static final String EXECUTING_DOWNED_DEATH = "ExecutingDownedDeath";
+    private static final String SMOKE_REGEN_OWNER = "SmokeRegenOwner";
 
     private StingerStateManager() {
     }
@@ -100,7 +110,7 @@ public final class StingerStateManager {
             return;
         }
         initializeIfNeeded(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         rechargeStim(player, now);
         tickRescue(player);
         tickDowned(player);
@@ -116,7 +126,7 @@ public final class StingerStateManager {
             return;
         }
 
-        int remaining = (int) Math.min(Integer.MAX_VALUE, until - player.level().getGameTime());
+        int remaining = (int) Math.min(Integer.MAX_VALUE, until - SkillCooldownHelper.now(player));
         if (remaining <= 0) {
             expireDowned(player);
             return;
@@ -151,7 +161,7 @@ public final class StingerStateManager {
 
     public static void enterDowned(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         long until = now + DOWNED_DURATION_TICKS;
         tag.putLong(DOWNED_UNTIL, until);
         tag.putLong(DOWNED_COOLDOWN_UNTIL, SkillCooldownHelper.until(player, now, DOWNED_COOLDOWN_TICKS));
@@ -163,6 +173,10 @@ public final class StingerStateManager {
         player.addEffect(new MobEffectInstance(ModEffects.STINGER_DOWNED.get(),
                 DOWNED_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_downed.1.amplifier", 0), false, true, true));
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.downed"), true);
+        ServerPlayer smokeOwner = smokeRegenOwner(player);
+        if (smokeOwner != null && player.hasEffect(ModEffects.STINGER_SMOKE_REGEN.get())) {
+            DfsAchievements.recordStingerSmokeConvertedSave(smokeOwner, player);
+        }
     }
 
     public static void clearDowned(ServerPlayer player, boolean fullHeal) {
@@ -190,7 +204,7 @@ public final class StingerStateManager {
     }
 
     public static boolean isDowned(Player player) {
-        return data(player).getLong(DOWNED_UNTIL) > player.level().getGameTime();
+        return data(player).getLong(DOWNED_UNTIL) > SkillCooldownHelper.now(player);
     }
 
     public static boolean isExecutingDownedDeath(Player player) {
@@ -198,7 +212,7 @@ public final class StingerStateManager {
     }
 
     public static int downedRemainingTicks(Player player) {
-        long remaining = data(player).getLong(DOWNED_UNTIL) - player.level().getGameTime();
+        long remaining = data(player).getLong(DOWNED_UNTIL) - SkillCooldownHelper.now(player);
         return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
     }
 
@@ -208,7 +222,7 @@ public final class StingerStateManager {
     }
 
     public static boolean smokeReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(SMOKE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(SMOKE_COOLDOWN_UNTIL);
     }
 
     public static int smokeCooldownRemainingTicks(Player player) {
@@ -217,7 +231,7 @@ public final class StingerStateManager {
 
     public static boolean consumeSmoke(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(SMOKE_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -226,7 +240,7 @@ public final class StingerStateManager {
     }
 
     public static boolean droneReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(DRONE_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(DRONE_COOLDOWN_UNTIL);
     }
 
     public static int droneCooldownRemainingTicks(Player player) {
@@ -235,7 +249,7 @@ public final class StingerStateManager {
 
     public static boolean consumeDrone(ServerPlayer player) {
         CompoundTag tag = data(player);
-        long now = player.level().getGameTime();
+        long now = SkillCooldownHelper.now(player);
         if (now < tag.getLong(DRONE_COOLDOWN_UNTIL)) {
             return false;
         }
@@ -263,7 +277,7 @@ public final class StingerStateManager {
         tag.putInt(STIM_CHARGES, charges - 1);
         if (charges - 1 < STIM_MAX_CHARGES && tag.getLong(STIM_NEXT_RECHARGE) <= 0L) {
             tag.putLong(STIM_NEXT_RECHARGE,
-                    SkillCooldownHelper.until(player, player.level().getGameTime(), STIM_RECHARGE_TICKS));
+                    SkillCooldownHelper.until(player, SkillCooldownHelper.now(player), STIM_RECHARGE_TICKS));
         }
         return true;
     }
@@ -303,10 +317,12 @@ public final class StingerStateManager {
     }
 
     public static void applyStimHeal(LivingEntity target) {
+        // Instant 20% max-health restore, then ongoing 5%/s via STINGER_STIM_HEAL effect.
+        if (!target.level().isClientSide && target.getHealth() > 0.0F) {
+            target.heal(target.getMaxHealth() * Math.max(0.0F, STIM_INSTANT_HEAL_FRACTION));
+        }
         target.addEffect(new MobEffectInstance(ModEffects.STINGER_STIM_HEAL.get(),
                 STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_stim_heal.3.amplifier", 0), false, true, true));
-        target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
-                STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.4.amplifier", 1), false, true, true));
         target.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
                 STIM_DURATION_TICKS, com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.absorption.5.amplifier", 1), false, true, true));
         for (MobEffectInstance effect : new ArrayList<>(target.getActiveEffects())) {
@@ -317,10 +333,25 @@ public final class StingerStateManager {
     }
 
     public static void applySmokeRegen(ServerPlayer target) {
+        applySmokeRegen(null, target);
+    }
+
+    public static void applySmokeRegen(ServerPlayer owner, ServerPlayer target) {
+        if (owner != null) {
+            data(target).putUUID(SMOKE_REGEN_OWNER, owner.getUUID());
+        }
         target.addEffect(new MobEffectInstance(ModEffects.STINGER_SMOKE_REGEN.get(),
                 com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_smoke_regen.6.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.stinger_smoke_regen.6.amplifier", 0), false, true, true));
         target.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
                 com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.7.duration_ticks", 30), com.rzy.dealt_force_skills.config.DealtForceConfig.intValue("characters.stinger.stinger_state_manager.effect.regeneration.7.amplifier", 0), false, true, true));
+    }
+
+    private static ServerPlayer smokeRegenOwner(ServerPlayer target) {
+        CompoundTag tag = data(target);
+        if (!tag.hasUUID(SMOKE_REGEN_OWNER)) {
+            return null;
+        }
+        return target.server.getPlayerList().getPlayer(tag.getUUID(SMOKE_REGEN_OWNER));
     }
 
     public static void applyStimSuppression(LivingEntity target) {
@@ -386,6 +417,7 @@ public final class StingerStateManager {
                     progressBar(ticks, REVIVE_SELF_TICKS)), true);
             if (ticks >= REVIVE_SELF_TICKS) {
                 clearDowned(player, true);
+                DfsAchievements.onRescue(player, player, true, "stinger");
             }
             return;
         }
@@ -403,10 +435,20 @@ public final class StingerStateManager {
         player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.rescuing",
                 target.getDisplayName(), progressBar(ticks, REVIVE_OTHER_TICKS)), true);
         if (ticks >= REVIVE_OTHER_TICKS) {
-            clearDowned(target, true);
-            resetRescue(tag);
-            player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.rescue_done",
-                    target.getDisplayName()), true);
+            boolean revived = false;
+            if (PlayerReviveCompat.isBleeding(target)) {
+                revived = PlayerReviveCompat.revive(target, true);
+            }
+            if (isDowned(target)) {
+                clearDowned(target, true);
+                revived = true;
+            }
+            if (revived) {
+                DfsAchievements.onRescue(player, target, false, "stinger");
+                resetRescue(tag);
+                player.displayClientMessage(Component.translatable("message.dealt_force_skills.stinger.rescue_done",
+                        target.getDisplayName()), true);
+            }
         }
     }
 
@@ -414,7 +456,8 @@ public final class StingerStateManager {
         double rangeSqr = REVIVE_RANGE * REVIVE_RANGE;
         return player.server.getPlayerList().getPlayers().stream()
                 .filter(target -> target != player && target.level() == player.level())
-                .filter(target -> TargetingUtil.isTargetablePlayer(target) && isDowned(target))
+                .filter(target -> DealtTeamManager.areTeammates(player, target))
+                .filter(target -> TargetingUtil.isTargetablePlayer(target) && isRescuableDowned(target))
                 .filter(target -> target.distanceToSqr(player) <= rangeSqr)
                 .min(Comparator.comparingDouble(player::distanceToSqr))
                 .orElse(null);
@@ -423,16 +466,24 @@ public final class StingerStateManager {
     private static List<StingerDownedMarker> downedMarkers(ServerPlayer stinger) {
         List<StingerDownedMarker> markers = new ArrayList<>();
         for (ServerPlayer player : stinger.server.getPlayerList().getPlayers()) {
-            if (player.level() == stinger.level() && isDowned(player)) {
-                markers.add(new StingerDownedMarker(player.getId(), player.position(), downedRemainingTicks(player)));
+            if (player.level() == stinger.level() && DealtTeamManager.areTeammates(stinger, player) && isRescuableDowned(player)) {
+                markers.add(new StingerDownedMarker(player.getId(), player.position(), downedRemainingTicksForMarker(player)));
             }
         }
         markers.sort(Comparator.comparingDouble(marker -> marker.position().distanceToSqr(stinger.position())));
         return markers;
     }
 
+    private static boolean isRescuableDowned(ServerPlayer player) {
+        return isDowned(player) || PlayerReviveCompat.isBleeding(player);
+    }
+
+    private static int downedRemainingTicksForMarker(ServerPlayer player) {
+        return Math.max(downedRemainingTicks(player), PlayerReviveCompat.downedRemainingTicks(player));
+    }
+
     private static boolean downedCooldownReady(Player player) {
-        return player.level().getGameTime() >= data(player).getLong(DOWNED_COOLDOWN_UNTIL);
+        return SkillCooldownHelper.now(player) >= data(player).getLong(DOWNED_COOLDOWN_UNTIL);
     }
 
     private static void expireDowned(ServerPlayer player) {
@@ -474,8 +525,7 @@ public final class StingerStateManager {
     }
 
     private static int remainingTicks(Player player, String key) {
-        long remaining = data(player).getLong(key) - player.level().getGameTime();
-        return remaining > 0L ? (int) Math.min(Integer.MAX_VALUE, remaining) : 0;
+        return SkillCooldownHelper.remainingTicks(player, data(player).getLong(key));
     }
 
     private static CompoundTag data(Player player) {
